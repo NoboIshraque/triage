@@ -35,15 +35,17 @@ gantt
 
 ## Phase 0 · Foundations (≈6 weeks)
 
-**Goal:** a branded Code-OSS build that opens a Triad project and knows about
-all of its domains.
+**Goal:** the Triad extension installs into VS Code, opens a Triad project and
+knows about all of its domains.
 
 Deliverables
 1. **Monorepo**: pnpm workspaces + Turborepo (TS), a Cargo workspace (Rust), and
    CI on Linux, Windows and macOS.
-2. **Desktop distribution pipeline**: pin an upstream Code-OSS tag, apply a
-   `patches/` series (VSCodium approach), build `product.json` with **Open VSX**
-   configured, and harden the fuses (RunAsNode off, Inspect off). Nightly builds.
+2. **Extension pipeline**: the extension bundled with esbuild, webviews bundled
+   with Vite, and **platform-specific VSIX** builds (`vsce package --target …`)
+   from a CI matrix. Integration tests run in real VS Code (stable and Insiders)
+   via `@vscode/test-electron`. Pre-releases publish to the VS Code Marketplace
+   and Open VSX.
 3. **Project format v0**: `triad.toml` schema, `.triad/links.json`,
    generated TS types, and a project explorer view with Code / Electronics /
    Mechanical / Simulation nodes.
@@ -184,9 +186,9 @@ Gerbers come out, and the 3D fit check passes.
 
 ## Phase 7 · Web edition, collaboration and AI (≈20 weeks)
 
-- **Web edition** from the same code: Code-OSS web + WASM engines (OCCT,
-  ngspice, JS MCU emulators, MuJoCo if a WASM build proves out). For classrooms
-  and Chromebooks.
+- **Web edition**: Triad as a web extension on vscode.dev, with WASM engines
+  (OCCT, ngspice, JS MCU emulators, MuJoCo if a WASM build proves out). For
+  classrooms and Chromebooks.
 - Visual diffs for schematic, PCB and CAD in git. Comments and reviews. Optional
   real-time collaboration (CRDT on the model service).
 - **AI design assistant** on the MCP server: "why doesn't my motor spin?" answered
@@ -199,8 +201,8 @@ Gerbers come out, and the 3D fit check passes.
 If the builder is one person plus AI assistance, **cut ruthlessly** and ship the
 magic first:
 
-1. **S0 (4–6 weeks):** monorepo, Code-OSS build (or a stock-VS Code extension pack
-   only, with no fork yet), the KiCad parser with round-trip tests, the project explorer.
+1. **S0 (4–6 weeks):** monorepo, the VS Code extension skeleton with CI
+   packaging, the KiCad parser with round-trip tests, the project explorer.
 2. **S1 (8–12 weeks):** Phase 1 slice with **KiCad as the only editor**,
    kicad-cli GLB for 3D, the template enclosure, avr8js + MuJoCo + 10 parts,
    scenario tests.
@@ -215,17 +217,19 @@ funds), or keep KiCad and Blender as the long-term editors.
 
 ## Phase 0, sprint 1: concrete first tasks
 
-1. Scaffold the monorepo (`apps/`, `extensions/`, `packages/`, `crates/`,
-   `services/`) with CI for lint, typecheck and test.
+1. Scaffold the monorepo (`extensions/`, `webviews/`, `apps/cli`, `packages/`,
+   `crates/`, `services/`) with CI for lint, typecheck and test.
 2. `crates/triad-kicad`: S-expression tokenizer and tree, lossless writer,
    round-trip test runner over `kicad-demos`.
-3. `apps/desktop`: script that fetches Code-OSS at a pinned tag, applies
-   `patches/`, writes `product.json` (name, Open VSX) and builds for linux-x64.
-4. `extensions/triad-project`: reads `triad.toml` and shows the domain tree.
-5. `extensions/triad-electronics`: calls `kicad-cli sch export netlist` and
-   shows nets and components. Read-only schematic viewer spike (WebGL2).
+3. `extensions/triad`: extension skeleton (activation events, a Triad view
+   container in the activity bar, a custom editor stub for `.kicad_sch`),
+   esbuild bundling, a `@vscode/test-electron` smoke test, and a
+   platform-specific VSIX build in CI.
+4. Project explorer: reads `triad.toml` and shows the domain tree.
+5. Electronics: calls `kicad-cli sch export netlist` and shows nets and
+   components. Read-only schematic viewer spike (WebGL2 in the custom editor).
 6. `services/sim-service` spike: avr8js runs a Blink `.hex`. The LED state
-   streams over a MessagePort to a three.js view where an LED glows.
+   streams over a localhost WebSocket to a three.js webview where an LED glows.
 
 Definition of done for every phase: exit demo recorded, CI green on three
 OSes, performance budgets measured, docs updated, ADRs written for new

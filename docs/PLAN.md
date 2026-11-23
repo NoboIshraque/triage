@@ -9,9 +9,11 @@
 
 ## 0. The plan on one page
 
-**What we're building.** One desktop app that runs offline on a student laptop. A
-project's **firmware**, **schematic + PCB** and **3D enclosure/mechanism** live
-in one project folder and one window, linked to each other. A single **Run**
+**What we're building.** A suite of **VS Code extensions** that turns the editor
+students already use into a full engineering workbench, running offline on a
+laptop. A project's **firmware**, **schematic + PCB** and **3D
+enclosure/mechanism** live in one project folder and one VS Code window, linked
+to each other. A single **Run**
 button simulates the whole device: the code runs on an emulated
 microcontroller, drives the simulated circuit, which drives motors and reads
 sensors in a 3D physics world. **Automated tests** then say pass or fail.
@@ -20,7 +22,7 @@ sensors in a 3D physics world. **Automated tests** then say pass or fail.
 
 | # | Bet | Why (evidence) |
 |---|---|---|
-| 1 | **Build on Code-OSS** (VS Code's MIT core), extension-first, inside a lightly patched distribution | We get Monaco, LSP/DAP, terminal, git, extensions and a UI students already know. Its utility-process + MessagePort architecture ([vscode.md](research/vscode.md)) is the template for our engine services |
+| 1 | **Run inside VS Code itself, as extensions** (VS Code Marketplace + Open VSX). No separate app, no fork | It's the most widely used code editor. Students install one extension into the VS Code they already have and keep their settings and extensions. We inherit Monaco, LSP/DAP, terminal, git, Test Explorer and the extension ecosystem. VS Code's own isolation pattern (narrow bridges, heavy work in separate processes, [vscode.md](research/vscode.md)) is the template for our engine processes |
 | 2 | **KiCad-native files as the electronics source of truth.** KiCad runs as companion and headless engine; our own schematic then PCB editors come in phases | KiCad's formats are open text. kicad-cli covers DRC, ERC, every fab format, STEP/GLB and renders. The IPC API is protobuf over nng ([kicad.md](research/kicad.md)) |
 | 3 | **Parametric B-rep CAD on OCCT 8** for enclosures, with Blender-style UX. **Blender is an optional render and mesh companion, not the core** | Engineering parts need exact dimensions and STEP. Blender is a mesh and render suite ([blender.md](research/blender.md)). OCCT 8.0.1 covers WebAssembly builds |
 | 4 | **Our own co-simulation kernel.** Renode-style time quanta and FMI-3-style units wire MCU emulators, ngspice and MuJoCo together, with **wiring generated from the schematic and CAD assembly** | ngspice has `Init_Sync`/`SetBkpt` for lockstep. MuJoCo has `mjs_`/`mjcb_` for building models and injecting torques. Renode's `.repl` is effectively a netlist ([simulators.md](research/simulators.md)) |
@@ -30,13 +32,15 @@ sensors in a 3D physics world. **Automated tests** then say pass or fail.
 - Not a feature-complete replacement for KiCad, Blender or Fusion. We cover the
   80% that student and maker projects need, and keep **"Open in KiCad / Blender"**
   for the rest.
+- Not a separate app and not a fork of VS Code (D2, confirmed). Triad lives
+  inside VS Code.
 - Not cloud-only, and no account is required.
 - No high-speed or RF PCB design, no 20-layer HDI.
 - No FEA or CFD in v1. Those are later sidecar integrations.
 - Nothing copied from proprietary tools. Clean-room only.
 
-**Decisions I need from you:** see §5. The main ones are D1 (licensing),
-D3 (first boards) and D8 (team and timeline).
+**Decisions:** see §5. D2 is confirmed: run inside VS Code. Still open: D1
+(licensing), D3 (first boards) and D8 (team and timeline).
 
 ---
 
@@ -79,7 +83,7 @@ maker clubs, capstone teams, and instructors who set and grade lab work.
 
 | Tool | How it's really built (observed in shipped builds) | What we adopt |
 |---|---|---|
-| **VS Code** | Electron: main process, sandboxed renderer, and utility processes (extension host, pty host, shared process, file watcher, agent host). The preload exposes **one 26-member `window.vscode` API**. The renderer gets **MessagePorts** straight to helper processes. Native addons: node-pty, parcel watcher, sqlite3, spdlog. RunAsNode fuse on | Code-OSS as the shell. Our engines become utility processes on MessagePorts. Keep a narrow preload. Harden fuses in release builds |
+| **VS Code** | Electron: main process, sandboxed renderer, and utility processes (extension host, pty host, shared process, file watcher, agent host). The preload exposes **one 26-member `window.vscode` API**. The renderer gets **MessagePorts** straight to helper processes. Native addons: node-pty, parcel watcher, sqlite3, spdlog. RunAsNode fuse on | **Run inside VS Code as extensions.** Mirror its isolation: our editors are sandboxed webviews, our engines are separate processes behind narrow message contracts. Its enabled RunAsNode fuse is what lets extensions fork Node helpers (we use it for the JS emulators) |
 | **KiCad** | `kicad` launcher hosting **kiface plugins** (`KIFACE_1`). The Python `pcbnew` module **is** the PCB editor binary. The **IPC API is protobuf over nng `ipc://`**, with 15 protos and requests serialized on the UI thread. **ngspice is dlopen'd**, OCCT handles STEP, libgit2 is built in. kicad-cli covers every fab and 3D format plus render and jobsets. Remote parts-provider protocol (OAuth2) | KiCad-native files, kicad-cli as headless engine, the IPC API for live sync. Become a **remote parts provider** that serves sim-ready parts into KiCad |
 | **Blender** | One 197 MB binary with **statically embedded CPython** (exports the C API). Bundled engines: Embree, HIP-RT, SYCL, OSL, MaterialX, USD, OpenVDB, OpenSubdiv, OIDN, Vulkan, OpenXR. Bullet rigid bodies and Mantaflow fluids. An **RNA reflection layer** drives UI, Python and animation | The **reflection idea**: one schema drives UI, API, undo and files. Viewport, outliner, properties and modifier-stack UX. Blender as a separate render and mesh companion |
 | **Simulators** | ngspice: `Init_Sync`, `SetBkpt`, event-node API. simavr: IRQ graph plus cycle timers plus GDB. avr8js/rp2040js: cycle clocks, pin listeners, sleep-skip. **Renode**: quantum time domains, a `{ActionId, Address, Data, PeripheralIndex}` co-sim protocol, `.repl` netlists. **MuJoCo**: `mjs_` model building, `mjcb_` control/sensor/actuator callbacks, batch rollouts | The sim kernel design (§4.7) |
@@ -90,9 +94,9 @@ maker clubs, capstone teams, and instructors who set and grade lab work.
 
 This is the target experience that the roadmap builds toward.
 
-1. **New Project → "Smart Fan (Arduino Uno)" template.** It creates one folder
-   with `firmware/`, `electronics/` (a KiCad project), `mechanical/` and
-   `simulation/`.
+1. **Install "Triad" from the VS Code Marketplace, then New Project → "Smart Fan
+   (Arduino Uno)" template.** It creates one folder with `firmware/`,
+   `electronics/` (a KiCad project), `mechanical/` and `simulation/`.
 2. **Electronics.** Maya places an NTC thermistor + 10 kΩ divider on A0, a
    logic-level MOSFET + flyback diode driving a 12 V fan motor on D9, an SSD1306
    OLED on I²C and a button on D2. ERC runs live.
@@ -131,10 +135,12 @@ This is the target experience that the roadmap builds toward.
 
 ```mermaid
 flowchart TB
-  subgraph APP["Triad app · Code-OSS + Electron"]
+  subgraph VSC["VS Code (the user's own install)"]
     direction TB
-    UI["Sandboxed UI (renderer)<br/>Code editor (Monaco + LSP) · Schematic · PCB · 3D/CAD<br/>Run & Test: live 3D, scopes, logic analyzer, serial"]
-    EXT["Extension host (Node)<br/>toolchains, KiCad bridge, language servers"]
+    UI["VS Code UI + Triad webviews<br/>Code editor (Monaco + LSP) · Schematic · PCB · 3D/CAD<br/>Run & Test: live 3D, scopes, logic analyzer, serial"]
+    EXT["Extension host (Node)<br/>Triad extensions, toolchains, KiCad bridge, language servers"]
+  end
+  subgraph ENG["Triad engines"]
     MODEL["Model service<br/>unified project + link graph"]
     GEOM["Geometry service<br/>OCCT 8"]
     SIM["Sim service<br/>kernel + signal bus"]
@@ -152,10 +158,11 @@ flowchart TB
     FREE["freerouting"]
   end
   FILES[("Project folder in git<br/>KiCad files, CAD, firmware, scenarios")]
-  UI <-->|MessagePort| MODEL
-  UI <-->|MessagePort| SIM
-  UI <-->|MessagePort| GEOM
-  EXT <--> MODEL
+  UI <-->|postMessage| EXT
+  EXT <-->|JSON-RPC| MODEL
+  EXT <-->|JSON-RPC| GEOM
+  EXT <-->|JSON-RPC| SIM
+  UI <-->|"localhost WebSocket, live streams"| SIM
   MODEL <--> FILES
   MODEL <--> GEOM
   SIM --> MCU & SPICE & FAST & PHYS & PARTS
@@ -171,18 +178,23 @@ the UI thread.
 
 | Process | Tech | Responsibilities | If it crashes |
 |---|---|---|---|
-| Main | Electron (Code-OSS) | windows, lifecycle, menus, hands out MessagePorts | app restarts |
-| Renderer (workbench) | TS + DOM + WebGL2/WebGPU | all editors and views. Heavy geometry in Web Workers and WASM | window reloads, state restored |
-| Extension host | Node | toolchains (PlatformIO, arduino-cli, CMake), clangd, KiCad and Blender bridges, user extensions | extensions restart |
-| **Model service** | Node + Rust (napi-rs) | loads and saves the project, KiCad S-expression I/O, link graph, change events, undo | UI shows "reconnecting", reloads from disk |
-| **Geometry service** | C++ OCCT 8 (native) | heavy B-rep ops, STEP import/export, tessellation, mass properties, interference | CAD ops retry |
-| **Sim service** | Rust kernel + engines | scheduler, signal bus, ngspice, MuJoCo, JS MCU emulators (Node worker), child Renode/QEMU | simulation stops with an error; editors unaffected |
+| VS Code main + renderer | Microsoft VS Code (not ours) | windows, Monaco, terminal, git, Test Explorer, debug UI | – |
+| **Triad webviews** | TS + React + WebGL2/WebGPU, inside VS Code custom editors and panels | schematic, PCB, 3D/CAD and Run & Test views. Heavy geometry in Web Workers and WASM | the editor reloads its webview; state restored |
+| Extension host | Node (VS Code's) | **Triad extensions**: project explorer, commands, custom editor providers, toolchains (PlatformIO, arduino-cli, CMake), KiCad and Blender bridges. Launches and supervises the engine processes | VS Code restarts the extension host; engines reconnect |
+| **Model service** | Rust executable | loads and saves the project, KiCad S-expression I/O, link graph, change events, undo | UI shows "reconnecting", reloads from disk |
+| **Geometry service** | C++ OCCT 8 executable | heavy B-rep ops, STEP import/export, tessellation, mass properties, interference | CAD ops retry |
+| **Sim service** | Rust kernel + engines, plus a forked Node helper for the JS MCU emulators | scheduler, signal bus, ngspice, MuJoCo, avr8js/rp2040js, child Renode/QEMU | simulation stops with an error; editors unaffected |
 | Companions | KiCad, Blender, Renode (.NET), QEMU, freerouting | as installed, via public interfaces | feature degrades gracefully |
 
-**IPC.** Control messages use JSON-RPC 2.0 (LSP-style, schema-validated).
-Streams (waveforms, transforms, framebuffers) use binary frames over
-**MessagePort with transferable ArrayBuffers**. KiCad is reached through its
-protobuf/nng IPC API, and Renode through its monitor socket and GDB.
+**IPC.** Webviews talk to the extension through `postMessage`, which transfers
+`ArrayBuffer`s efficiently for extensions targeting VS Code 1.57+. The
+extension talks to the engines with JSON-RPC 2.0 (the `vscode-jsonrpc` stack that
+language servers use), with schema-validated messages. **High-rate streams**
+(waveforms, transforms, framebuffers) skip the extension host: the sim service
+serves a **localhost WebSocket** that the webview connects to directly. It is
+allowed by the webview's CSP, and VS Code's webview port mapping covers remote
+setups. KiCad is reached through its protobuf/nng IPC API, and Renode through
+its monitor socket and GDB.
 
 ### 4.3 The unified project model (the heart of the app)
 
@@ -252,7 +264,7 @@ erDiagram
 
 | Workspace | Phase A (bridge) | Phase B+ (own) |
 |---|---|---|
-| **Code** | Code-OSS + clangd. PlatformIO Core / arduino-cli / CMake / ESP-IDF / Zephyr tasks. **pin-map codegen + "unconnected pin" diagnostics**. MicroPython for RP2040 | debug-in-sim (DAP → GDB → emulator stub), register and peripheral views |
+| **Code** | VS Code + C/C++ support (Microsoft's C/C++ extension or clangd). PlatformIO Core / arduino-cli / CMake / ESP-IDF / Zephyr tasks. **pin-map codegen + "unconnected pin" diagnostics**. MicroPython for RP2040 | debug-in-sim (DAP → GDB → emulator stub), register and peripheral views |
 | **Electronics** | Our schematic and PCB **viewers** (WebGL). **Edit in KiCad** with IPC cross-probing. kicad-cli for ERC, DRC and fab | own **schematic editor** (Phase 3), then **PCB editor** (Phase 5), still saving `.kicad_*` |
 | **Mechanical** | 3D board from `kicad-cli pcb export glb`. Template enclosures with OCCT (box/shell/holes/cutouts) | full parametric CAD: constrained sketches, features, assemblies with joints → physics (Phase 4) |
 | **Simulation & Test** | T0 interactive sim on AVR (avr8js). Serial monitor, LED/motor in 3D, scenario tests | T1 SPICE co-sim, RP2040, Renode, ESP32, FMU import, sweeps, coverage |
@@ -441,9 +453,9 @@ which scenario expectations were exercised.
 
 | Surface | Choice | Notes |
 |---|---|---|
-| Schematic and PCB canvas | **Custom 2D GPU renderer**: WebGL2 now, a WebGPU backend when available | KiCad's GAL lesson: cached GPU geometry per layer and item, instancing, LOD, culling, MSDF text, KiCad's stroke font for fidelity. Clipper2 (WASM) for polygon ops |
+| Schematic and PCB canvas | **Custom 2D GPU renderer** in a VS Code custom editor (webview): WebGL2 now, a WebGPU backend when available | KiCad's GAL lesson: cached GPU geometry per layer and item, instancing, LOD, culling, MSDF text, KiCad's stroke font for fidelity. Clipper2 (WASM) for polygon ops |
 | 3D | **three.js** (WebGPURenderer with WebGL2 fallback) | WebGPU on Linux is still rolling out per GPU (Chrome 144+), **so the fallback is required** |
-| Panels and inspectors | React + TS inside custom editors and webviews; native workbench views where we patch Code-OSS | narrow messaging contracts |
+| Panels and inspectors | React + TS inside webviews; native VS Code tree views, status bar items, quick picks and walkthroughs where they fit | narrow messaging contracts |
 | Plots | uPlot (waveforms), custom WebGL logic-analyzer view | millions of samples |
 | Heavy compute in UI | Web Workers + WASM (OCCT for interactive CAD, Manifold for mesh booleans, Clipper2) | keep the UI thread under 8 ms per frame |
 
@@ -464,8 +476,9 @@ which scenario expectations were exercised.
 
 ### 4.10 Extensibility and automation
 
-- **VS Code extensions** (Open VSX) work as usual. Our features are
-  extensions too, exposing a **`triad` TS API** to other extensions.
+- **Triad is itself a set of VS Code extensions.** Other extensions can call a
+  **`triad` TS API** (returned from our `activate()`), and users keep every other
+  extension they already use.
 - **Python API** (`import triad`): project, schematic, PCB, CAD, sim and test,
   in the spirit of `bpy` and `pcbnew`. It runs in a separate Python process over
   JSON-RPC, so a bad script can't crash the UI.
@@ -483,7 +496,7 @@ which scenario expectations were exercised.
 
 | Layer | Choice | License |
 |---|---|---|
-| Shell | Code-OSS (Electron, TypeScript), Open VSX | MIT |
+| Host | **VS Code** (the user's install). Published on the VS Code Marketplace, and on Open VSX for VSCodium, Cursor and other forks | VS Code: Microsoft's license. Our extensions: ours |
 | Our UI code | TypeScript, React (panels), custom WebGL2/WebGPU renderer, three.js | ours, MIT |
 | Core libraries | Rust (napi-rs for Node, wasm-bindgen for web): KiCad file model, link graph, sim kernel, MNA solver | ours |
 | CAD kernel | OCCT 8 (native + WASM), Manifold (mesh booleans), sketch solver: PlaneGCS (LGPL) or SolveSpace (GPL-3), decided by D1 | LGPL-2.1+exc / Apache-2.0 |
@@ -492,9 +505,9 @@ which scenario expectations were exercised.
 | Physics | MuJoCo 4 | Apache-2.0 |
 | Toolchains | PlatformIO Core, arduino-cli, CMake + Arm GNU, ESP-IDF, Zephyr, MicroPython | Apache / GPL-3 (separate) / ... |
 | Language servers | clangd, Pyright | Apache-2.0 + LLVM exc. / MIT |
-| IPC | JSON-RPC 2.0, MessagePort binary frames, protobuf (KiCad) | – |
+| IPC | JSON-RPC 2.0 (`vscode-jsonrpc`), webview `postMessage` with transferred ArrayBuffers, localhost WebSocket for live streams, protobuf (KiCad) | – |
 | Storage | plain files; SQLite caches (as VS Code does) | – |
-| Tests | Vitest, Playwright (Electron), cargo test, golden files from `kicad-demos`, sim regression scenarios | – |
+| Tests | Vitest, **@vscode/test-electron** (integration tests in a real VS Code, stable and Insiders), Playwright (webviews), cargo test, golden files from `kicad-demos`, sim regression scenarios | – |
 
 ### 4.12 Licensing and process boundaries (Decision D1)
 
@@ -514,28 +527,34 @@ KiCad's router becomes tempting. *This is not legal advice; get a review before
 the first public release.*
 
 Hard rules under A:
-1. Never load GPL code into the renderer, main, extension-host or model-service process.
+1. Never load GPL code into the extension host, our webviews or the model service.
 2. Talk to GPL programs only through documented protocols (KiCad IPC API, CLIs, sockets, files).
 3. QEMU (GPL-2.0-only) always runs as a separate process.
 4. Keep a `THIRD_PARTY_NOTICES` file and an SBOM, generated in CI.
+5. Triad runs inside the user's own VS Code under Microsoft's license. We never
+   redistribute VS Code, so its license doesn't constrain ours.
 
 ### 4.13 Security
 
-- **Workspace Trust** (from VS Code) gates building or running a cloned
-  project's toolchain, Python scripts and part models.
+- **Workspace Trust:** our extensions declare limited support for untrusted
+  workspaces (`capabilities.untrustedWorkspaces`). Building or running a cloned
+  project's toolchain, Python scripts and part models waits until the user
+  trusts the folder.
 - Firmware only ever runs **inside emulators**. Part models are **WASM**
   (sandboxed, no syscalls).
-- Webviews get strict CSP and no Node. Keep a narrow preload (VS Code's has 26
-  members).
-- Release builds flip the Electron fuses VS Code leaves open: **RunAsNode off,
-  Inspect off, asar integrity on** (macOS and Windows).
+- Webviews get a strict CSP, `localResourceRoots` limited to the extension and
+  the project, and no Node. Messages are schema-validated on both sides, the same
+  narrow-bridge discipline as VS Code's 26-member preload.
+- We don't ship Electron, so its fuses are VS Code's responsibility. We rely
+  only on RunAsNode, to fork the Node helper for the JS emulators. If a future VS
+  Code disables it, we fall back to a system or bundled Node runtime.
 - Downloaded companions (KiCad, Renode...) are verified by checksum and signature.
 
 ### 4.14 Performance budgets
 
 | Scenario | Budget (mid-range laptop, integrated GPU) |
 |---|---|
-| Cold start to usable | ≤ 4 s |
+| Extension activation (lazy, via activation events) | ≤ 500 ms; first project open ≤ 3 s |
 | Schematic pan/zoom | 60 fps at 5k items |
 | PCB pan/zoom | 60 fps at 50k items (tracks, pads, vias, zones) |
 | 3D board + enclosure | 60 fps at 2M triangles |
@@ -547,12 +566,20 @@ Each budget becomes an automated benchmark in CI (see ROADMAP Phase 0).
 
 ### 4.15 Platforms and packaging
 
-Windows 10+, macOS 13+ and Linux (deb, rpm, AppImage), on x64 and arm64.
-Companions are detected if installed, or offered for download on first use
-(KiCad is needed only for kicad-cli functions until our own engines replace them).
-Auto-update follows VSCodium's channel model. A **web edition** (later) reuses the
-WASM builds of everything: OCCT, ngspice (eecircuit-engine proves it), the JS
-MCU emulators and three.js.
+- **Install** from the **VS Code Marketplace**, or from **Open VSX** for
+  VSCodium, Cursor and other forks. Windows, macOS and Linux, x64 and arm64.
+  VS Code handles updates.
+- **Native engines** ship as **platform-specific VSIX packages**
+  (`vsce package --target linux-x64`, `darwin-arm64`, `win32-x64`...) built by
+  a CI matrix. Large optional engines download on first use and are
+  checksum-verified.
+- **Companions** are detected if installed, or offered for download on first
+  use. KiCad is needed only for kicad-cli functions until our own engines replace them.
+- **Remote setups** work (Remote-SSH, WSL, Codespaces). Engines run next to the
+  files, and webviews reach them through port mapping. Handy for school lab machines.
+- A **web edition** (later) runs as a web extension on vscode.dev. It reuses the
+  WASM builds of everything: OCCT, ngspice (eecircuit-engine proves it), the JS
+  MCU emulators and three.js.
 
 ---
 
@@ -561,7 +588,7 @@ MCU emulators and three.js.
 | # | Decision | Recommendation | Status |
 |---|---|---|---|
 | D1 | License of our code | **Apache-2.0 + process boundaries**; revisit before Phase 5 (§4.12) | **needs you** |
-| D2 | Shell | **Code-OSS, extension-first**, patch-based fork (VSCodium style); also publish a "lite" extension pack for stock VS Code | proposed |
+| D2 | Host | **Extensions for the real VS Code** (Marketplace + Open VSX). No fork, no separate app. See [ADR 0001](adr/0001-run-inside-vscode.md) | **confirmed 2026-11-23** |
 | D3 | First boards | **Arduino Uno (AVR) + Raspberry Pi Pico (RP2040)**: fully open emulators. Then STM32/nRF52 (Renode), then ESP32 (QEMU). *If your courses live on ESP32, we pull it earlier* | **needs you** |
 | D4 | Electronics editing | KiCad companion first; own schematic editor in Phase 3, own PCB editor in Phase 5; KiCad files throughout | proposed |
 | D5 | CAD kernel | **OCCT 8** (native + WASM) + Manifold; Blender as companion | proposed |
@@ -579,7 +606,9 @@ MCU emulators and three.js.
 | **Scope explosion**: three huge apps plus simulation | High / fatal | Vertical slices with hard exit criteria (ROADMAP). KiCad and Blender carry the long tail through "Open in…". Say no to features outside student needs |
 | PCB editor is far harder than it looks (router, zones, DRC) | High / high | Keep KiCad as companion until Phase 5. kicad-cli remains the DRC sign-off. Reconsider D1 to reuse KiCad's router |
 | Co-sim too slow or unstable | Medium / high | Netlist partitioning, transaction-level buses, adaptive quanta, T0/T1 tiers, MuJoCo's stable solver. Benchmarks in CI |
-| Fork maintenance burden (monthly Code-OSS releases) | Medium / medium | Extension-first, small patch set, automated rebase CI. The lite extension pack is the fallback |
+| VS Code's extension API can't do something we need (custom layouts, native canvases outside webviews) | Medium / medium | Custom editors, webview panels and views, tree views and walkthroughs cover everything in this plan. Use only stable APIs. A branded Code-OSS build stays the last resort (Positron's route), and our extensions would carry over unchanged |
+| Webview performance on big boards and assemblies | Medium / medium | GPU canvases, workers and WASM, transferred ArrayBuffers, direct WebSocket streams. Profile against the §4.14 budgets from Phase 1 |
+| VS Code updates break us | Low / medium | CI runs integration tests against VS Code stable and Insiders. Declare the minimum version in `engines.vscode` |
 | KiCad API churn (IPC API young, headless in v11) | Medium / medium | Isolate it behind our `kicad-bridge` interface. Prefer file I/O + kicad-cli. Track KiCad 11 |
 | Simulation inaccuracy misleads students | Medium / high | Tier labels, model provenance per part, "validated against" notes, warnings when assumptions are violated |
 | Licensing mistake | Low / high | §4.12 rules, SBOM and license scan in CI, review before the first release |
@@ -593,9 +622,11 @@ MCU emulators and three.js.
 **Monorepo layout (target):**
 
 ```
-apps/desktop/        Code-OSS distribution: upstream pin, patches/, product.json, branding
-apps/cli/            `triad` CLI
-extensions/          built-in extensions: project, electronics, mechanical, simulation, firmware
+extensions/triad/    the VS Code extension (TS): activation, commands, views, custom editors,
+                     engine supervisor, platform-specific VSIX packaging
+webviews/            schematic, PCB, 3D/CAD and Run & Test UIs (React + WebGL2/WebGPU),
+                     bundled into the extension
+apps/cli/            `triad` CLI (same engines, for CI)
 packages/            shared TS: model types (generated), render2d, render3d, protocol, ui
 crates/              Rust: triad-kicad (S-expr), triad-model, triad-sim-kernel, triad-mna,
                      triad-ngspice, triad-mujoco, triad-part-sdk
@@ -610,10 +641,11 @@ scripts/research/    REA teardown reproduction
   `kicad-demos` (36 projects). Byte-identical or semantically identical.
 - **Simulation regression suite**: each smart part ships scenarios. Kernel
   changes must keep every scenario green and within performance budgets.
-- **Upstream tracking**: monthly Code-OSS bump through automated patch
-  application. KiCad and Blender compatibility matrix in CI using their CLIs.
+- **Compatibility tracking**: CI runs integration tests in real VS Code (stable
+  and Insiders) through `@vscode/test-electron`, plus a KiCad and Blender
+  compatibility matrix using their CLIs.
 - **REA stays in the toolbox.** Re-run `scripts/research/teardown.sh` on each new
-  KiCad, Blender or Code-OSS release to detect API and packaging changes (new
+  KiCad, Blender or VS Code release to detect API and packaging changes (new
   protos, new process entry points, fuse changes) before users hit them.
 - ADRs for every decision in §5 live under `docs/adr/` as they are confirmed.
 
@@ -621,7 +653,11 @@ scripts/research/    REA teardown reproduction
 
 ## 8. Glossary
 
-- **Code-OSS:** the MIT-licensed source of VS Code. VSCodium is a build of it.
+- **Code-OSS:** the MIT-licensed source of VS Code. VSCodium is a build of it
+  (used for the teardown, since Microsoft's build license forbids reverse engineering).
+- **Custom editor / webview:** VS Code's API for extension-provided editors,
+  rendered in a sandboxed web view.
+- **VSIX:** a packaged VS Code extension. Platform-specific VSIXs carry native binaries.
 - **kiface:** a KiCad editor module loaded by the launcher (`KIFACE_1` entry).
 - **IPC API (KiCad):** protobuf messages over an nng socket for controlling KiCad.
 - **B-rep:** boundary representation, the exact-geometry model used by CAD kernels (OCCT).

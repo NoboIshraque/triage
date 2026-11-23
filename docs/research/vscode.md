@@ -33,9 +33,10 @@ observations · **[D]** from official documentation · **[?]** unknown.
 | EnableCookieEncryption | disabled | |
 | GrantFileProtocolExtraPrivileges | enabled | |
 
-**Lesson:** our distribution should **turn RunAsNode and Inspect off** and turn
-asar integrity on for release builds. It needs a different way to launch helper
-Node processes, which Electron's `utilityProcess` already provides.
+**Why it matters to us:** Electron's docs say disabling RunAsNode breaks
+`child_process.fork`, the call extensions use to start Node helper processes [D].
+Because it is enabled, our extension can fork a Node helper for the JS MCU
+emulators. Hardening these fuses is VS Code's job, since we don't ship Electron.
 
 ## 2. Process model
 
@@ -87,8 +88,10 @@ webUtils: getPathForFile
 **Key pattern: `ipcMessagePort.acquire`.** The sandboxed renderer asks main for a
 `MessagePort` and then talks **directly** to a utility process, such as the
 extension host or pty host, without routing traffic through main [O + D].
-This is how VS Code keeps a sandboxed UI fast. **We copy it** for our high-rate
-streams (simulation state, waveforms, geometry).
+This is how VS Code keeps a sandboxed UI fast. Extensions can't use this
+channel, so **our equivalent** for high-rate streams (simulation state,
+waveforms, geometry) is a direct localhost WebSocket from our engine process to
+our webview.
 
 ## 3. Native modules shipped
 
@@ -108,21 +111,29 @@ Found in `node_modules.asar.unpacked` [O]:
 
 ## 4. What we take from VS Code
 
-1. **Use Code-OSS as the shell.** We get Monaco, LSP/DAP, terminal, git, tasks,
-   settings, keybindings, the extension host and the Open VSX ecosystem for free.
-   Students already know the UI.
-2. **Extension-first.** Build every feature as a (built-in) extension. Patch
-   the workbench only for what the extension API cannot do: custom layout and
-   perspectives, the unified project explorer, startup flow and branding.
-   Positron forked for the same reason; VSCodium and GitLab show how to keep
-   the patch set small [D].
-3. **New services become utility processes** (sim kernel, geometry, model) wired
-   to the renderer with `MessagePort`, exactly like the pty host.
-4. **Security posture:** keep the 26-member style of a narrow preload. Never give
-   webviews or the renderer Node access. Respect Workspace Trust before building
-   or running untrusted firmware.
-5. **Marketplace:** a Code-OSS distribution must use **Open VSX**, not
-   Microsoft's Marketplace (Marketplace terms limit it to Microsoft products) [D].
+**Decision (2026-11-23): Triad runs inside the real VS Code as extensions**
+([ADR 0001](../adr/0001-run-inside-vscode.md)). The teardown still shapes how we
+build:
+
+1. **We inherit the platform.** Monaco, LSP/DAP, terminal, git, tasks, Test
+   Explorer, settings and the extension ecosystem come free, in the UI students
+   already know. That includes Microsoft's own C/C++ and Python extensions, which
+   are licensed only for Microsoft's VS Code.
+2. **Copy the isolation pattern.** VS Code keeps the UI sandboxed and pushes heavy
+   work into separate processes behind narrow message contracts. We do the same:
+   our editors are sandboxed webviews, and our engines (model, geometry, sim) are
+   separate processes launched by the extension.
+3. **Fast data paths.** The renderer's MessagePorts aren't available to
+   extensions. We use `postMessage` with transferred `ArrayBuffer`s (VS Code
+   1.57+), plus a direct localhost WebSocket from the sim service to the webview
+   for high-rate streams.
+4. **RunAsNode matters to us** (see the fuses section): it lets our extension fork
+   the Node helper for the JS emulators. We keep a fallback in case it changes.
+5. **Security posture:** narrow, schema-validated messages (the spirit of the
+   26-member preload), no Node in webviews, and Workspace Trust before building
+   or running a cloned project.
+6. **Reach:** publish to the VS Code Marketplace, and to Open VSX so VSCodium,
+   Cursor and other forks can install it too.
 
 ## 5. Unknowns and limits
 

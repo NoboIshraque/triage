@@ -5,9 +5,10 @@ whole device.**
 
 Engineering students write firmware in one tool, design PCBs in another and
 model enclosures in a third, then copy pin numbers and re-export STEP files
-between them. Nothing simulates the whole thing. Triad puts a project's
-**firmware** (VS Code-style editor), **schematic and PCB** (KiCad-compatible)
-and **3D enclosure and mechanism** (parametric CAD) in one linked project.
+between them. Nothing simulates the whole thing. Triad is a set of **VS Code
+extensions**. It puts a project's **firmware**, **schematic and PCB**
+(KiCad-compatible) and **3D enclosure and mechanism** (parametric CAD) into one
+linked project, inside the VS Code students already use.
 Pressing **Run** executes the firmware on an emulated microcontroller, drives
 the simulated circuit, and moves motors and reads sensors in a 3D physics world,
 with automated pass/fail tests. Everything runs locally on a laptop.
@@ -21,6 +22,7 @@ with automated pass/fail tests. Everything runs locally on a laptop.
 | [docs/PLAN.md](docs/PLAN.md) | The master plan: architecture, unified project model, simulation kernel, tech stack, licensing, risks, decisions |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Phased delivery with exit demos, timeline, and a solo-builder track |
 | [docs/research/](docs/research/README.md) | Teardowns of the shipped VS Code, KiCad and Blender builds and of the simulation engines (ngspice, simavr, avr8js, rp2040js, Renode, MuJoCo), plus market and standards research |
+| [docs/adr/](docs/adr/0001-run-inside-vscode.md) | Decision records. 0001: Triad runs inside the real VS Code as extensions |
 | [CLAUDE.md](CLAUDE.md) | Working agreement for AI-assisted development in this repo |
 
 ## How the plan was made
@@ -38,7 +40,7 @@ reproduce it.
 
 ```mermaid
 flowchart LR
-  CODE["Firmware<br/>(Code-OSS editor)"] <-->|pin map| SCH["Schematic + PCB<br/>(KiCad files)"]
+  CODE["Firmware<br/>(VS Code)"] <-->|pin map| SCH["Schematic + PCB<br/>(KiCad files)"]
   SCH <-->|board fits enclosure| CAD["3D CAD<br/>(OCCT)"]
   CODE --> RUN(("Run"))
   SCH --> RUN

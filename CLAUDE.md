@@ -1,8 +1,9 @@
 # CLAUDE.md: working on Triad
 
-Triad (working name) is one desktop app that unifies firmware coding
-(VS Code / Code-OSS), electronics (KiCad schematic + PCB), 3D mechanical design
-(parametric CAD, Blender-style UX) and **whole-device simulation**.
+Triad (working name) is a suite of **VS Code extensions** that unifies firmware
+coding, electronics (KiCad schematic + PCB), 3D mechanical design (parametric
+CAD, Blender-style UX) and **whole-device simulation**, inside the VS Code
+students already use.
 
 **Status: planning.** No application code exists yet.
 
@@ -19,7 +20,7 @@ Triad (working name) is one desktop app that unifies firmware coding
 
 - **Licensing (PLAN §4.12, decision D1 pending, default Option A):** never load
   GPL code (KiCad, Blender, simavr, ngspice's GPL parts, QEMU, freerouting) into
-  the renderer, main, extension-host or model-service process. Reach GPL
+  the extension host, our webviews or the model service. Reach GPL
   programs only through documented interfaces (KiCad IPC API, CLIs, sockets,
   files). Do not copy code from GPL projects into our sources unless D1 is
   changed to GPL-3.0.
@@ -30,7 +31,9 @@ Triad (working name) is one desktop app that unifies firmware coding
   their code or assets.
 - **Evidence discipline** when making claims about third-party tools: separate
   observed / inferred / unknown and cite sources or Evidence IDs.
-- Release builds harden Electron fuses: RunAsNode off, Inspect off, asar integrity on.
+- **Host: the real VS Code** (D2, confirmed; `docs/adr/0001-run-inside-vscode.md`).
+  No fork, no separate app. Use stable extension APIs only. Any proposed API, or
+  any reason to fork, needs a new ADR first.
 
 ## Using REA (reverse engineering) in this repo
 
