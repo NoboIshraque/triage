@@ -17,8 +17,9 @@ reads sensors in a 3D physics world, with automated pass/fail tests. You can als
 simulate just the circuit, just the code or just the mechanism. Boards: **ESP32,
 Arduino and Raspberry Pi**. Everything runs locally on a laptop, **Windows first**.
 
-> **Status: planning complete.** The build starts at ROADMAP P0-1. The team is two:
-> the owner and Claude.
+> **Status: building.** P0-1 (repository skeleton, CI on Windows and Linux) is
+> done; see [docs/STATUS.md](docs/STATUS.md) for the current work package. The
+> team is two: the owner and Claude.
 
 ## Documents
 
@@ -31,6 +32,33 @@ Arduino and Raspberry Pi**. Everything runs locally on a laptop, **Windows first
 | [docs/adr/](docs/adr/0001-standalone-app-on-vscode-codebase.md) | Decisions: 0001 standalone app on VS Code's codebase, 0002 hidden engines, 0003 boards and Windows |
 | [docs/research/](docs/research/README.md) | Full REA breakdowns of VS Code, KiCad, FreeCAD, Blender and the simulators |
 | [CLAUDE.md](CLAUDE.md) | Instructions for every Claude session |
+
+## Build from source
+
+You need Node 22.12 or newer (pnpm comes through `corepack enable`), rustup (it
+installs the pinned Rust 1.97.0 on first use), CMake 3.25+ with Ninja, and a C++20
+compiler: GCC on Linux, MSVC on Windows (run the native build from a Visual Studio
+developer shell). P0-6 replaces this list with setup scripts for both systems.
+
+```sh
+pnpm install
+pnpm check                      # TypeScript: build, typecheck, lint, test (Turborepo)
+cargo test --workspace          # Rust
+cmake --workflow --preset dev   # Triage's own native C++ (configure, build, test)
+pnpm format:check               # Prettier; `pnpm format:native:check` for C/C++ (clang-format 18)
+```
+
+CI runs the same checks on Windows and Linux ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+
+| Folder | What |
+|---|---|
+| `app/` | the VS Code fork (P0-2) |
+| `engines/` | native engine processes: KiCad, FreeCAD, Espressif QEMU forks, render scripts, hello engine |
+| `crates/` | Rust: project model, simulation kernel, solvers |
+| `sim/` | Node helpers for emulators, adapters, Pi bridge, network gateway |
+| `parts/` | smart part library |
+| `cli/` | the `triage` command line |
+| `docs/`, `scripts/` | plan and research; dev, build and research scripts |
 
 ## The core idea
 

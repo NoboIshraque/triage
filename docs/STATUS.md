@@ -2,9 +2,9 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-24 · **Phase:** planning complete. Build not started.
-**Next work package:** **P0-1 Repository skeleton** (CI on Windows and Linux from the
-first commit), then **P0-2 VS Code fork imported**.
+**Last updated:** 2026-11-24 · **Phase:** P0 Foundations.
+**Done:** **P0-1 Repository skeleton** (CI green on Windows and Linux).
+**Current work package:** **P0-2 VS Code fork imported**.
 
 ## Decisions confirmed by the owner (2026-11-24)
 
@@ -31,7 +31,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Phase | WP | Status |
 |---|---|---|
-| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies | not started |
+| P0 Foundations, Windows + Linux | **P0-1 skeleton: done** · P0-2 VS Code fork: in progress · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies | in progress |
 | P1 Electronics engine + views (M1) | P1-1 … P1-7 | not started |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
@@ -77,3 +77,22 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
   The ELK layout library stalls REA's alias analysis, so it is recorded as unknown.
   Per-file results: `docs/research/data/vscode-round3.tsv`.
+- **2026-11-24 (build starts, P0-1 done):** Repository skeleton: folders from PLAN
+  §4.12 with READMEs; pnpm 10 workspace + Turborepo with `@triage/cli` (help and
+  version, Vitest tests including one that runs the built binary); Cargo workspace
+  (Rust 1.97.0 pinned) with a placeholder `triage-model`; CMake presets (`dev`,
+  `release`, `ci`) for Triage's own C++, seeded with the P0-4 hello engine and 3
+  CTest tests; Prettier, ESLint, rustfmt, clippy and clang-format 18 (Ubuntu's,
+  not a downloaded wheel). CI run 1 was green on all 8 jobs (format, then
+  TypeScript, Rust and native C++ on `ubuntu-24.04` and `windows-2025`).
+  Notes for later WPs:
+  - TypeScript stays on **6.0**: typescript-eslint supports `< 6.1`, and the
+    latest TypeScript is 7 (the native port). VS Code itself pins
+    `@typescript/typescript6`.
+  - pnpm refuses releases younger than a week (`minimumReleaseAge`). It worked:
+    vitest 5.1.1 (6 days old) was refused and 5.1.0 installed.
+  - The Windows runners ship an unrelated `ccache.exe` (Strawberry Perl), which
+    CMake picked up as a launcher. The `ci` preset turns ccache off until P0-6
+    adds a cached one.
+  - `ilammy/msvc-dev-cmd@v1` targets Node 20, so GitHub forces it onto Node 24
+    with a warning. It works.

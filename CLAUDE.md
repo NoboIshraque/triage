@@ -7,7 +7,7 @@ in **one window**. Boards: **ESP32, Arduino, Raspberry Pi**. Platform: **Windows
 first** (the owner's laptop), Linux too, macOS later. The team is two: **the owner
 and Claude**.
 
-**Status: planning complete; build starts at ROADMAP P0-1.**
+**Status: building. `docs/STATUS.md` names the current work package.**
 
 ## Read first, every session
 

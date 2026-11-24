@@ -28,9 +28,11 @@
       "name": "ci",
       "inherits": "base",
       "displayName": "CI (Release, warnings are errors)",
+      "description": "No ccache yet: the Windows runners carry an unrelated ccache (Strawberry Perl). P0-6 adds a cached one.",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "TRIAGE_WARNINGS_AS_ERRORS": "ON"
+        "TRIAGE_WARNINGS_AS_ERRORS": "ON",
+        "TRIAGE_USE_CCACHE": "OFF"
       }
     }
   ],
