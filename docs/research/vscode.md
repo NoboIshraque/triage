@@ -62,6 +62,25 @@ webUtils: getPathForFile
 to a helper process without routing traffic through main [O + D]. Triage's engine
 connections use exactly this.
 
+**Round 2 (all 28 JS entry files, unbounded)** found the complete preload surface:
+**4 bridge APIs with 34 members in 3 preload scripts** [O]:
+
+| Preload | World | API | Members |
+|---|---|---|---|
+| `vs/base/parts/sandbox/electron-browser/preload.js` | main | `vscode` | the 26 above |
+| `vs/base/parts/sandbox/electron-browser/preload-aux.js` (auxiliary windows) | main | `vscode` | `ipcRenderer.invoke`, `ipcRenderer.send`, `webFrame.setZoomLevel` (5 with parents) |
+| `vs/platform/browserView/electron-browser/preload-browserView.js` | isolated | `browserViewAPI` | `getSelectedText` |
+| same | main | `__vscode_helpers` | `getElement`, `getFrameToken` |
+
+IPC across those files [O]: 29 operations, **18 literal channels** (`vscode:fetchShellEnv`
+plus 17 `vscode:browserView:*` channels: start/stop element and area pickers,
+highlight and hide, element comments, theme, localized strings, keydown,
+`preloadReady`), 11 dynamic-channel operations, 13 renderer sends, 13 renderer
+listeners, 3 main handlers, 8 sender-validation observations, 3 `BrowserWindow`
+sites and 1 `utilityProcess` site. The **browser view** is an embedded web page
+with element picking, built for the agents features. [I] Triage can reuse it to show
+datasheets and vendor pages inside the one window.
+
 ## 3. Native modules shipped
 
 `node-pty`, `@parcel/watcher`, `@vscode/sqlite3`, `@vscode/spdlog`, `native-keymap`,
@@ -92,11 +111,12 @@ files, then the built-in `extensions/` (927 sources). Evidence IDs are in
 | Run | Result | Basis |
 |---|---|---|
 | `vs/workbench/workbench.desktop.main.js` (21.1 MB, the IDE) | **Parsed completely:** 21,103,304 bytes, 5,318,098 syntax-tree nodes, 3,017 findings, 0 parse failures, in 29 min 54 s on one core. The bundle itself has **no `BrowserWindow`, IPC or utility-process sites**: the renderer reaches the main process only through the `window.vscode` preload globals (§2). Also: 6 sender-validation observations, `localStorage` get/set/remove, one module `Worker`, 255 literal asset and route strings, none with an http(s) host. **The semantic relationship graph was not retained:** its projection exhausted the 6 GiB worker heap, chosen to stay under this host's restart threshold | [O] `ev_9b375b8e…` (view `ev_20728c1c…`) |
-| `vs/sessions/sessions.desktop.main.js` (22.3 MB), then the other 37 `out/` files | running (2026-11-24) | – |
-| built-in `extensions/` (927 sources) | queued | – |
+| `vs/sessions/sessions.desktop.main.js` (22.3 MB, the agents window) | **Parsed completely:** 22,304,735 bytes, 5,631,871 syntax-tree nodes, 3,001 findings, 0 parse failures, in 32 min 10 s. Like the workbench: no Electron sites in the bundle, 6 sender-validation observations, and **no semantic graph** (the projection exhausted the 6 GiB worker heap) | [O] `ev_aa88f498…` (view `ev_4fcc4006…`) |
+| The other 37 `out/` files (28 JS entry points, plus JSON and HTML) | **Parsed completely:** 20,696,344 bytes, 3,414,945 nodes, 3,193 findings, 0 parse failures, in 8 min 12 s. Electron surface in §2. **Semantic graphs retained for 22 of the 28 JS files**: 134,416 data-flow, 17,504 call-flow, 16,899 object-flow, 10,851 closure, 417 promise, 90 boundary, 83 timer, 71 event, 19 child-process, 5 configuration and 4 request relations. For the 6 largest (`mainImpl.js`, `sharedProcessMain.js`, `cliProcessMain.js`, `agentHostMain.js`, `watcherMain.js`, `extensionHostWorkerMain.js`) the graphs exceeded the parent's result budget (2 GiB parent heap); their static and module facts were kept. `agentHostMain.js`'s facts alone exceed REA's 512 MiB per-file transfer ceiling at that heap (2 GiB maximum) | [O] `ev_d5f6028b…` (view `ev_9d60ac01…`) |
+| Built-in `extensions/` (418 JS files, 77.7 MB) | running in 6 batches (2026-11-24). `mermaid-markdown-features/notebook-out/` is byte-identical to `markdown-preview-out/` except `index.js` (115 of 116 files), so one copy plus that file covers all unique code | – |
 
 **What this means.** REA's fixed time and size caps no longer stop a run; physical
-memory does. A full semantic graph of a 21 MB minified bundle needs more than 6 GiB
+memory does, through the worker heap and the parent's result budget. A full semantic graph of a 21 MB minified bundle needs more than 6 GiB
 of V8 heap (how much more is unknown), and a bigger worker risks this host's
 restart threshold. The 2,208 "module" nodes REA reports for this bundle are
 unresolved references to minified `require` names, not module paths: REA found no

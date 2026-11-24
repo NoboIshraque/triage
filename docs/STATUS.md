@@ -51,7 +51,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Blender 5.3 | static complete. Runtime API dump not permitted in session | [blender.md](research/blender.md) |
 | Wokwi 4.1.0 | complete for the shipped package | [simulators.md](research/simulators.md) |
 | Board emulators (ESP32, Arduino, Raspberry Pi) | package checks + vendor docs | [simulators.md](research/simulators.md) §7, [ADR 0003](adr/0003-boards-and-windows.md) |
-| VS Code 1.143 | entry bundles complete (round 1). Workbench bundle **parsed completely**; its semantic graph is partial (6 GiB heap). Sessions bundle and the other `out/` files running; `extensions/` queued | [vscode.md](research/vscode.md) §5 |
+| VS Code 1.143 | all of `out/` **parsed completely** (unbounded): 3 preloads, 4 bridge APIs, 34 members, 18 literal IPC channels. Semantic graphs: 22 of 28 entry files; the two 21–22 MB bundles and 6 large entry files are memory-bound (6 GiB worker heap, 2 GiB parent). `extensions/` running in 6 batches | [vscode.md](research/vscode.md) §2, §5 |
 
 ## Session log
 
