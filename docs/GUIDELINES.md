@@ -35,6 +35,13 @@ project coherent across many sessions.
 3. Tell the owner what now works, how to try it on Windows (which nightly, which
    steps), what's next, and any questions.
 
+**One phase per session.** The owner starts each phase (P0, P1, …) in a new
+session. A session works through its phase's WPs in order. When the phase is
+done, it updates `STATUS.md` (phase done, next phase), pushes, and tells the
+owner plainly: "Phase Px is done; start Py in a new session." A session that
+can't finish its phase records where it stopped in `STATUS.md`, and the next
+session continues that phase.
+
 ## 3. Work package template
 
 ```markdown
@@ -59,6 +66,9 @@ before continuing.
 - **Milestone WPs:** the owner has run the exit demo on their Windows laptop.
 - No performance budget from PLAN §4.14 regresses (benchmarks for touched areas).
 - Docs updated: user-facing notes, `STATUS.md`, and an ADR if a decision was made or changed.
+- **Deviations logged:** anything built differently from PLAN, ROADMAP,
+  GUIDELINES or an ADR has an entry in `DEVIATIONS.md` (plan said · built · why ·
+  docs updated? · revisit), added in the same commit.
 
 ## 5. Branches and pull requests
 

@@ -16,14 +16,11 @@
 | D8 | Name: **Triage** | PLAN §5 |
 | D9 | **Everything in one window**, and simulation of **everything together or any part separately** | PLAN §1, §4.3, §4.7 |
 
-## Decisions made in build sessions (the owner can override)
+## Deviations from the plan
 
-| Decision | Why | Where |
-|---|---|---|
-| Forks are **not committed**: `upstream.json` pins tag + commit, the build checks it out into `upstream/` (git-ignored) and applies patches and overlays | VS Code 1.147.0 alone is 411 MB / 21,462 files; KiCad and FreeCAD are larger. This is VSCodium's proven model, and it is what "re-applies cleanly onto a fresh upstream checkout" (P0-3) needs | GUIDELINES §6, PLAN §4.12, [app/README.md](../app/README.md) |
-| VS Code pinned at **1.147.0** (tagged 2026-11-17) | latest release when P0-2 started; the research teardown used 1.143 (VSCodium) | `app/upstream.json` |
-| Fork scripts are **Node** (`scripts/forks/*.mjs`, `app/build.mjs`); `build.sh` and `build.ps1` only start them | one implementation for Windows and Linux (GUIDELINES §8) | `scripts/forks/`, `app/` |
-| Open VSX gallery keys as VSCodium uses them, and Triage's own Windows app IDs | Triage installs beside VS Code without clashing | `app/product.json` |
+Every place the build differs from the plan is logged in
+[DEVIATIONS.md](DEVIATIONS.md) (10 entries so far, DV-01 … DV-10), so the
+owner can compare the final build with the plan.
 
 ## Open questions
 

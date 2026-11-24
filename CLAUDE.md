@@ -11,9 +11,10 @@ and Claude**.
 
 ## Read first, every session
 
-1. `docs/STATUS.md`: current work package, open questions, session log.
+1. `docs/STATUS.md`: current phase and work package, open questions, session log.
 2. `docs/ROADMAP.md`: the work package you're on (goal, deliverable, done-when).
 3. `docs/GUIDELINES.md`: session routine, definition of done, forks, testing.
+   `docs/DEVIATIONS.md`: where the build already differs from the plan.
 4. `docs/PLAN.md` and `docs/adr/` for the sections your WP touches.
 5. `docs/research/` when integrating an engine (sizes, boundaries, APIs, evidence).
 
@@ -35,6 +36,12 @@ and Claude**.
   in its own folders (GUIDELINES §6).
 - **Work in WP order**, one WP at a time unless the owner runs parallel sessions.
   Ask before ADR-level decisions (GUIDELINES §11).
+- **One phase per session.** The owner starts every phase (P0, P1, …) in a new
+  session. Finish the whole phase, update `docs/STATUS.md`, push, then tell the
+  owner the phase is done so they can start the next one (GUIDELINES §2).
+- **Log every deviation from the plan** in `docs/DEVIATIONS.md`, in the same
+  commit as the change: what the plan said, what was built, why. The owner
+  compares the final build with the plan from that list.
 - **Commit and push often:** cloud sessions can restart. Keep background jobs
   under ~6–8 GB RAM combined and launch long jobs detached.
 - **Never execute downloaded third-party binaries without the owner's OK**, and

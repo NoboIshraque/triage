@@ -29,13 +29,14 @@ Arduino and Raspberry Pi**. Everything runs locally on a laptop, **Windows first
 | [docs/PLAN.md](docs/PLAN.md) | Architecture: VS Code fork, hidden engines, project model, simulation kernel and scopes, decisions, risks |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Phases P0–P8 as work packages with acceptance checks; milestones M1–M5 |
 | [docs/GUIDELINES.md](docs/GUIDELINES.md) | How the owner and Claude build it: session routine, definition of done, forks, testing, Windows rules |
+| [docs/DEVIATIONS.md](docs/DEVIATIONS.md) | Where the build differs from the plan, and why |
 | [docs/adr/](docs/adr/0001-standalone-app-on-vscode-codebase.md) | Decisions: 0001 standalone app on VS Code's codebase, 0002 hidden engines, 0003 boards and Windows |
 | [docs/research/](docs/research/README.md) | Full REA breakdowns of VS Code, KiCad, FreeCAD, Blender and the simulators |
 | [CLAUDE.md](CLAUDE.md) | Instructions for every Claude session |
 
 ## Build from source
 
-You need Node 22.12 or newer (pnpm comes through `corepack enable`), rustup (it
+You need Node 22.12 or newer; CI uses 24.22.1, VS Code's pinned version (pnpm comes through `corepack enable`), rustup (it
 installs the pinned Rust 1.97.0 on first use), CMake 3.25+ with Ninja, and a C++20
 compiler: GCC on Linux, MSVC on Windows (run the native build from a Visual Studio
 developer shell). P0-6 replaces this list with setup scripts for both systems.
