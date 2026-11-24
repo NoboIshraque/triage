@@ -1,236 +1,140 @@
-# Triad: roadmap
+# Triad: roadmap (team of two: the owner + Claude)
 
-How we get from an empty repo to the app described in [PLAN.md](PLAN.md). Every
-phase ends in a **demo that works end to end**: vertical slices, not horizontal
-layers. Durations assume **a team of 4–6 engineers**. A solo builder working
-with AI should follow the [solo track](#solo-track) instead.
+How we get from an empty repository to the app in [PLAN.md](PLAN.md). Work is cut
+into **work packages (WPs)** of about 1–3 Claude sessions each. Every WP ends with
+something runnable and tested. [GUIDELINES.md](GUIDELINES.md) describes how a
+session works, and [STATUS.md](STATUS.md) tracks where we are.
+
+**Order of attack:** first a working end-to-end slice using stock KiCad and
+FreeCAD as **companions**, then absorb each engine into Triad (electronics, then
+CAD), then deepen simulation, then ship.
 
 ```mermaid
 gantt
-  title Triad roadmap (team of 4 to 6, indicative)
+  title Triad roadmap (two-person team, indicative)
   dateFormat YYYY-MM-DD
   axisFormat %b %Y
   section Foundations
-  P0 Foundations                  :p0, 2026-12-07, 6w
+  P0 Foundations                 :p0, 2026-12-01, 3w
   section First slice
-  P1 Vertical slice (Uno fan)     :p1, after p0, 12w
-  section Depth
-  P2 Real circuits, more MCUs     :p2, after p1, 14w
-  P3 Own schematic editor         :p3, after p1, 16w
-  P4 Parametric CAD + mechanisms  :p4, after p2, 16w
-  P5 Own PCB editor               :p5, after p3, 24w
-  section Breadth
-  P6 Advanced sim and testing     :p6, after p4, 20w
-  P7 Web, collaboration, AI       :p7, after p5, 20w
+  P1 Companion suite + model     :p1, after p0, 5w
+  P2 Simulation slice (M1)       :p2, after p1, 5w
+  section Absorb the engines
+  P3 EDA engine + in-app viewing :p3, after p2, 8w
+  P4 In-app electronics editing  :p4, after p3, 10w
+  P5 CAD engine + 3D workspace   :p5, after p4, 10w
+  section Depth and release
+  P6 Simulation depth            :p6, after p5, 10w
+  P7 Render engine + v1.0        :p7, after p6, 7w
 ```
 
-| Milestone | When (team of 4–6) | What users can do |
+| Milestone | When (indicative) | What you can do |
 |---|---|---|
-| **M1 "It runs"** | end of P1 (week 18, ~4 months) | Write Arduino code, wire it in KiCad, see the board in a generated enclosure, press Run, watch the motor spin in 3D, pass a test |
-| **M2 "Real engineering"** | end of P2–P3 (week 34, ~8 months) | Accurate SPICE co-sim, Pico and STM32 targets, schematic editing inside Triad |
-| **M3 "v1.0"** | end of P4–P5 (week 58, ~13.5 months) | Parametric enclosures and mechanisms with physics, PCB layout inside Triad, full release bundle |
-| **M4 "Platform"** | end of P6–P7 (week 78, ~18 months) | FMU models, thermal/FEA sidecars, web edition, classroom features, AI assistant |
+| **M1 "It runs"** | end of P2, ~3 months | One Triad project. Edit the circuit in KiCad (companion), code in Triad, generate the enclosure, press **Run** and watch the fan spin in 3D, pass a scenario test |
+| **M2 "Electronics inside"** | end of P4, ~7.5 months | Draw the schematic and lay out the board **inside Triad** with KiCad's engine (router, DRC, zones). KiCad still opens the files |
+| **M3 "CAD inside"** | end of P5, ~10 months | Design enclosures and mechanisms **inside Triad** with FreeCAD's engine. Assemblies drive physics |
+| **M4 "v1.0"** | end of P7, ~14 months | Accurate and broad simulation, renders, installers for Windows, macOS and Linux |
+
+Durations assume steady work, several sessions a week. Independent WPs (for
+example P5 and P6 items) can run in **parallel sessions on separate branches** to
+go faster.
 
 ---
 
-## Phase 0 · Foundations (≈6 weeks)
+## P0 · Foundations
 
-**Goal:** the Triad extension installs into VS Code, opens a Triad project and
-knows about all of its domains.
+| WP | Deliverable | Done when |
+|---|---|---|
+| **P0-1** Repository skeleton | Folders from PLAN §4.12; pnpm + Turborepo, Cargo workspace, CMake presets; formatting and lint; CI on Linux | CI green on placeholder tests |
+| **P0-2** VS Code fork imported | Upstream `microsoft/vscode` at a pinned release tag in `app/`, build script, Triad `product.json` (name, data folder, **Open VSX** gallery), placeholder branding | `scripts/app/build.sh` produces a running Linux build; a Playwright smoke test opens a window |
+| **P0-3** Triad entry points | `app/src/vs/triad/` contribution: Triad view container, **Engineering layout** command, walkthrough page. Patch-queue tooling (`patches/`, apply/refresh scripts) | Triad sidebar visible; patch queue re-applies cleanly onto a fresh upstream checkout |
+| **P0-4** Project format v0 | `triad.toml` JSON Schema; `crates/triad-model` (load/validate), napi binding; project explorer tree (Code / Electronics / Mechanical / Simulation) | Opening `examples/smart-fan` shows the four domains; Rust and TS unit tests |
+| **P0-5** Dev environment | `scripts/dev/setup.sh` (Linux deps for app, Rust, later KiCad/FreeCAD), docs for the owner's OS | Fresh container to first build following only the script |
+| **P0-6** Nightly artifacts | CI uploads a Linux build. Windows and macOS jobs start (may be red at first) | Owner can download and launch a nightly |
 
-Deliverables
-1. **Monorepo**: pnpm workspaces + Turborepo (TS), a Cargo workspace (Rust), and
-   CI on Linux, Windows and macOS.
-2. **Extension pipeline**: the extension bundled with esbuild, webviews bundled
-   with Vite, and **platform-specific VSIX** builds (`vsce package --target …`)
-   from a CI matrix. Integration tests run in real VS Code (stable and Insiders)
-   via `@vscode/test-electron`. Pre-releases publish to the VS Code Marketplace
-   and Open VSX.
-3. **Project format v0**: `triad.toml` schema, `.triad/links.json`,
-   generated TS types, and a project explorer view with Code / Electronics /
-   Mechanical / Simulation nodes.
-4. **`triad-kicad` crate**: lossless S-expression parser and serializer for
-   `.kicad_sch`, `.kicad_pcb`, `.kicad_sym` and `.kicad_mod`. Round-trip
-   tests on **every project in `kicad-demos`**.
-5. **Companion manager**: detect and version-check KiCad (kicad-cli), Blender,
-   Renode, PlatformIO and arduino-cli, with guided install.
-6. **Netlist and link graph v0**: `kicad-cli sch export netlist` → nets, pins
-   and components, linked by UUID.
-7. **Benchmarks harness** for the PLAN §4.14 budgets (even if most are still empty).
+## P1 · Companion suite and project model
 
-Exit demo: open `kicad-demos/…` and a sample firmware folder as a Triad
-project. The explorer lists components, nets and firmware files. CI is green
-on three OSes.
+| WP | Deliverable | Done when |
+|---|---|---|
+| **P1-1** Companion manager | Detect KiCad, FreeCAD and Blender (path, version), settings UI, open-in-companion commands | Detects installs and opens the project's files in each |
+| **P1-2** KiCad bridge | Protobuf/nng client for KiCad's IPC API, **cross-probe** (Triad ↔ KiCad selection), netlist via `kicad-cli sch export netlist`, file watching | Selecting a net in Triad highlights it in KiCad and vice versa |
+| **P1-3** Link graph v0 + pin map | Components, nets and pins from the netlist into the link graph; generated `board_pins.h`; editor diagnostics for unconnected or misused pins | Renaming a net in KiCad updates the header and diagnostics within 2 s |
+| **P1-4** Firmware build | PlatformIO/arduino-cli tasks, Uno and Pico board profiles, clangd config | Build and flash-image generation from Triad's Run menu |
+| **P1-5** 3D assembly view v0 | Native workbench editor with three.js: board GLB (`kicad-cli pcb export glb`) + enclosure GLB, live refresh | Board and enclosure visible together; refresh on save |
+| **P1-6** Enclosure from board v0 | FreeCADCmd script: parametric box/shell/lid, bosses at mounting holes, connector cutouts from footprint positions, fit check (OCCT interference) | Smart Fan board gets a printable enclosure and a red highlight on a collision |
 
----
+## P2 · Simulation slice "Smart Fan Lite" → **M1**
 
-## Phase 1 · Vertical slice: "Smart Fan Lite" on Arduino Uno (≈12 weeks)
+| WP | Deliverable | Done when |
+|---|---|---|
+| **P2-1** Sim kernel core | `crates/triad-sim-kernel`: picosecond clock, unit trait, quantum scheduler (grant/sync/unblock), signal bus, record/replay | Deterministic replay test; scheduler property tests |
+| **P2-2** AVR unit | avr8js in the sim engine's Node helper; GPIO, ADC, PWM, UART ports; serial monitor panel | Blink and serial-echo sketches run at ≥ 1× real time |
+| **P2-3** T0 circuit + first parts | Netlist partitioning; logic nets; Rust MNA solver for small analog islands; parts: LED, button, pot, NTC, MOSFET + DC motor, servo | Thermistor divider reads the right ADC value; LED current is correct |
+| **P2-4** MuJoCo unit + 3D playback | `crates/triad-mujoco` with `mjs_*` model building and `mjcb_control` torque; fan rotor; 3D frames at 60 Hz | Fan speed follows PWM; LED glows in 3D |
+| **P2-5** Run UX | Run/Pause/Step/Speed, environment panel (temperature slider), instruments v0 (scope, plots) | The walkthrough's step 6 works end to end |
+| **P2-6** Scenario tests | YAML v0 (`at`, `within`, `always`), `triad test` CLI, Test Explorer, CI job | `overheat.yaml` passes headless in CI |
 
-**Goal:** the first end-to-end Run across all four domains, at T0 fidelity.
+**M1 exit demo:** PLAN §3 steps 1–6 and 9, with KiCad and FreeCAD as companions.
 
-Deliverables
-- **Code:** PlatformIO/arduino-cli build tasks, clangd, a Uno board profile,
-  **generated `board_pins.h`**, and "pin not connected" diagnostics.
-- **Electronics:** WebGL **schematic and PCB viewers** (read-only, layers,
-  net highlight), **Edit in KiCad** with live reload, and **IPC cross-probe**
-  (select in Triad ↔ select in KiCad) via kicad-python/kipy.
-- **Mechanical:** 3D board via `kicad-cli pcb export glb` → three.js. An
-  **enclosure template** on OCCT-WASM: box, shell, lid, bosses at mounting
-  holes, **automatic connector cutouts**. STL/3MF/STEP export. Clearance check
-  between component bounding volumes and the enclosure.
-- **Simulation T0:** sim service with the kernel (virtual clock, quanta,
-  early return), **avr8js** unit, logic nets, a small MNA solver for
-  divider/pot/LED islands, **MuJoCo** unit (fan rotor as a hinge with drag),
-  smart parts (LED, button, pot, NTC, MOSFET + DC motor, servo), a serial
-  monitor, and LED glow and spinning rotor in 3D. Real-time pacing.
-- **Tests:** scenario YAML v0 (`at`, `within`, `always`), `triad test` CLI and
-  Test Explorer integration.
+## P3 · EDA engine and in-app viewing
 
-Exit demo (recorded): the walkthrough in PLAN §3, steps 1–6 and 9, on Uno with
-the T0 tier. CI runs `overheat.yaml` headless and passes.
+| WP | Deliverable | Done when |
+|---|---|---|
+| **P3-1** KiCad fork builds | KiCad pinned release in `engines/eda/` with a patch queue; Linux build in CI with caching | `kicad-cli` built from our tree passes on `kicad-demos` |
+| **P3-2** Headless engine host | `triad-eda-engine`: long-running headless process, modeled on `kicad-cli` and KiCad's API server; loads projects; protobuf API over nng | Engine loads all `kicad-demos` projects and answers API queries |
+| **P3-3** Stream GAL | GAL backend recording ~45 drawing methods into per-group display lists; binary protocol; headless `VIEW` + painters | Display lists for a demo board match OpenGL GAL output in a golden test |
+| **P3-4** Triad canvas | Schematic and board editors in the workbench drawing display lists (WebGL2), with layers, pan/zoom and hit-testing via the engine | Renders every demo project at 60 fps; pixel-compare against kicad-cli SVG/PNG |
+| **P3-5** Remote-tools spike | Canvas events → KiCad `TOOL_EVENT`s; run selection and move headlessly; list wx dependencies hit | Spike report + **ADR 0003** (go, partial, or fallback) |
 
----
+## P4 · In-app electronics editing → **M2**
 
-## Phase 2 · Real circuits and more microcontrollers (≈14 weeks)
+| WP | Deliverable | Done when |
+|---|---|---|
+| **P4-1** Schematic editing | Place symbol (Triad symbol chooser), wire, label, junction, move/rotate/delete, undo/redo, properties panel | Smart Fan schematic drawn entirely in Triad |
+| **P4-2** ERC + annotation | Engine ERC with Triad problems panel, annotation, net highlighting | ERC results match `kicad-cli sch erc` |
+| **P4-3** Board placement + routing | Footprint placement, ratsnest, **push-and-shove routing**, vias, length readout | Route the Smart Fan board in Triad |
+| **P4-4** Zones, rules, DRC | Zones with fill, net classes and rules editor (Triad UI), DRC panel | DRC results match `kicad-cli pcb drc` |
+| **P4-5** Libraries + smart parts browser | Symbol and footprint browsers over KiCad libraries, smart part browser | Place an HC-SR04 smart part with its sim model attached |
+| **P4-6** Fab outputs | Jobsets in the engine; Triad release bundle | Gerbers open cleanly in a viewer; BOM/CPL correct |
 
-- **ngspice unit** (T1): `Init_Sync` external sources driven by MCU pins,
-  `SetBkpt` lockstep, event nodes. Per-island tier switch in the UI.
-- **T2 analyses**: OP, DC sweep, AC, transient and parameter sweep, with a
-  waveform viewer (KiCad-simulator parity for the common cases).
-- **RP2040 (rp2040js)** including PIO, USB-CDC serial and **MicroPython** support.
-- **Renode unit** (STM32 Nucleo, nRF52840-DK): `.repl` **generated from the
-  netlist**, GPIO and UART bridging, quantum sync.
-- **Debug-in-sim**: DAP → GDB → emulator stubs (rp2040js, simavr-compatible,
-  Renode). Breakpoints freeze the whole world.
-- **Instruments**: oscilloscope, logic analyzer with I²C/SPI/UART decode,
-  current and energy budget.
-- **Part SDK v1** (WASM) and ~60 smart parts: OLED SSD1306 (framebuffer shown on
-  the 3D part), MPU-6050 (IMU from MuJoCo), HC-SR04 (`mj_ray`), DHT22, WS2812,
-  L298N/DRV8833, relay, buzzer (Web Audio).
-- **MCP server v0** (`run_scenario`, `get_pin_map`, `get_waveform`) so AI
-  agents can drive the app.
-- *Stretch:* ESP32 via QEMU (Espressif fork), if D3 says ESP32 is a priority.
+## P5 · CAD engine and 3D workspace → **M3**
 
-Exit demo: the flyback-diode lesson (PLAN §3 step 7) in T1. A Pico robot
-reads its IMU and drives two motors. Breakpoint debugging in sim.
+| WP | Deliverable | Done when |
+|---|---|---|
+| **P5-1** FreeCAD fork builds | FreeCAD pinned release in `engines/cad/`, App-layer build in CI | `FreeCADCmd` from our tree runs Part/PartDesign tests |
+| **P5-2** CAD engine RPC | JSON-RPC server module in the engine: documents, recompute, feature tree, properties, tessellation streaming | Open and recompute every Smart Fan document over RPC |
+| **P5-3** 3D workspace | Viewport, outliner/feature tree, properties, gizmos (Blender-style UX) | Edit a pad length in the properties panel and see recompute live |
+| **P5-4** Sketcher | Sketch overlay with constraints solved by FreeCAD's Sketcher | Fully constrained enclosure sketch built in Triad |
+| **P5-5** Features | Pad, pocket, revolve, fillet, chamfer, shell, hole, patterns, booleans | Smart Fan enclosure modeled from scratch in Triad |
+| **P5-6** Assemblies → physics | Assembly joints (Ondsel solver) → MuJoCo via `mjs_*`; motors bound to smart parts | 2-DOF arm moves under servo control in simulation |
+| **P5-7** Board ↔ enclosure links | Parametric links (outline, holes, connectors) and live fit/clearance checks | Moving a connector in the board moves the cutout |
 
----
+## P6 · Simulation depth
 
-## Phase 3 · Own schematic editor (≈16 weeks, parallel to P2)
+| WP | Deliverable | Done when |
+|---|---|---|
+| **P6-1** ngspice T1/T2 | `crates/triad-ngspice` (`Init_Sync`, `SetBkpt`, event nodes); per-island tier switch; analyses + waveform viewer | Flyback-diode lesson (PLAN §3 step 7) reproduces |
+| **P6-2** RP2040 + debug-in-sim | rp2040js unit, MicroPython, **GDB bridge → DAP**, world-pause on breakpoints | Breakpoint in Pico firmware freezes physics and circuit |
+| **P6-3** Renode unit | STM32 Nucleo and nRF52840 with `.repl` generated from the netlist, sync-point injection | Nucleo blink + button scenario passes |
+| **P6-4** ESP32 + network | QEMU (Espressif fork) unit, **virtual network gateway** (DHCP/DNS/TCP), RFC2217 serial bridge | ESP32 sketch reaches a local MQTT broker through the gateway |
+| **P6-5** Part SDK v1 + library | WASM SDK, ~100 parts with scenario tests, logic analyzer with protocol decode | Part library CI green; I²C/SPI decode in the analyzer |
+| **P6-6** FMI 3.0 import (stretch) | FMU unit | A Modelica-exported FMU runs in a scenario |
 
-- Editing: place symbols (KiCad libraries + smart parts browser), wires,
-  junctions, labels (local, global, hierarchical), buses, power symbols,
-  hierarchical sheets, annotation, properties, groups.
-- **Writes native `.kicad_sch`.** Golden round-trip tests: KiCad must open our
-  output without diffs beyond formatting.
-- Live ERC (our rules) plus `kicad-cli sch erc` for sign-off. Undo across
-  domains: renaming a net updates the firmware header in the same transaction.
-- Code ↔ schematic: hover, jump and rename-refactor of pin symbols in both directions.
-- KiCad **remote parts provider** endpoint serving smart parts into KiCad.
+## P7 · Render engine and v1.0 → **M4**
 
-Exit demo: build the Phase 1 project's schematic from scratch inside Triad.
-KiCad opens it cleanly. The firmware header and simulation update live.
+| WP | Deliverable | Done when |
+|---|---|---|
+| **P7-1** Render engine | Blender driven headless: product shots and turntables from the 3D assembly (glTF/USD with stable IDs) | Render queue panel produces images for the release bundle |
+| **P7-2** Installers + updates | Windows, macOS and Linux installers (owner's OS first), update feed | Install on the owner's laptop, auto-update to a new nightly |
+| **P7-3** Templates + docs | Smart Fan, Line Follower and Weather Station templates; onboarding walkthroughs; user docs | A new user completes the Smart Fan in under 1 hour |
+| **P7-4** Performance pass | Budgets from PLAN §4.14 measured and met | Benchmarks green in CI |
+| **P7-5** Release 1.0 | Changelog, tagged release, known-issues list | v1.0 published |
 
 ---
 
-## Phase 4 · Parametric CAD and mechanisms (≈16 weeks)
+## First session checklist
 
-- **Sketcher** with constraint solver (PlaneGCS or SolveSpace per D1),
-  dimensions and project parameters.
-- **Features**: extrude, revolve, sweep, loft, fillet, chamfer, shell,
-  hole wizard, linear/circular pattern, mirror, boolean. Feature tree with
-  rollback and editing (Blender-style non-destructive stack UX).
-- **Assemblies**: rigid groups, joints (revolute, prismatic, ball, fixed), motors
-  bound to smart parts. **mjSpec generation** for MuJoCo, plus materials and mass
-  properties.
-- Board ↔ enclosure constraints: outline, holes and connectors drive features.
-  **Interference and clearance** from real component 3D models (OCCT).
-- **Blender companion**: "Render product shot" (Cycles in background mode) and
-  "Edit mesh in Blender" round-trip through glTF with ID-preserving extras.
-
-Exit demo: design a 2-DOF robot arm enclosure and linkage. It simulates with
-servos driven by Pico firmware, gets a Cycles render, and exports STEP + 3MF.
-
----
-
-## Phase 5 · Own PCB editor (≈24 weeks)
-
-- Placement (move, rotate, flip, align), ratsnest, **interactive routing**
-  (walkaround first, then a shove subset), vias, length display, tracks and arcs.
-- Copper zones and fills (Clipper2-based filler, or the headless KiCad engine
-  per D1), stackup editor, net classes, design rules.
-- Live DRC (our rules) with **kicad-cli DRC as the sign-off**. Fab outputs
-  via kicad-cli jobsets.
-- **Board outline from the enclosure** and keep-outs from mechanical
-  clearances. Incremental 3D updates without kicad-cli export.
-- *Decision point:* revisit D1. A GPL-3 relicense would let us reuse KiCad's
-  push-and-shove router.
-
-Exit demo: lay out the Smart Fan board in Triad. KiCad's DRC passes. Order-ready
-Gerbers come out, and the 3D fit check passes.
-
----
-
-## Phase 6 · Advanced simulation and testing (≈20 weeks)
-
-- **FMI 3.0 FMU import** (Modelica/OpenModelica, Simulink-exported models) and SSP.
-- Thermal: a lumped RC network from component power dissipation (fast). Elmer
-  sidecar for PCB and enclosure thermal (accurate).
-- Structural: a CalculiX sidecar for enclosure stress (drop and clip snap-fits).
-- Monte Carlo and tolerance analysis, parameter sweeps (MuJoCo `mjb_*` batch
-  rollouts for mechanisms).
-- Test coverage reports (firmware lines and scenario expectations).
-  **Instructor mode**: hidden scenarios, auto-grading, LMS export.
-- Optional **hardware bridge**: a real board's serial/GPIO mirrored into the sim
-  (HIL-lite).
-
-## Phase 7 · Web edition, collaboration and AI (≈20 weeks)
-
-- **Web edition**: Triad as a web extension on vscode.dev, with WASM engines
-  (OCCT, ngspice, JS MCU emulators, MuJoCo if a WASM build proves out). For
-  classrooms and Chromebooks.
-- Visual diffs for schematic, PCB and CAD in git. Comments and reviews. Optional
-  real-time collaboration (CRDT on the model service).
-- **AI design assistant** on the MCP server: "why doesn't my motor spin?" answered
-  from live sim evidence, design reviews, and part suggestions.
-
----
-
-## Solo track
-
-If the builder is one person plus AI assistance, **cut ruthlessly** and ship the
-magic first:
-
-1. **S0 (4–6 weeks):** monorepo, the VS Code extension skeleton with CI
-   packaging, the KiCad parser with round-trip tests, the project explorer.
-2. **S1 (8–12 weeks):** Phase 1 slice with **KiCad as the only editor**,
-   kicad-cli GLB for 3D, the template enclosure, avr8js + MuJoCo + 10 parts,
-   scenario tests.
-3. **S2 (8–12 weeks):** rp2040js, ngspice T1 for one analog island type, OLED
-   and IMU parts, debug-in-sim.
-
-That gives a compelling, demoable product in about 6–8 months. Then decide
-whether to grow a team (Phases 3–5), seek grants (education and open-hardware
-funds), or keep KiCad and Blender as the long-term editors.
-
----
-
-## Phase 0, sprint 1: concrete first tasks
-
-1. Scaffold the monorepo (`extensions/`, `webviews/`, `apps/cli`, `packages/`,
-   `crates/`, `services/`) with CI for lint, typecheck and test.
-2. `crates/triad-kicad`: S-expression tokenizer and tree, lossless writer,
-   round-trip test runner over `kicad-demos`.
-3. `extensions/triad`: extension skeleton (activation events, a Triad view
-   container in the activity bar, a custom editor stub for `.kicad_sch`),
-   esbuild bundling, a `@vscode/test-electron` smoke test, and a
-   platform-specific VSIX build in CI.
-4. Project explorer: reads `triad.toml` and shows the domain tree.
-5. Electronics: calls `kicad-cli sch export netlist` and shows nets and
-   components. Read-only schematic viewer spike (WebGL2 in the custom editor).
-6. `services/sim-service` spike: avr8js runs a Blink `.hex`. The LED state
-   streams over a localhost WebSocket to a three.js webview where an LED glows.
-
-Definition of done for every phase: exit demo recorded, CI green on three
-OSes, performance budgets measured, docs updated, ADRs written for new
-decisions, and a license scan clean.
+When the build starts in a new session:
+1. Read `CLAUDE.md`, then this file and `STATUS.md`.
+2. Confirm D3 (engines) and ask the open questions (D4, D5, D8) if still unanswered.
+3. Start **P0-1**, then **P0-2**. The VS Code fork build is the first big unknown, so retire it early.

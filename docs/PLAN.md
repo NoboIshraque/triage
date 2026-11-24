@@ -1,131 +1,115 @@
-# Triad: master plan
+# Triad: master plan (standalone app)
 
 > **Triad** is a working name for the three pillars (Code · Circuit · Form) plus
 > the simulation that joins them. Rename freely.
-> Status: **proposal v0.1**, 2026-11-23. It builds on the teardown in [research/](research/README.md).
-> The phased delivery plan is in [ROADMAP.md](ROADMAP.md).
+> Status: **plan v0.2**, 2026-11-23. Built from the unbounded teardown in
+> [research/](research/README.md). Delivery: [ROADMAP.md](ROADMAP.md) · how we
+> work: [GUIDELINES.md](GUIDELINES.md) · progress: [STATUS.md](STATUS.md).
+> **Team:** the project owner and Claude.
 
 ---
 
 ## 0. The plan on one page
 
-**What we're building.** A suite of **VS Code extensions** that turns the editor
-students already use into a full engineering workbench, running offline on a
-laptop. A project's **firmware**, **schematic + PCB** and **3D
-enclosure/mechanism** live in one project folder and one VS Code window, linked
-to each other. A single **Run**
-button simulates the whole device: the code runs on an emulated
-microcontroller, drives the simulated circuit, which drives motors and reads
-sensors in a 3D physics world. **Automated tests** then say pass or fail.
+**What we're building.** A complete desktop app, **built from VS Code's own
+source**, that does the work of VS Code, KiCad, a parametric CAD tool and
+Blender in one window, and adds **whole-device simulation**. A student writes
+firmware, draws the schematic, lays out the PCB and designs the enclosure side
+by side. **Run** then executes the firmware on an emulated microcontroller,
+drives the simulated circuit, and moves motors and reads sensors in a 3D
+physics world, with automated tests that pass or fail. It runs offline on a
+laptop.
 
 **Five big bets**
 
-| # | Bet | Why (evidence) |
+| # | Bet | Evidence |
 |---|---|---|
-| 1 | **Run inside VS Code itself, as extensions** (VS Code Marketplace + Open VSX). No separate app, no fork | It's the most widely used code editor. Students install one extension into the VS Code they already have and keep their settings and extensions. We inherit Monaco, LSP/DAP, terminal, git, Test Explorer and the extension ecosystem. VS Code's own isolation pattern (narrow bridges, heavy work in separate processes, [vscode.md](research/vscode.md)) is the template for our engine processes |
-| 2 | **KiCad-native files as the electronics source of truth.** KiCad runs as companion and headless engine; our own schematic then PCB editors come in phases | KiCad's formats are open text. kicad-cli covers DRC, ERC, every fab format, STEP/GLB and renders. The IPC API is protobuf over nng ([kicad.md](research/kicad.md)) |
-| 3 | **Parametric B-rep CAD on OCCT 8** for enclosures, with Blender-style UX. **Blender is an optional render and mesh companion, not the core** | Engineering parts need exact dimensions and STEP. Blender is a mesh and render suite ([blender.md](research/blender.md)). OCCT 8.0.1 covers WebAssembly builds |
-| 4 | **Our own co-simulation kernel.** Renode-style time quanta and FMI-3-style units wire MCU emulators, ngspice and MuJoCo together, with **wiring generated from the schematic and CAD assembly** | ngspice has `Init_Sync`/`SetBkpt` for lockstep. MuJoCo has `mjs_`/`mjcb_` for building models and injecting torques. Renode's `.repl` is effectively a netlist ([simulators.md](research/simulators.md)) |
-| 5 | **Local-first, open formats, everything scriptable** (TS and Python APIs, CLI for CI, MCP server for AI agents) | Students need it free and offline. Instructors need autograding. Teams need git |
+| 1 | **Fork VS Code (Code-OSS) into the Triad app.** Native editors, new engine processes and our own layout are compiled into the workbench ([ADR 0001](adr/0001-standalone-app-on-vscode-codebase.md)) | VS Code's process model (utility processes + MessagePort, a narrow 26-member preload) is built for exactly this ([vscode.md](research/vscode.md)) |
+| 2 | **Keep the engines, replace the UIs.** KiCad, FreeCAD and Blender become headless **engine processes** behind Triad's UI ([ADR 0002](adr/0002-absorb-engines-headless.md)) | KiCad's engine is 42–49% of its code and its graphics boundary is **68 methods**. FreeCAD splits **29.3 MB engine / 28.3 MB UI** ([kicad.md](research/kicad.md), [freecad.md](research/freecad.md)) |
+| 3 | **Triad's own co-simulation kernel** wires MCU emulators, ngspice, MuJoCo and a virtual network together, with **wiring generated from the schematic and assembly** | ngspice `Init_Sync`/`SetBkpt`, MuJoCo `mjs_`/`mjcb_`, Renode's sync phases and `.repl` netlists, Wokwi's network gateway ([simulators.md](research/simulators.md)) |
+| 4 | **One project, one link graph.** Pins, nets, parts, boards, bodies and code are linked across domains, so nothing is retyped or re-exported | the walkthrough below |
+| 5 | **Build in vertical slices, companion first.** Ship a working end-to-end slice early using the stock apps as companions, then absorb each engine | two-person team: value early, risk retired step by step |
 
-**Out of scope** (guardrails against an infinite project):
-- Not a feature-complete replacement for KiCad, Blender or Fusion. We cover the
-  80% that student and maker projects need, and keep **"Open in KiCad / Blender"**
-  for the rest.
-- Not a separate app and not a fork of VS Code (D2, confirmed). Triad lives
-  inside VS Code.
-- Not cloud-only, and no account is required.
-- No high-speed or RF PCB design, no 20-layer HDI.
-- No FEA or CFD in v1. Those are later sidecar integrations.
-- Nothing copied from proprietary tools. Clean-room only.
+**Out of scope for v1.0** (guardrails against an infinite project): HDI/RF PCB
+design · FEA/CFD beyond FreeCAD FEM basics · cloud accounts and collaboration ·
+mobile. Blender's animation and VFX features stay inside the optional render engine.
 
-**Decisions:** see §5. D2 is confirmed: run inside VS Code. Still open: D1
-(licensing), D3 (first boards) and D8 (team and timeline).
+**Open questions for you** (§5): which **laptop OS** you test on, which **first
+boards** your courses use, and the **name**.
 
 ---
 
 ## 1. Who it's for and what it must do
 
-**Users:** engineering students (EE, ME, mechatronics, CS), robotics and
-maker clubs, capstone teams, and instructors who set and grade lab work.
+**Users:** engineering students (EE, ME, mechatronics, CS), robotics and maker
+clubs, capstone teams, and instructors who set and grade lab work.
 
 **Jobs to be done**
 1. Design a device end to end without juggling 3–4 tools and manual exports.
 2. **See it working before buying parts**: catch wiring, firmware, fit and power
    mistakes in simulation.
 3. Hand off to manufacturing: Gerbers, BOM, pick-and-place, STEP, STL/3MF, firmware.
-4. (Instructors) Ship templates and auto-graded test scenarios.
+4. (Instructors) ship templates and auto-graded test scenarios.
 
-**Today's pain** (from [market-and-standards.md](research/market-and-standards.md)):
-- Pin numbers get retyped by hand from the schematic into code.
-- STEP is exported from KiCad into Fusion manually, again after every change.
-- There is no system-level "does my robot actually work" check.
-- Tinkercad is easy but toy-level and stalled.
-- Proteus, Altium and Fusion are partial, paid or Windows-only.
-- Wokwi's private projects and VS Code support are paid.
-
-**Product principles**
-1. **One project, one truth, many views.** Every object exists once and every
-   view is a lens on it.
-2. **Links, not exports.** Cross-domain relationships are live, so nobody
-   copies a pin number or re-exports a STEP by hand.
-3. **Progressive fidelity.** An instant, game-like interactive sim by default,
-   with accurate engineering analysis one click away. The active tier is always visible.
-4. **Open by default.** KiCad, STEP, glTF, MJCF, FMI and plain text in git.
-   Leaving must be easy.
-5. **Teach through feedback.** Errors explain physics: "LED current 48 mA
-   exceeds 20 mA max; add ~150 Ω".
-6. **Runs on a normal laptop.** 8–16 GB RAM, integrated GPU, offline.
+**Principles:**
+- **One project, one truth, many views.**
+- **Links, not exports.**
+- **Progressive fidelity:** a game-like interactive sim by default, accurate
+  engineering analysis one click away.
+- **Open file formats:** KiCad and FreeCAD files stay openable in the original tools.
+- **Teach through feedback:** errors explain physics.
+- **Runs on a normal laptop:** 8–16 GB RAM, integrated GPU, offline.
 
 ---
 
-## 2. What the teardown taught us
+## 2. What the full breakdown showed
 
-| Tool | How it's really built (observed in shipped builds) | What we adopt |
+| App | How it's really built (shipped builds, REA unbounded) | What Triad does with it |
 |---|---|---|
-| **VS Code** | Electron: main process, sandboxed renderer, and utility processes (extension host, pty host, shared process, file watcher, agent host). The preload exposes **one 26-member `window.vscode` API**. The renderer gets **MessagePorts** straight to helper processes. Native addons: node-pty, parcel watcher, sqlite3, spdlog. RunAsNode fuse on | **Run inside VS Code as extensions.** Mirror its isolation: our editors are sandboxed webviews, our engines are separate processes behind narrow message contracts. Its enabled RunAsNode fuse is what lets extensions fork Node helpers (we use it for the JS emulators) |
-| **KiCad** | `kicad` launcher hosting **kiface plugins** (`KIFACE_1`). The Python `pcbnew` module **is** the PCB editor binary. The **IPC API is protobuf over nng `ipc://`**, with 15 protos and requests serialized on the UI thread. **ngspice is dlopen'd**, OCCT handles STEP, libgit2 is built in. kicad-cli covers every fab and 3D format plus render and jobsets. Remote parts-provider protocol (OAuth2) | KiCad-native files, kicad-cli as headless engine, the IPC API for live sync. Become a **remote parts provider** that serves sim-ready parts into KiCad |
-| **Blender** | One 197 MB binary with **statically embedded CPython** (exports the C API). Bundled engines: Embree, HIP-RT, SYCL, OSL, MaterialX, USD, OpenVDB, OpenSubdiv, OIDN, Vulkan, OpenXR. Bullet rigid bodies and Mantaflow fluids. An **RNA reflection layer** drives UI, Python and animation | The **reflection idea**: one schema drives UI, API, undo and files. Viewport, outliner, properties and modifier-stack UX. Blender as a separate render and mesh companion |
-| **Simulators** | ngspice: `Init_Sync`, `SetBkpt`, event-node API. simavr: IRQ graph plus cycle timers plus GDB. avr8js/rp2040js: cycle clocks, pin listeners, sleep-skip. **Renode**: quantum time domains, a `{ActionId, Address, Data, PeripheralIndex}` co-sim protocol, `.repl` netlists. **MuJoCo**: `mjs_` model building, `mjcb_` control/sensor/actuator callbacks, batch rollouts | The sim kernel design (§4.7) |
+| **VS Code 1.143** | Electron main process, sandboxed renderer, and utility processes (extension host, pty host, shared process, file watcher, **agent host**). One 26-member preload API. Renderers reach helpers over **MessagePort**. ~59 MB of core JS (two 21–22 MB workbench bundles) plus ~78 MB of built-in extensions | **Fork it.** Add Triad editors to the workbench and Triad engines as utility processes, using the same MessagePort pattern |
+| **KiCad 10.0.8** | Launcher plus `KIFACE_1` plugins. ~158k functions, ~81 MB of code. pcbnew is **42% engine / 21% UI dialogs / 5% tools**. **GAL = 68 methods**. Router adapter `pns_kicad_iface.cpp`. Protobuf/nng API (15 protos). ngspice dlopen'd. OCCT for STEP. kicad-cli for every fab format | **EDA engine process** from KiCad source: **Stream GAL** for rendering, **remote tools** for editing, extended protobuf API, dialogs rebuilt in Triad |
+| **FreeCAD 1.1** | Every module is an **App/Gui library pair**. Engine 29.3 MB (Part, PartDesign, Sketcher, Assembly + Ondsel solver, FEM, TechDraw, Materials). UI 28.3 MB (Qt + Coin3D) | **CAD engine process** (App layer + JSON-RPC). Triad draws the viewport and panels |
+| **Blender 5.3** | 197 MB binary with embedded CPython. Cycles (Embree/HIP-RT/SYCL), OSL, USD, OpenVDB, Bullet, Mantaflow. UI is Python over RNA (273 panels, 505 menus, 348 Python operators) | **Optional render engine** (Cycles, mesh/sculpt) plus the **UX model** for Triad's 3D workspace |
+| **Simulators** | ngspice co-sim hooks. simavr IRQ graph. avr8js/rp2040js cycle clocks. **Renode: 1,248 peripheral models, 143 CPU types, grant/sync/unblock/wait time phases**. MuJoCo 822-function API. **Wokwi: client-side emulation, a Go/WASM virtual network gateway, GDB and RFC2217 bridges** | **Sim engine** units and design patterns (§4.7) |
 
 ---
 
 ## 3. A walkthrough: building a smart desk fan
 
-This is the target experience that the roadmap builds toward.
+This is the target experience for v1.0. Earlier milestones deliver parts of it,
+in the order of the [ROADMAP](ROADMAP.md).
 
-1. **Install "Triad" from the VS Code Marketplace, then New Project → "Smart Fan
-   (Arduino Uno)" template.** It creates one folder with `firmware/`,
-   `electronics/` (a KiCad project), `mechanical/` and `simulation/`.
+1. **Open Triad → New Project → "Smart Fan (Arduino Uno)".** It creates one
+   folder with `firmware/`, `electronics/` (KiCad files), `mechanical/` (FreeCAD
+   files) and `simulation/`. The window opens in the **Engineering layout**:
+   Code | Schematic | Board | 3D | Sim.
 2. **Electronics.** Maya places an NTC thermistor + 10 kΩ divider on A0, a
-   logic-level MOSFET + flyback diode driving a 12 V fan motor on D9, an SSD1306
-   OLED on I²C and a button on D2. ERC runs live.
-3. **Code.** `#include "board_pins.h"` is **generated from the schematic**
-   (`FAN_PWM = 9`, `TEMP_SENSE = A0`...). Hovering `FAN_PWM` highlights the net
-   in the schematic. Writing `analogWrite(10, …)` gives a squiggle: *"D10 is not
-   connected to anything in electronics/smart-fan.kicad_sch"*.
-4. **PCB.** She lays out the board: in KiCad in early phases, in Triad's own PCB
-   editor later. The **3D view updates live inside the enclosure.**
-5. **Mechanical.** "Enclosure from board": 2 mm walls, 5 mm clearance. It
-   **automatically cuts openings** for the USB and DC jack, adds a fan grille
-   pattern, and places **bosses aligned to the board's mounting holes**. A fit
-   check flags *"OLED header intersects lid by 1.2 mm"* in red, so she raises
-   the lid.
-6. **Run (F5).** The firmware compiles and the emulated ATmega328P boots. The
-   environment panel has a room-temperature slider. At 22 °C the fan is off. At
-   35 °C, PWM reaches 80 % and the **fan blade spins in 3D**. The **OLED on the
-   3D model shows "35.0C 80%"**. An oscilloscope shows motor current.
+   logic-level MOSFET + flyback diode driving a 12 V fan on D9, an SSD1306 OLED on
+   I²C and a button on D2. ERC runs live (KiCad's engine underneath).
+3. **Code.** `#include "board_pins.h"` is generated from the schematic. Hovering
+   `FAN_PWM` highlights the net. `analogWrite(10, …)` gets a squiggle: *"D10 is not
+   connected to anything"*.
+4. **PCB.** She places and routes the board in Triad's PCB editor, using KiCad's
+   push-and-shove router underneath. The **3D view updates live inside the enclosure.**
+5. **Mechanical.** "Enclosure from board" (FreeCAD engine): 2 mm walls, 5 mm
+   clearance, **automatic cutouts** for USB and the DC jack, a fan grille, and
+   **bosses at the board's mounting holes**. The fit check flags *"OLED header
+   intersects lid by 1.2 mm"*, so she raises the lid.
+6. **Run (F5).** The firmware compiles and the emulated ATmega328P boots. A
+   room-temperature slider sits in the environment panel. At 35 °C, PWM reaches
+   80% and **the fan spins in 3D**. **The OLED on the 3D model shows "35.0C 80%"**.
+   A scope shows motor current.
 7. **Accuracy tier.** She switches the power stage to SPICE and deletes the
-   flyback diode. The scope shows a **61 V spike** with *"exceeds MOSFET VDS max
-   (55 V)"*. The simulation caught a real-world bug.
-8. **Debug.** A breakpoint in `updateFan()` **freezes the whole world**:
-   CPU, circuit and physics share one virtual clock. She steps through the code
-   and watches the PWM pin change.
-9. **Test.** `simulation/scenarios/overheat.yaml` ramps temperature from 20 to
-   40 °C and expects duty ≥ 0.8 by 8 s and "HOT" on the OLED. It runs in the
-   Test Explorer and in CI (`triad test`).
-10. **Release.** `triad export release` writes Gerbers, drill files, BOM and CPL,
-    enclosure STEP, 3MF, `firmware.hex` and the test report into one zip.
+   flyback diode. The scope shows a **61 V spike**, flagged *"exceeds MOSFET VDS max
+   (55 V)"*.
+8. **Debug.** A breakpoint in `updateFan()` **freezes CPU, circuit and physics
+   together**. She steps through and watches the PWM pin.
+9. **Test.** `simulation/scenarios/overheat.yaml` ramps 20 → 40 °C and expects duty
+   ≥ 0.8 by 8 s and "HOT" on the OLED. It runs in the Test Explorer and as
+   `triad test` in CI.
+10. **Render and release.** A Cycles product shot from the render engine, then
+    `triad export release` writes Gerbers, drill files, BOM and CPL, STEP, 3MF,
+    `firmware.hex`, the test report and renders.
 
 ---
 
@@ -135,97 +119,103 @@ This is the target experience that the roadmap builds toward.
 
 ```mermaid
 flowchart TB
-  subgraph VSC["VS Code (the user's own install)"]
+  subgraph TRIAD["Triad app (fork of VS Code, Electron)"]
     direction TB
-    UI["VS Code UI + Triad webviews<br/>Code editor (Monaco + LSP) · Schematic · PCB · 3D/CAD<br/>Run & Test: live 3D, scopes, logic analyzer, serial"]
-    EXT["Extension host (Node)<br/>Triad extensions, toolchains, KiCad bridge, language servers"]
+    UI["Workbench renderer<br/>Code (Monaco) · Schematic · Board · 3D/CAD · Sim views<br/>native editors with GPU canvases"]
+    MAIN["Main process<br/>windows, lifecycle, MessagePort broker"]
+    EXT["Extension host<br/>Open VSX extensions, language servers, toolchains"]
   end
-  subgraph ENG["Triad engines"]
-    MODEL["Model service<br/>unified project + link graph"]
-    GEOM["Geometry service<br/>OCCT 8"]
-    SIM["Sim service<br/>kernel + signal bus"]
+  subgraph ENGINES["Triad engine processes"]
+    MODEL["Model service<br/>project, link graph, codegen"]
+    EDA["EDA engine<br/>KiCad core + Stream GAL"]
+    CAD["CAD engine<br/>FreeCAD App layer"]
+    SIM["Sim engine<br/>kernel + units"]
+    REN["Render engine<br/>Blender, optional"]
   end
   subgraph UNITS["Simulation units"]
-    MCU["MCU emulators<br/>avr8js, rp2040js, Renode, QEMU-ESP32"]
-    SPICE["ngspice<br/>Init_Sync, SetBkpt"]
-    FAST["Fast MNA + logic solver"]
-    PHYS["MuJoCo<br/>mjSpec, mjcb callbacks"]
-    PARTS["Part models<br/>WASM Part SDK"]
+    MCU["MCU emulators<br/>avr8js, rp2040js, Renode, QEMU"]
+    SPICE["ngspice"]
+    PHYS["MuJoCo"]
+    NET["Virtual network gateway"]
   end
-  subgraph SIDE["Optional companions (separate programs)"]
-    KICAD["KiCad<br/>IPC API + kicad-cli"]
-    BLENDER["Blender<br/>background render, mesh"]
-    FREE["freerouting"]
-  end
-  FILES[("Project folder in git<br/>KiCad files, CAD, firmware, scenarios")]
-  UI <-->|postMessage| EXT
-  EXT <-->|JSON-RPC| MODEL
-  EXT <-->|JSON-RPC| GEOM
-  EXT <-->|JSON-RPC| SIM
-  UI <-->|"localhost WebSocket, live streams"| SIM
+  FILES[("Project folder in git<br/>KiCad + FreeCAD files, firmware, scenarios")]
+  MAIN --- UI
+  UI <-->|MessagePort| MODEL
+  UI <-->|MessagePort| EDA
+  UI <-->|MessagePort| CAD
+  UI <-->|MessagePort| SIM
+  UI <-->|MessagePort| REN
+  EXT <--> MODEL
   MODEL <--> FILES
-  MODEL <--> GEOM
-  SIM --> MCU & SPICE & FAST & PHYS & PARTS
-  EXT <-->|protobuf over nng| KICAD
-  EXT --> BLENDER
-  EXT --> FREE
+  EDA <--> FILES
+  CAD <--> FILES
+  SIM --> MCU & SPICE & PHYS & NET
 ```
 
 ### 4.2 Processes
 
-We follow VS Code's model: crash isolation, a sandboxed UI, and heavy work off
-the UI thread.
-
-| Process | Tech | Responsibilities | If it crashes |
+| Process | Built from | Responsibilities | If it crashes |
 |---|---|---|---|
-| VS Code main + renderer | Microsoft VS Code (not ours) | windows, Monaco, terminal, git, Test Explorer, debug UI | – |
-| **Triad webviews** | TS + React + WebGL2/WebGPU, inside VS Code custom editors and panels | schematic, PCB, 3D/CAD and Run & Test views. Heavy geometry in Web Workers and WASM | the editor reloads its webview; state restored |
-| Extension host | Node (VS Code's) | **Triad extensions**: project explorer, commands, custom editor providers, toolchains (PlatformIO, arduino-cli, CMake), KiCad and Blender bridges. Launches and supervises the engine processes | VS Code restarts the extension host; engines reconnect |
-| **Model service** | Rust executable | loads and saves the project, KiCad S-expression I/O, link graph, change events, undo | UI shows "reconnecting", reloads from disk |
-| **Geometry service** | C++ OCCT 8 executable | heavy B-rep ops, STEP import/export, tessellation, mass properties, interference | CAD ops retry |
-| **Sim service** | Rust kernel + engines, plus a forked Node helper for the JS MCU emulators | scheduler, signal bus, ngspice, MuJoCo, avr8js/rp2040js, child Renode/QEMU | simulation stops with an error; editors unaffected |
-| Companions | KiCad, Blender, Renode (.NET), QEMU, freerouting | as installed, via public interfaces | feature degrades gracefully |
+| Main | VS Code fork | windows, lifecycle, menus. Spawns engines and hands **MessagePorts** to the renderer (the observed `ipcMessagePort.acquire` pattern) | app restarts |
+| Workbench renderer | VS Code fork + Triad editors (TS) | Monaco, all Triad editors and panels, GPU canvases (WebGL2/WebGPU), workers for heavy client work | window reloads, state restored |
+| Extension host | VS Code fork | Open VSX extensions, clangd, PlatformIO/arduino-cli/CMake tasks | extensions restart |
+| **Model service** | Triad (Rust via napi-rs, in a utility process) | `triad.toml`, link graph, change propagation, pin-map codegen, scenario files | reconnect, reload from disk |
+| **EDA engine** | **KiCad fork** (C++, headless) | schematic and board models, connectivity, router, DRC, zones, IO, plotters, simulator glue, jobs. **Stream GAL** display lists. **Remote tools**. Extended protobuf API | editors show "reconnecting", reload files |
+| **CAD engine** | **FreeCAD fork** (C++/Python, App layer) | documents, features, sketches with solver, assemblies, materials, STEP/STL/3MF, FEM, TechDraw. Tessellation streaming. JSON-RPC | CAD ops retry |
+| **Sim engine** | Triad (Rust kernel via napi-rs + Node utility process for the JS emulators) | scheduler, signal bus, units, recording/replay. Spawns Renode and QEMU | simulation stops with an error |
+| **Render engine** | Blender (`blender -b` + Triad RPC script), optional | Cycles renders, mesh/sculpt operations, glTF/USD exchange | render job fails, retry |
 
-**IPC.** Webviews talk to the extension through `postMessage`, which transfers
-`ArrayBuffer`s efficiently for extensions targeting VS Code 1.57+. The
-extension talks to the engines with JSON-RPC 2.0 (the `vscode-jsonrpc` stack that
-language servers use), with schema-validated messages. **High-rate streams**
-(waveforms, transforms, framebuffers) skip the extension host: the sim service
-serves a **localhost WebSocket** that the webview connects to directly. It is
-allowed by the webview's CSP, and VS Code's webview port mapping covers remote
-setups. KiCad is reached through its protobuf/nng IPC API, and Renode through
-its monitor socket and GDB.
+**Transport.** Engines are native executables. A small Node **broker** in each
+engine's utility process speaks to its engine over a local socket (KiCad's nng for
+the EDA engine) and relays to the renderer over MessagePort with **transferable
+ArrayBuffers**. Control uses JSON-RPC or protobuf. Bulk data uses binary frames:
+display lists, tessellations, waveforms.
 
-### 4.3 The unified project model (the heart of the app)
+### 4.3 How each original app is absorbed
 
-**Folder layout.** Everything is plain files, so git just works:
+Every domain moves through three stages. Each stage is shippable.
+
+| Stage | Electronics (KiCad) | Mechanical (FreeCAD) | Render (Blender) |
+|---|---|---|---|
+| **A. Companion** | Triad launches stock KiCad for editing. `kicad-cli` provides netlist, ERC/DRC, GLB/STEP, fab outputs. IPC API cross-probing | Triad launches stock FreeCAD. `FreeCADCmd` scripts generate enclosures and export STEP/GLB | `blender -b` scripts render product shots |
+| **B. Engine + viewer** | **EDA engine** built from KiCad source. **Stream GAL** renders schematic and board inside Triad tabs, pixel-identical, with live selection and cross-probe | **CAD engine** (FreeCAD App) inside Triad: live tessellated 3D, feature tree, properties | render engine bundled with Triad, render queue panel |
+| **C. Native editing** | **Remote tools:** Triad canvas input drives KiCad's tool framework (select, move, wire, place, **route** with push-and-shove, zones). Dialogs rebuilt in Triad. KiCad window optional | Triad sketcher overlay and feature UI over FreeCAD's solver. Assemblies with joints feed MuJoCo | mesh/sculpt handoff with stable IDs |
+
+**Stream GAL details** (from [kicad.md](research/kicad.md)): implement the ~45 drawing
+methods of `KIGFX::GAL` (lines, segments, arcs, circles, polygons, curves, glyphs,
+bitmaps, groups, layers, transforms) as a recorder that emits **display lists
+per cached group**. The renderer composes layers on the GPU, and KiCad's own
+`VIEW` caching decides what to redraw. **Remote tools:** convert canvas
+mouse/keyboard events into KiCad `TOOL_EVENT`s and run the tool framework on the
+engine's main loop. Tools that open wx dialogs are wrapped so the dialog becomes
+a Triad form over the API. **This bridge is the main technical risk**, so it gets
+an early spike (ROADMAP P3).
+
+### 4.4 The unified project model
 
 ```
 smart-fan/
-  triad.toml                 # manifest: name, targets, boards, sim defaults, links file
-  firmware/                  # PlatformIO / Arduino / CMake / Zephyr / MicroPython project
+  triad.toml                 # manifest: name, targets, boards, sim defaults
+  firmware/                  # PlatformIO / Arduino / CMake / Zephyr / MicroPython
     src/main.cpp
-    generated/board_pins.h   # generated from schematic (do not edit)
-  electronics/               # a normal KiCad 10 project
-    smart-fan.kicad_pro  smart-fan.kicad_sch  smart-fan.kicad_pcb
-  mechanical/
-    enclosure.triad-cad.json # feature tree (sketches, extrude, shell, fillet, pattern...)
-    assembly.triad-asm.json  # bodies, joints, motors, materials
-    exports/                 # STEP/3MF/STL (generated)
+    generated/board_pins.h   # generated from the schematic (do not edit)
+  electronics/               # a normal KiCad project (.kicad_pro/.kicad_sch/.kicad_pcb)
+  mechanical/                # FreeCAD documents (.FCStd) + exports/
   simulation/
-    environment.toml         # temperature, light, gravity, obstacles...
+    environment.toml         # temperature, light, gravity, obstacles, network
     scenarios/*.yaml         # stimulus + expectations (tests)
   parts/                     # project-local smart parts
   .triad/links.json          # cross-domain link graph (stable IDs)
 ```
 
-**One schema, many uses (the "RNA" lesson from Blender).** Every entity type
-(component, net, board, body, joint, actuator, sensor, scenario, parameter) is
-defined once in a **schema** (JSON Schema plus annotations). From it we
-generate TS and Python API types, the property panels, file validation, undo
-records and docs.
-
-**Link graph:**
+- **Source of truth per domain:** KiCad files (electronics), FreeCAD files
+  (mechanical), source code (firmware), YAML/TOML (simulation). Each opens in
+  its original tool.
+- **One schema, many uses** (Blender's RNA lesson): entity types (component, net,
+  pin, board, body, joint, actuator, sensor, scenario, parameter) are defined
+  once. From that we generate TS/Rust/Python API types, property panels,
+  validation, undo records and docs.
+- **Link graph:**
 
 ```mermaid
 erDiagram
@@ -243,132 +233,93 @@ erDiagram
   SENSOR }o--|| COMPONENT : "electrical side"
 ```
 
-- **Stable IDs.** KiCad's UUIDs for symbols, footprints and nets are reused, and
-  our own entities get UUIDv7s. `.triad/links.json` stores the cross-domain
-  edges with both IDs, so links survive renames and re-annotation.
-- **Change propagation.** Edits are **commands** (`MoveFootprint`,
-  `RenameNet`...) applied to the model service. Dependents are recomputed
-  lazily through a small **dependency graph**, Blender-depsgraph style: renaming
-  net `FAN_PWM` updates `board_pins.h`, the Renode `.repl`, scenario references
-  and 3D labels.
-- **Undo** is a transaction log of commands across domains. One undo can revert
-  "moved connector + enclosure cutout followed".
-- **Parameters.** A project-wide table (`board_w = 50 mm`, `wall = 2 mm`)
-  usable in PCB outline expressions, CAD features, firmware constants (generated)
-  and simulation.
-- **Conflicts with external edits** (the user edits the PCB in KiCad): a file
-  watcher detects the change, the model re-parses, the link graph is reconciled
-  by UUID, and broken links are listed in a "Links" problems view.
+- **Stable IDs:** KiCad UUIDs for symbols, footprints and nets; FreeCAD object
+  names and UUIDs for bodies and features; UUIDv7 for Triad entities.
+- **Change propagation:** edits are commands. Dependents recompute through a
+  small dependency graph. Renaming net `FAN_PWM` updates `board_pins.h`, the
+  generated Renode `.repl`, scenarios and 3D labels in one transaction.
+- **Parameters:** a project table (`board_w`, `wall`) usable in KiCad (board
+  outline), FreeCAD (Spreadsheet), firmware (generated) and simulation.
+- **External edits** (a file changed in stock KiCad or FreeCAD): watch, re-parse,
+  reconcile links by ID, and list broken links in a Links problems view.
 
-### 4.4 Workspaces
+### 4.5 Cross-domain features (why Triad exists)
 
-| Workspace | Phase A (bridge) | Phase B+ (own) |
-|---|---|---|
-| **Code** | VS Code + C/C++ support (Microsoft's C/C++ extension or clangd). PlatformIO Core / arduino-cli / CMake / ESP-IDF / Zephyr tasks. **pin-map codegen + "unconnected pin" diagnostics**. MicroPython for RP2040 | debug-in-sim (DAP → GDB → emulator stub), register and peripheral views |
-| **Electronics** | Our schematic and PCB **viewers** (WebGL). **Edit in KiCad** with IPC cross-probing. kicad-cli for ERC, DRC and fab | own **schematic editor** (Phase 3), then **PCB editor** (Phase 5), still saving `.kicad_*` |
-| **Mechanical** | 3D board from `kicad-cli pcb export glb`. Template enclosures with OCCT (box/shell/holes/cutouts) | full parametric CAD: constrained sketches, features, assemblies with joints → physics (Phase 4) |
-| **Simulation & Test** | T0 interactive sim on AVR (avr8js). Serial monitor, LED/motor in 3D, scenario tests | T1 SPICE co-sim, RP2040, Renode, ESP32, FMU import, sweeps, coverage |
-
-### 4.5 Cross-domain features (why this app exists)
-
-1. **Pin map sync (schematic ↔ firmware).** A generated header, devicetree
-   overlay or Python module, plus an LSP-style checker for unknown,
-   unconnected or misused pins (for example ADC on a non-ADC pin).
-2. **Cross-probe everywhere.** Select a symbol, net, pad, 3D body or line of
-   code and it highlights in every other view.
-3. **Board ↔ enclosure.** Outline, mounting holes and connector positions
-   drive enclosure features. **Interference and clearance checks** use OCCT
-   distance and boolean ops on component bodies against enclosure solids.
-4. **Live 3D.** The PCB sits inside the enclosure and updates on every board
-   edit (incremental tessellation).
-5. **Mechatronics in one place.** Motors, servos and sensors are single smart
-   parts with electrical, mechanical and simulation sides (§4.6).
-6. **Run.** Build firmware → assemble the co-simulation from schematic,
-   assembly and environment → play in 3D with instruments.
-7. **Debug the world.** Breakpoints pause CPU, circuit and physics together.
-8. **Test.** Scenario files hold stimulus plus expectations. They run headless
-   in CI, and instructors can grade with them.
-9. **One release bundle.** Fab files, mechanical exports, firmware, BOM with
-   cost, and a test report.
+1. **Pin map sync:** a generated header, devicetree overlay or Python module, plus
+   diagnostics for unknown, unconnected or misused pins.
+2. **Cross-probe everywhere:** code ↔ schematic ↔ board ↔ 3D ↔ simulation.
+3. **Board ↔ enclosure:** outline, holes and connectors drive CAD features.
+   Interference and clearance checks use OCCT.
+4. **Live 3D:** the board sits in the enclosure and updates on every edit.
+5. **Mechatronics:** motors, servos and sensors are one smart part with
+   electrical, mechanical and simulation sides.
+6. **Run:** build firmware, assemble the co-simulation from schematic, assembly
+   and environment, then play in 3D with instruments.
+7. **Debug the world:** a breakpoint pauses CPU, circuit and physics together.
+8. **Test:** scenario files hold stimulus plus expectations, run in the Test
+   Explorer and CI.
+9. **Release bundle:** fab, mechanical, firmware, BOM with cost, test report and renders.
 
 ### 4.6 Smart parts
 
-A **smart part** is the unit that ties every domain together:
-
 ```
 parts/hc-sr04/
-  part.toml          # metadata, pins, parameters, datasheet link
-  symbol: KiCad lib ref or .kicad_sym   footprint: .kicad_mod   model: .step/.glb
-  sim/behavior.wasm  # Part SDK model (pins, timers, I2C/SPI/UART devices, framebuffers)
+  part.toml          # metadata, pins, parameters, UI controls (sliders), datasheet
+  symbol / footprint / 3D model   (KiCad library refs or files)
+  sim/behavior.wasm  # Part SDK model: pins, timers, I2C/SPI/UART devices, framebuffer
   sim/spice.lib      # optional SPICE subcircuit for the accuracy tier
-  mech.toml          # mass, mounting frame, sensor frame (ray origin/direction), joint hooks
-  firmware/          # optional driver hints (Arduino library name, Zephyr binding)
+  mech.toml          # mass, mounting frame, sensor frame, joint hooks
+  firmware/          # optional driver hints
 ```
 
-- **Part SDK.** Our own C/Rust/AssemblyScript → **WebAssembly** API for
-  behavioral models. It covers pin read/write/watch, timers, I²C/SPI/UART device
-  callbacks, analog outputs, a framebuffer for displays, and access to the
-  physics frame for sensors. It follows the spirit of Wokwi's Chips API (pins,
-  watches, timers), but it is our own design. WASM keeps community models
-  sandboxed and portable to the web.
-- **Library sources:** KiCad's official symbol, footprint and 3D libraries,
-  plus our sim-model library. Starter set of about 100 parts: LEDs, R/C/L,
-  buttons, pots, LDR, NTC, DHT22, HC-SR04, MPU-6050, SSD1306, servo, DC motor,
-  L298N/DRV8833, MOSFETs, relay, buzzer and WS2812.
-- **KiCad remote provider.** Because KiCad 10 speaks a parts-provider protocol,
-  we can serve our smart parts straight into KiCad as well.
+The **Part SDK** is Triad's own WebAssembly API (C, Rust or AssemblyScript) for
+behavioral models. It covers pins, watches, timers, bus devices, analog outputs,
+a framebuffer, **UI controls** and access to the physics frame for sensors. The
+manifest shape (pins + controls + display) follows the pattern observed in
+Wokwi's chip schema. Starter library: about 100 tested parts (LEDs, R/C/L,
+buttons, pots, LDR, NTC, DHT22, HC-SR04, MPU-6050, SSD1306, servo, DC motor,
+L298N/DRV8833, MOSFETs, relay, buzzer, WS2812). KiCad 10's remote-provider protocol
+can serve them into stock KiCad too.
 
 ### 4.7 Simulation architecture
 
-#### Fidelity tiers
+**Fidelity tiers**
 
-| Tier | Electrical | Firmware | Mechanics | Speed target |
+| Tier | Electrical | Firmware | Mechanics | Target speed |
 |---|---|---|---|---|
-| **T0 Interactive** (default) | event-driven logic plus a **fast MNA solver** for small analog islands (dividers, RC, LEDs) | cycle-accurate MCU emulators | MuJoCo, 1 kHz fixed step | ≥ 1× real time |
-| **T1 Accurate** | **ngspice transient** for selected analog nets, co-simulated with the MCU | same | same | 0.05–1× real time |
-| **T2 Analysis** | ngspice OP/DC/AC/noise/sweeps/Monte Carlo, offline | – | (later) FEA/thermal via sidecars | batch |
+| **T0 Interactive** (default) | event-driven logic + fast MNA solver for small analog islands | cycle-accurate emulators | MuJoCo, 1 kHz | ≥ 1× real time |
+| **T1 Accurate** | ngspice transient on selected islands, co-simulated | same | same | 0.05–1× real time |
+| **T2 Analysis** | ngspice OP/DC/AC/noise/sweeps/Monte Carlo, offline | – | FEM via the CAD engine | batch |
 
-The UI always shows the active tier per subsystem, for example
-"Power stage: SPICE · Logic: fast".
+**Units.** Each engine is wrapped as a unit with an FMI-3-like contract:
+`doStep(t, Δt) → reached | earlyReturn(t_e, events)`, plus event handling and
+state save/restore.
 
-#### Simulation units
-
-Every engine is wrapped as a **unit** with an FMI-3-like contract. Inputs and
-outputs are typed ports. The core call is
-`doStep(t, Δt) → reached | earlyReturn(t_e, events)`, with event handling and
-state save/restore:
-
-| Unit | Engine | Ports |
+| Unit | Engine | Notes |
 |---|---|---|
-| MCU (AVR) | avr8js (in-process worker) | GPIO, ADC, PWM, UART/I²C/SPI transactions |
-| MCU (RP2040) | rp2040js | GPIO, PIO, ADC, PWM, I²C/SPI/UART, USB CDC |
-| MCU (STM32, nRF52...) | Renode (child process; `.repl` generated) | GPIO and bus messages; quantum sync |
-| MCU (ESP32) | QEMU, Espressif fork (child process) | GPIO, UART, Wi-Fi stubs |
-| Circuit T0 | our Rust MNA + logic solver | net voltages, currents, logic levels |
-| Circuit T1 | ngspice shared library | external sources (`Init_Sync`), breakpoints (`SetBkpt`), event nodes |
-| Mechanics | MuJoCo | joint torque in; angles, rates, IMU, ranges, contacts out |
-| Parts | Part SDK WASM | per part |
-| Environment | built-in | temperature, light, distance targets, gravity, wind |
-| External | **FMI 3.0 FMU** import | as declared |
+| AVR (Uno, Nano) | avr8js | in the sim engine's Node helper |
+| RP2040/RP2350 (Pico) | rp2040js | PIO, USB-CDC, MicroPython |
+| STM32, nRF52, RISC-V… | **Renode** (child process) | `.repl` generated from the netlist. Inject at sync points (`ExecuteInNearestSyncedState`-style). GPIO over its co-sim protocol |
+| ESP32 family | **QEMU** (Espressif fork, child process) | **virtual network gateway** for Wi-Fi/Internet (user-space TCP/IP + DHCP/DNS, like Wokwi's `wokwigw`) |
+| Circuit T0 | Triad Rust MNA + logic solver | analog islands, logic nets |
+| Circuit T1 | ngspice shared library | `Init_Sync` external sources, `SetBkpt` lockstep, event nodes |
+| Mechanics | MuJoCo | model built with `mjs_*` from the CAD assembly. Torques via `mjcb_control`/`mjcb_act_*` |
+| Parts | Part SDK (WASM) | behavioral models |
+| Environment | built-in | temperature, light, distance targets, gravity, wind, network |
+| External | FMI 3.0 FMU | third-party models |
 
-#### Time and scheduling
-
-- **One global virtual clock**: `int64` picoseconds, about 106 days of range,
-  enough for 240 MHz cycles.
-- **Conservative, quantum-based synchronization** (Renode's model). The kernel
-  advances the **event producers (MCUs) first**, up to the quantum end or their
-  first output event. Each unit stops early at a pin edge or bus transaction,
-  which is the FMI 3.0 "early return". Continuous units (circuit, physics)
-  then catch up to that time with zero-order-hold inputs, the event is applied,
-  and the loop repeats.
-- **Sync on demand** for analog reads. When firmware reads the ADC at time *t*,
-  the MCU pauses, the circuit is advanced exactly to *t* (`ngSpice_SetBkpt` in
-  T1), and the true voltage is returned. Rare, exact, cheap.
-- **Adaptive quantum**: 1 ms when nothing is happening, down to 1 µs around
-  fast interactions. MCUs that are asleep skip ahead, as rp2040js does.
-- **Real-time pacing**: virtual time is throttled to the wall clock, like
-  Renode's default. The UI shows the "×0.73 real time" ratio. Users can
-  run as fast as possible, slow-mo or single-step.
+**Time and scheduling** (Renode's design, observed):
+- **One virtual clock** in `int64` picoseconds.
+- **Conservative quantum sync.** Event producers (MCUs) run first, up to the
+  quantum end or their first output event (early return). Continuous units
+  (circuit, physics) catch up with held inputs, the event is applied, and the
+  loop repeats, in explicit **grant, sync and unblock phases**.
+- **Sync on demand:** an ADC read pauses the MCU and advances the circuit exactly
+  to *t*.
+- **Adaptive quantum** from 1 ms down to 1 µs. Sleeping MCUs skip ahead, as
+  rp2040js does.
+- **Real-time pacing** with a visible speed ratio. Run as fast as possible,
+  slow-mo, or single-step.
 
 ```mermaid
 sequenceDiagram
@@ -376,61 +327,39 @@ sequenceDiagram
   participant M as MCU emulator
   participant C as Circuit (fast solver or ngspice)
   participant P as Physics (MuJoCo)
-  K->>M: run until t+q or first pin/bus event
+  K->>M: grant: run until t+q or first pin/bus event
   M-->>K: stopped at t_e, PB1 rising (PWM edge)
-  K->>C: advance to t_e with held inputs, then V(PB1)=5 V
+  K->>C: sync: advance to t_e with held inputs, then V(PB1)=5 V
   C-->>K: node voltages, motor current at t_e
   K->>P: advance to t_e with torque from motor model
   P-->>K: shaft speed, IMU, ranges, contacts
-  K->>M: deliver ADC samples, pin levels, I2C replies
+  K->>M: unblock: deliver ADC samples, pin levels, I2C replies
   K->>K: pace to wall clock, publish frame to UI at 60 Hz or less
 ```
 
-#### Netlist partitioning (the key to real-time speed)
+**Netlist partitioning** (real-time speed): digital nets are event-driven, buses
+(I²C, SPI, UART) run at transaction level (like Renode's bus messages), and
+analog islands go to the fast solver (T0) or ngspice (T1).
 
-The schematic netlist is split automatically:
-- **Digital nets** (MCU ↔ logic parts) are event-driven: edges with timestamps.
-- **Bus nets** (I²C, SPI, UART) are simulated **at transaction level** between
-  MCU peripheral models and part models, like Renode's
-  `ReadFromBus`/`WriteToBus` messages. There is no SPICE on a 1 MHz clock line.
-- **Analog islands** (sensor dividers, RC filters, power stages) go to the fast
-  solver in T0 or to ngspice in T1, per island.
-- Adapters convert between domains: logic thresholds (V_IH/V_IL), PWM as
-  either the averaged voltage (T0) or real switching edges (T1), and ADC
-  sampling with quantization.
+**Electro-mechanical coupling:**
+- **DC motor:** `V = R·i + L·di/dt + Ke·ω` and `τ = Kt·i − b·ω` (plus gearing).
+- **Servo:** pulse width → target angle → P-controller with a speed limit.
+- **Stepper:** step pulses → angle increments, with stall detection.
+- **Sensors:** an IMU from MuJoCo accelerometer and gyro sensors through an
+  MPU-6050 register model; HC-SR04 from `mj_ray`; encoders as quadrature edges;
+  limit switches from contacts.
 
-#### Electro-mechanical coupling
+**Instruments:** live 3D (LED glow ∝ current, OLED framebuffer on the 3D part,
+spinning shafts, NeoPixels), oscilloscope, logic analyzer with I²C/SPI/UART decode,
+serial terminal, plots, energy and current budget, and an event log.
 
-- **DC motor:** `V = R·i + L·di/dt + Ke·ω` and `τ = Kt·i − b·ω` (plus
-  gearbox). The electrical half lives in the circuit unit. Torque enters
-  MuJoCo through **`mjcb_control`/actuator callbacks**, and ω comes back each step.
-- **Hobby servo:** pulse width → target angle → internal P-controller with a
-  speed limit → MuJoCo position actuator.
-- **Stepper:** step/dir pulses → discrete angle increments with torque limit and stall detection.
-- **Sensors:** IMU from MuJoCo accelerometer and gyro sensors plus noise,
-  exposed through an MPU-6050 register model. Rangefinder (HC-SR04) uses
-  `mj_ray` distance turned into echo pulse width. Encoders turn joint angle into
-  quadrature edges. Limit switches use contacts.
-- **The physics model is built with `mjs_*` from the CAD assembly.** Rigid
-  groups are welded into single bodies (the KSP lesson). Joints come from mates,
-  and masses and inertias from OCCT and material density.
+**Bridges** (Wokwi lesson): a **GDB server** per emulated MCU (DAP in Triad's
+debugger) and an **RFC2217 serial port**, so external tools see the simulated board.
 
-#### Instruments and visualization
+**Determinism and replay:** seeded noise, and UI interactions recorded with
+virtual timestamps. Any run replays exactly.
 
-Live 3D shows LED glow (∝ current), displays as textures (OLED framebuffer on
-the 3D part), spinning shafts, servo horns and NeoPixel colors. Also: an
-oscilloscope (any net), a **logic analyzer** with protocol decode
-(I²C/SPI/UART), a serial terminal, plots of any physics quantity,
-the energy and current budget, and a "what's happening" event log.
-
-#### Determinism, recording, replay
-
-All units are deterministic for a given input sequence. Noise uses seeded RNGs.
-UI interactions (button presses, slider moves) are recorded **with virtual
-timestamps**, so any run can be **replayed exactly**. That is essential for
-debugging and for fair grading.
-
-#### Tests
+**Tests:**
 
 ```yaml
 # simulation/scenarios/overheat.yaml
@@ -445,224 +374,143 @@ expect:
   - always: current(net: +12V) < 1.5A
 ```
 
-Tests run in VS Code's **Test Explorer** and through `triad test` (CLI,
-headless, JUnit output) in CI. Coverage reports show which firmware lines and
-which scenario expectations were exercised.
+### 4.8 Rendering and UI
 
-### 4.8 Rendering and UI technology
-
-| Surface | Choice | Notes |
-|---|---|---|
-| Schematic and PCB canvas | **Custom 2D GPU renderer** in a VS Code custom editor (webview): WebGL2 now, a WebGPU backend when available | KiCad's GAL lesson: cached GPU geometry per layer and item, instancing, LOD, culling, MSDF text, KiCad's stroke font for fidelity. Clipper2 (WASM) for polygon ops |
-| 3D | **three.js** (WebGPURenderer with WebGL2 fallback) | WebGPU on Linux is still rolling out per GPU (Chrome 144+), **so the fallback is required** |
-| Panels and inspectors | React + TS inside webviews; native VS Code tree views, status bar items, quick picks and walkthroughs where they fit | narrow messaging contracts |
-| Plots | uPlot (waveforms), custom WebGL logic-analyzer view | millions of samples |
-| Heavy compute in UI | Web Workers + WASM (OCCT for interactive CAD, Manifold for mesh booleans, Clipper2) | keep the UI thread under 8 ms per frame |
+| Surface | Choice |
+|---|---|
+| Workbench | VS Code's own UI framework, plus Triad parts (Engineering layout, project explorer, inspectors) |
+| Schematic and board canvas | WebGL2 (WebGPU when available) renderer drawing **Stream GAL display lists** from the EDA engine: layers, cached groups, instancing |
+| 3D | three.js (WebGPURenderer with a WebGL2 fallback), with **tessellation streamed** from the CAD engine and board models from the EDA engine |
+| Inspectors and dialogs | Triad components generated from the schema (§4.4) |
+| Plots | uPlot for waveforms; a WebGL logic analyzer |
 
 ### 4.9 Interop and file formats
 
 | Need | Format | Via |
 |---|---|---|
-| Electronics source | KiCad native S-expression and JSON | our Rust parser/serializer (lossless round-trip; tested on the `kicad-demos` corpus) |
-| Fabrication | Gerber X2, Excellon, IPC-2581, ODB++, BOM, CPL | `kicad-cli` (`jobset run`) |
-| 3D board | GLB/STEP | `kicad-cli pcb export glb|step` → later our own incremental generator |
-| Mechanical | STEP AP214/AP242, 3MF, STL, glTF | OCCT |
-| ECAD↔MCAD with other CAD tools | STEP now, **IDX** later | follows KiCad's IDX work (aiming for v11) |
-| Physics | MJCF/mjSpec, URDF export | MuJoCo |
-| Co-sim models | FMI 3.0 FMU import, SSP | our kernel |
-| Waveforms | VCD/FST, sigrok sessions | instruments |
-| Firmware | ELF/HEX/UF2, GDB RSP, DAP | toolchains and emulators |
-| Renders | Blender `.blend`/glTF/USD | Blender companion |
+| Electronics | KiCad native files | EDA engine |
+| Fabrication | Gerber X2, Excellon, IPC-2581, ODB++, BOM, CPL | EDA engine (kicad-cli jobs) |
+| Imports | Altium, Allegro, CADSTAR, PADS, Eagle, EasyEDA, Fabmaster | EDA engine (KiCad's `pcb_io`, 3.2 MB of importers) |
+| Mechanical | FreeCAD `.FCStd`, STEP AP214/AP242, IGES, STL, 3MF, glTF | CAD engine |
+| ECAD↔MCAD with other CAD | STEP now, IDX later | EDA + CAD engines |
+| Physics | MJCF/mjSpec, URDF export | sim engine |
+| Co-sim models | FMI 3.0, SSP | sim engine |
+| Renders | glTF/USD to Blender | render engine |
+| Firmware | ELF/HEX/UF2, GDB RSP, DAP | toolchains, emulators |
 
 ### 4.10 Extensibility and automation
 
-- **Triad is itself a set of VS Code extensions.** Other extensions can call a
-  **`triad` TS API** (returned from our `activate()`), and users keep every other
-  extension they already use.
-- **Python API** (`import triad`): project, schematic, PCB, CAD, sim and test,
-  in the spirit of `bpy` and `pcbnew`. It runs in a separate Python process over
-  JSON-RPC, so a bad script can't crash the UI.
-- **CLI** `triad`: `build`, `sim run`, `test`, `erc`/`drc` (delegating to
-  kicad-cli), `export release`. CI-friendly with JUnit output.
-- **MCP server**: `list_nets`, `get_pin_map`, `run_drc`, `run_scenario`,
-  `get_waveform`, `screenshot_3d`... AI agents, including Claude during
-  development, can operate the app and verify their own changes. Added early
-  because it is cheap and multiplies our testing.
-- **KiCad integration:** an IPC API plugin (`plugin.json` with Python/exec
-  runtime) adds a "Send to Triad / sync" action inside KiCad. The parts-provider
-  endpoint feeds smart parts into KiCad.
+- **Extensions:** the whole Open VSX ecosystem. Triad exposes a `triad` API to
+  extensions.
+- **Python API** (`import triad`) for project, schematic, board, CAD, sim and test,
+  in the spirit of `bpy` and `pcbnew`. It runs out of process.
+- **CLI** `triad`: `build`, `sim run`, `test`, `erc`, `drc`, `export release`, headless for CI.
+- **MCP server:** AI agents (including Claude during development) can query nets,
+  run scenarios, read waveforms and take 3D screenshots.
 
-### 4.11 Tech stack summary
+### 4.11 Tech stack
 
-| Layer | Choice | License |
-|---|---|---|
-| Host | **VS Code** (the user's install). Published on the VS Code Marketplace, and on Open VSX for VSCodium, Cursor and other forks | VS Code: Microsoft's license. Our extensions: ours |
-| Our UI code | TypeScript, React (panels), custom WebGL2/WebGPU renderer, three.js | ours, MIT |
-| Core libraries | Rust (napi-rs for Node, wasm-bindgen for web): KiCad file model, link graph, sim kernel, MNA solver | ours |
-| CAD kernel | OCCT 8 (native + WASM), Manifold (mesh booleans), sketch solver: PlaneGCS (LGPL) or SolveSpace (GPL-3), decided by D1 | LGPL-2.1+exc / Apache-2.0 |
-| Circuit sim | ngspice (shared library; WASM for web, as eecircuit-engine shows) | BSD-3 / LGPL-2 / GPL-2+ parts |
-| MCU emulation | avr8js, rp2040js (JS); Renode (.NET); QEMU-ESP32 | MIT / MIT / GPL-2 |
-| Physics | MuJoCo 4 | Apache-2.0 |
-| Toolchains | PlatformIO Core, arduino-cli, CMake + Arm GNU, ESP-IDF, Zephyr, MicroPython | Apache / GPL-3 (separate) / ... |
-| Language servers | clangd, Pyright | Apache-2.0 + LLVM exc. / MIT |
-| IPC | JSON-RPC 2.0 (`vscode-jsonrpc`), webview `postMessage` with transferred ArrayBuffers, localhost WebSocket for live streams, protobuf (KiCad) | – |
-| Storage | plain files; SQLite caches (as VS Code does) | – |
-| Tests | Vitest, **@vscode/test-electron** (integration tests in a real VS Code, stable and Insiders), Playwright (webviews), cargo test, golden files from `kicad-demos`, sim regression scenarios | – |
+| Layer | Choice |
+|---|---|
+| App shell | **VS Code fork** (TypeScript, Electron), Open VSX gallery |
+| Triad UI | TypeScript inside the workbench; WebGL2/WebGPU; three.js |
+| Model service and sim kernel | **Rust** (napi-rs into Node utility processes; wasm-bindgen for a future web build) |
+| EDA engine | **KiCad fork** (C++17/20, CMake), headless target + Stream GAL + remote tools |
+| CAD engine | **FreeCAD fork** (C++/Python, CMake), App layer + RPC server |
+| Render engine | Blender release build, driven by Python scripts |
+| Simulation | ngspice, MuJoCo, avr8js, rp2040js, Renode, QEMU-ESP32, virtual network gateway |
+| Toolchains | PlatformIO Core, arduino-cli, CMake + Arm GNU, ESP-IDF, Zephyr, MicroPython; clangd |
+| Build | pnpm + Turborepo (TS), Cargo (Rust), CMake + Ninja + ccache (C++), GitHub Actions matrix |
+| Tests | Vitest, Playwright for Electron, cargo test, KiCad/FreeCAD golden files, sim regression scenarios |
 
-### 4.12 Licensing and process boundaries (Decision D1)
+### 4.12 Repository layout
 
-Every engine we picked is compatible with **GPL-3.0**. The real choice is
-whether **our own code** should be permissive or GPL.
+```
+engineering-solution-/
+  app/                  # the VS Code fork: upstream snapshot + Triad source under src/vs/triad/
+  engines/
+    eda/                # KiCad fork: upstream + patches/ + Triad additions (stream_gal/, remote_tools/, api/)
+    cad/                # FreeCAD fork: upstream + patches/ + Triad RPC module
+    render/             # Blender scripts and RPC
+  crates/               # Rust: triad-model, triad-sim-kernel, triad-mna, triad-ngspice, triad-mujoco, triad-part-sdk
+  sim/                  # Node helper for JS emulators, Renode/QEMU adapters, network gateway
+  parts/                # smart part library + per-part scenarios
+  cli/                  # `triad` CLI
+  docs/                 # plan, roadmap, guidelines, status, ADRs, research
+  scripts/              # dev environment, builds, research reproduction
+```
 
-| Option | What it allows | What it costs |
-|---|---|---|
-| **A. Apache-2.0 for our code + strict process boundaries** *(recommended to start)* | Any future model: open-source community edition, commercial or cloud editions, dual licensing. GPL tools (KiCad, Blender, simavr, QEMU, freerouting) stay separate programs reached through public interfaces. Binaries that link GPL code (the sim service with ngspice/simavr) are distributed as separate GPL-3 programs | We can't paste KiCad or Blender C++ into our own process. Our PCB router and DRC must be written by us or run in a separate GPL engine program |
-| **B. GPL-3.0-or-later for everything** | Merge KiCad and Blender code directly (for example KiCad's push-and-shove router and DRC engine compiled into our PCB editor). Simplest licensing story. Natural ally of the KiCad and Blender communities | No proprietary distribution, ever. A hosted SaaS fork is still possible unless we pick AGPL |
+Forks are kept as **upstream snapshot plus a patch queue** (`patches/*.patch`,
+applied by script). Triad-only code lives in separate folders, so upstream merges
+stay mechanical (GUIDELINES §6).
 
-**Why start with A:** Apache-2.0 code can be relicensed into a GPL-3 project
-later. GPL code can't go the other way without every contributor's consent. We
-keep the process boundaries either way, for crash isolation and because KiCad
-and Blender update independently. **Revisit before Phase 5**, when reusing
-KiCad's router becomes tempting. *This is not legal advice; get a review before
-the first public release.*
+### 4.13 Packaging
 
-Hard rules under A:
-1. Never load GPL code into the extension host, our webviews or the model service.
-2. Talk to GPL programs only through documented protocols (KiCad IPC API, CLIs, sockets, files).
-3. QEMU (GPL-2.0-only) always runs as a separate process.
-4. Keep a `THIRD_PARTY_NOTICES` file and an SBOM, generated in CI.
-5. Triad runs inside the user's own VS Code under Microsoft's license. We never
-   redistribute VS Code, so its license doesn't constrain ours.
-
-### 4.13 Security
-
-- **Workspace Trust:** our extensions declare limited support for untrusted
-  workspaces (`capabilities.untrustedWorkspaces`). Building or running a cloned
-  project's toolchain, Python scripts and part models waits until the user
-  trusts the folder.
-- Firmware only ever runs **inside emulators**. Part models are **WASM**
-  (sandboxed, no syscalls).
-- Webviews get a strict CSP, `localResourceRoots` limited to the extension and
-  the project, and no Node. Messages are schema-validated on both sides, the same
-  narrow-bridge discipline as VS Code's 26-member preload.
-- We don't ship Electron, so its fuses are VS Code's responsibility. We rely
-  only on RunAsNode, to fork the Node helper for the JS emulators. If a future VS
-  Code disables it, we fall back to a system or bundled Node runtime.
-- Downloaded companions (KiCad, Renode...) are verified by checksum and signature.
+One installer per OS (Windows, macOS, Linux; x64 and arm64) containing the app and
+all engines. Expect a large download (on the order of 1–2 GB with engines and
+libraries). Optional components download on demand (Blender render engine, ESP32
+QEMU, Renode). Auto-update via the VS Code update mechanism pointed at Triad's
+release feed.
 
 ### 4.14 Performance budgets
 
 | Scenario | Budget (mid-range laptop, integrated GPU) |
 |---|---|
-| Extension activation (lazy, via activation events) | ≤ 500 ms; first project open ≤ 3 s |
+| Cold start to usable | ≤ 5 s (engines start lazily) |
 | Schematic pan/zoom | 60 fps at 5k items |
-| PCB pan/zoom | 60 fps at 50k items (tracks, pads, vias, zones) |
+| Board pan/zoom | 60 fps at 50k items |
+| Interactive routing feedback | ≤ 16 ms per mouse move (router in the EDA engine) |
 | 3D board + enclosure | 60 fps at 2M triangles |
 | T0 sim: Uno-class MCU + ≤ 30 parts + ≤ 20 bodies | ≥ 1× real time on one core |
-| T1 sim: ≤ 200 SPICE nodes co-simulated | ≥ 0.1× real time |
-| Typical project memory | ≤ 3 GB total |
+| T1 sim: ≤ 200 SPICE nodes | ≥ 0.1× real time |
+| Typical project memory | ≤ 4 GB including engines |
 
-Each budget becomes an automated benchmark in CI (see ROADMAP Phase 0).
+### 4.15 Security
 
-### 4.15 Platforms and packaging
-
-- **Install** from the **VS Code Marketplace**, or from **Open VSX** for
-  VSCodium, Cursor and other forks. Windows, macOS and Linux, x64 and arm64.
-  VS Code handles updates.
-- **Native engines** ship as **platform-specific VSIX packages**
-  (`vsce package --target linux-x64`, `darwin-arm64`, `win32-x64`...) built by
-  a CI matrix. Large optional engines download on first use and are
-  checksum-verified.
-- **Companions** are detected if installed, or offered for download on first
-  use. KiCad is needed only for kicad-cli functions until our own engines replace them.
-- **Remote setups** work (Remote-SSH, WSL, Codespaces). Engines run next to the
-  files, and webviews reach them through port mapping. Handy for school lab machines.
-- A **web edition** (later) runs as a web extension on vscode.dev. It reuses the
-  WASM builds of everything: OCCT, ngspice (eecircuit-engine proves it), the JS
-  MCU emulators and three.js.
+- Firmware runs **only inside emulators**. Part models are **WASM** (sandboxed).
+- Engines are separate processes with narrow, schema-validated message contracts.
+  The renderer keeps VS Code's sandbox and narrow preload.
+- **Workspace Trust** gates building or running a cloned project's toolchain,
+  scripts and part models.
+- Release builds harden the Electron fuses VS Code leaves open (RunAsNode off,
+  Inspect off) **once** Triad no longer needs `fork` for Node helpers (utility
+  processes replace it).
 
 ---
 
-## 5. Key decisions
+## 5. Decisions
 
-| # | Decision | Recommendation | Status |
-|---|---|---|---|
-| D1 | License of our code | **Apache-2.0 + process boundaries**; revisit before Phase 5 (§4.12) | **needs you** |
-| D2 | Host | **Extensions for the real VS Code** (Marketplace + Open VSX). No fork, no separate app. See [ADR 0001](adr/0001-run-inside-vscode.md) | **confirmed 2026-11-23** |
-| D3 | First boards | **Arduino Uno (AVR) + Raspberry Pi Pico (RP2040)**: fully open emulators. Then STM32/nRF52 (Renode), then ESP32 (QEMU). *If your courses live on ESP32, we pull it earlier* | **needs you** |
-| D4 | Electronics editing | KiCad companion first; own schematic editor in Phase 3, own PCB editor in Phase 5; KiCad files throughout | proposed |
-| D5 | CAD kernel | **OCCT 8** (native + WASM) + Manifold; Blender as companion | proposed |
-| D6 | Physics | **MuJoCo 4** (reduced coordinates, mjSpec, callbacks) | proposed |
-| D7 | Core language | TypeScript (UI and extensions) + Rust (model, kernel, solvers) | proposed |
-| D8 | Team and timeline | Roadmap assumes a team of 4–6. A solo builder with AI assistance should cut scope to Phases 0–2 for a first release | **needs you** |
-| D9 | Name | "Triad" placeholder | needs you |
-
----
+| # | Decision | Status |
+|---|---|---|
+| D1 | **Host:** standalone app built from VS Code's source ([ADR 0001](adr/0001-standalone-app-on-vscode-codebase.md)) | **confirmed** |
+| D2 | **Team:** the owner + Claude, working in session-sized work packages ([GUIDELINES](GUIDELINES.md)) | **confirmed** |
+| D3 | **Engines:** absorb KiCad, FreeCAD and Blender headless; replace their UIs ([ADR 0002](adr/0002-absorb-engines-headless.md)) | proposed: confirm in session 1 |
+| D4 | **First boards:** Arduino Uno (AVR) + Raspberry Pi Pico (RP2040); then STM32/nRF (Renode); then ESP32 (QEMU + network) | needs you: what do your courses use? |
+| D5 | **Your laptop OS** (first installer we polish): Windows, macOS or Linux | **needs you** |
+| D6 | **Core languages:** TypeScript (UI), Rust (model, kernel, solvers), C++ (forked engines) | proposed |
+| D7 | **License:** GPL-3.0-or-later for the combined app (compatible with everything reused; no further license work) | default |
+| D8 | **Name:** "Triad" placeholder | needs you |
 
 ## 6. Risks and mitigations
 
-| Risk | Likelihood / impact | Mitigation |
+| Risk | Impact | Mitigation |
 |---|---|---|
-| **Scope explosion**: three huge apps plus simulation | High / fatal | Vertical slices with hard exit criteria (ROADMAP). KiCad and Blender carry the long tail through "Open in…". Say no to features outside student needs |
-| PCB editor is far harder than it looks (router, zones, DRC) | High / high | Keep KiCad as companion until Phase 5. kicad-cli remains the DRC sign-off. Reconsider D1 to reuse KiCad's router |
-| Co-sim too slow or unstable | Medium / high | Netlist partitioning, transaction-level buses, adaptive quanta, T0/T1 tiers, MuJoCo's stable solver. Benchmarks in CI |
-| VS Code's extension API can't do something we need (custom layouts, native canvases outside webviews) | Medium / medium | Custom editors, webview panels and views, tree views and walkthroughs cover everything in this plan. Use only stable APIs. A branded Code-OSS build stays the last resort (Positron's route), and our extensions would carry over unchanged |
-| Webview performance on big boards and assemblies | Medium / medium | GPU canvases, workers and WASM, transferred ArrayBuffers, direct WebSocket streams. Profile against the §4.14 budgets from Phase 1 |
-| VS Code updates break us | Low / medium | CI runs integration tests against VS Code stable and Insiders. Declare the minimum version in `engines.vscode` |
-| KiCad API churn (IPC API young, headless in v11) | Medium / medium | Isolate it behind our `kicad-bridge` interface. Prefer file I/O + kicad-cli. Track KiCad 11 |
-| Simulation inaccuracy misleads students | Medium / high | Tier labels, model provenance per part, "validated against" notes, warnings when assumptions are violated |
-| Licensing mistake | Low / high | §4.12 rules, SBOM and license scan in CI, review before the first release |
-| WebGPU and graphics fragmentation | Medium / low | WebGL2 baseline everywhere, WebGPU as an opt-in fast path |
-| Part model quality and coverage | High / medium | Start with ~100 well-tested parts. The Part SDK plus a contribution pipeline with scenario tests per part |
+| **Scope**: three huge apps plus simulation, built by two | fatal | Vertical slices, companion mode first, absorb one engine at a time, strict out-of-scope list |
+| **KiCad remote tools**: tools are coupled to wx frames and dialogs | high | Early spike (P3). Fallback: keep the KiCad editor window for complex tools while viewing and simple edits move in-app |
+| **Three forks to maintain** (VS Code, KiCad, FreeCAD) | medium | Patch queues, Triad code in separate folders, scheduled upstream merges, REA version diffs to spot API changes |
+| **Native build complexity** (KiCad and FreeCAD dependencies on 3 OSes) | high | Linux first in CI, then Windows and macOS. Pin dependency versions, aggressive ccache, prebuilt dependency bundles |
+| **Co-sim speed and stability** | high | Netlist partitioning, transaction-level buses, adaptive quanta, tiers, CI benchmarks |
+| **Installer size and RAM use** | medium | Lazy engine start, optional components, per-engine memory budgets |
+| **Running third-party binaries in cloud dev sessions may be blocked by policy** | low | Build engines from source in sessions. The owner tests installers on their laptop |
 
----
+## 7. Glossary
 
-## 7. How we build it
-
-**Monorepo layout (target):**
-
-```
-extensions/triad/    the VS Code extension (TS): activation, commands, views, custom editors,
-                     engine supervisor, platform-specific VSIX packaging
-webviews/            schematic, PCB, 3D/CAD and Run & Test UIs (React + WebGL2/WebGPU),
-                     bundled into the extension
-apps/cli/            `triad` CLI (same engines, for CI)
-packages/            shared TS: model types (generated), render2d, render3d, protocol, ui
-crates/              Rust: triad-kicad (S-expr), triad-model, triad-sim-kernel, triad-mna,
-                     triad-ngspice, triad-mujoco, triad-part-sdk
-services/            model-service, geometry-service (C++/OCCT), sim-service
-parts/               smart part library + per-part scenario tests
-docs/                plan, roadmap, research, ADRs
-scripts/research/    REA teardown reproduction
-```
-
-**Engineering practices**
-- **Golden-file round-trip tests** of our KiCad parser on every project in
-  `kicad-demos` (36 projects). Byte-identical or semantically identical.
-- **Simulation regression suite**: each smart part ships scenarios. Kernel
-  changes must keep every scenario green and within performance budgets.
-- **Compatibility tracking**: CI runs integration tests in real VS Code (stable
-  and Insiders) through `@vscode/test-electron`, plus a KiCad and Blender
-  compatibility matrix using their CLIs.
-- **REA stays in the toolbox.** Re-run `scripts/research/teardown.sh` on each new
-  KiCad, Blender or VS Code release to detect API and packaging changes (new
-  protos, new process entry points, fuse changes) before users hit them.
-- ADRs for every decision in §5 live under `docs/adr/` as they are confirmed.
-
----
-
-## 8. Glossary
-
-- **Code-OSS:** the MIT-licensed source of VS Code. VSCodium is a build of it
-  (used for the teardown, since Microsoft's build license forbids reverse engineering).
-- **Custom editor / webview:** VS Code's API for extension-provided editors,
-  rendered in a sandboxed web view.
-- **VSIX:** a packaged VS Code extension. Platform-specific VSIXs carry native binaries.
-- **kiface:** a KiCad editor module loaded by the launcher (`KIFACE_1` entry).
-- **IPC API (KiCad):** protobuf messages over an nng socket for controlling KiCad.
-- **B-rep:** boundary representation, the exact-geometry model used by CAD kernels (OCCT).
-- **MNA:** modified nodal analysis, the matrix method behind SPICE-like solvers.
+- **Code-OSS:** VS Code's open-source codebase (`microsoft/vscode`). Triad forks it.
+- **Engine process:** a headless build of KiCad, FreeCAD or Blender (or Triad's sim kernel) behind Triad's UI.
+- **Stream GAL:** a KiCad graphics backend that records drawing calls into display lists for Triad's canvas.
+- **Remote tools:** KiCad's interactive tool framework driven by input from Triad's canvas.
+- **kiface:** a KiCad editor module (`KIFACE_1` entry point).
+- **Companion mode:** using stock KiCad, FreeCAD or Blender windows and CLIs before the engine is absorbed.
 - **Quantum:** the slice of virtual time units may run ahead before synchronizing.
-- **FMI/FMU:** Functional Mock-up Interface/Unit, a standard for exchanging simulation models.
 - **Smart part:** one component with symbol, footprint, 3D, simulation and mechanical data.
 - **T0/T1/T2:** interactive, accurate and analysis simulation tiers.

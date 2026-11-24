@@ -1,4 +1,4 @@
-# Market landscape, simulator games, standards and licenses
+# Market landscape, simulator games and standards
 
 Researched 2026-11-23. Vendor marketing is labeled as such.
 
@@ -74,27 +74,6 @@ Design rules adopted:
 | Firmware | ELF/HEX/UF2, GDB remote serial protocol, DAP (VS Code debug), devicetree overlays (Zephyr) | build, debug and pin mapping |
 | Extensions | Open VSX (VS Code extensions), KiCad IPC API plugins, KiCad remote parts provider | ecosystem |
 
-## 5. License map of everything we touch
-
-| Component | License | Where it may run (see PLAN §4.12) |
-|---|---|---|
-| Code-OSS / VSCodium, Monaco, Electron | MIT | in-process (our shell) |
-| KiCad | GPL-3.0+ | separate process (companion and headless engine) |
-| Blender | GPL (2.0+/3.0) | separate process (render and mesh companion) |
-| OCCT 8 | LGPL-2.1 with OCCT exception | in-process (native or WASM) |
-| ngspice | BSD-3 mostly, but numparam LGPL-2 and parts of XSPICE/ADMS GPL-2+ | sim service |
-| MuJoCo | Apache-2.0 | in-process / sim service |
-| avr8js, rp2040js, @wokwi/elements, eecircuit-engine | MIT | in-process |
-| simavr | GPL-3.0+ | sim service |
-| Renode | MIT (bundled Antmicro libraries Apache-2.0) | separate process (.NET) |
-| QEMU | GPL-2.0-only | separate process only |
-| three.js | MIT | in-process |
-| Manifold | Apache-2.0 | in-process |
-| freerouting | GPL-3.0 | separate process |
-| CalculiX / Elmer / OpenFOAM | GPL | separate process |
-
-*Not legal advice. Get a review before the first public release.*
-
 ## Sources
 
 - KiCad 10.0.0 release: https://www.kicad.org/blog/2026/03/Version-10.0.0-Released/
@@ -117,4 +96,3 @@ Design rules adopted:
 - Blender as a Python module: https://docs.blender.org/api/5.3/info_advanced_blender_as_bpy.html
 - WebGPU on Linux (Chrome): https://developer.chrome.com/blog/new-in-webgpu-144 · https://developer.chrome.com/blog/new-in-webgpu-147-148
 - tscircuit: https://github.com/tscircuit/tscircuit · atopile: https://hackaday.com/2024/02/06/atopile-wants-you-to-code-schematics
-- GPL plug-in boundary discussion: https://safeguard.sh/resources/blog/gpl-plugins-one-program-or-two-programs

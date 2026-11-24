@@ -1,43 +1,50 @@
-# Research: how VS Code, KiCad, Blender and the simulators are built
+# Research: how VS Code, KiCad, FreeCAD, Blender and the simulators are built
 
-Before planning one app that does the work of four, we took apart the real,
-shipped Linux builds of each tool with **REA (Reverse Engineer Anything)**, plus
-official docs and market research.
+Before planning one app that does the work of all of them, we took apart the real,
+shipped Linux builds with **REA (Reverse Engineer Anything)**. Round 2 used REA's
+**unbounded mode**, with no analysis timers and no fixed size caps (skill
+`rea-full-breakdown`, vendored in `.claude/skills/`).
 
 | Report | What it covers |
 |---|---|
-| [vscode.md](vscode.md) | Code-OSS process model, the 26-member preload bridge, MessagePort IPC, native modules, Electron fuses |
-| [kicad.md](kicad.md) | Launcher + kiface plugin design, the protobuf/nng IPC API (15 protos), kicad-cli, ngspice and OCCT coupling, plugin and parts-provider schemas |
-| [blender.md](blender.md) | Monolithic binary with embedded CPython, bundled engines (Embree, OSL, USD, OpenVDB...), Bullet and Mantaflow, and why Blender is not our CAD core |
-| [simulators.md](simulators.md) | ngspice co-sim API, simavr IRQ model, avr8js/rp2040js timing loops, Renode co-sim protocol and `.repl` wiring, MuJoCo C API |
-| [market-and-standards.md](market-and-standards.md) | Competitors, the gap we fill, simulator-game lessons, standards, license map, sources |
-| [evidence-ledger.md](evidence-ledger.md) | Every REA Evidence ID and artifact SHA-256, cost of each run, open questions |
+| [vscode.md](vscode.md) | Code-OSS process model, preload bridge, MessagePort IPC, native modules, fuses, full JS graph of all bundles |
+| [kicad.md](kicad.md) | **Full debug-symbol breakdown**: ~158k functions placed in source files, engine/UI split, the 68-method GAL boundary, router/DRC/IO sizes, IPC API, kicad-cli |
+| [freecad.md](freecad.md) | FreeCAD 1.1 as the parametric CAD engine: **App (29.3 MB) vs Gui (28.3 MB)** split across 61 libraries |
+| [blender.md](blender.md) | Monolithic binary with embedded CPython, bundled engines, module map from 970 embedded source paths, Python UI layer counts |
+| [simulators.md](simulators.md) | ngspice co-sim API, simavr, avr8js/rp2040js, **Renode complete (1,248 peripheral models, time framework)**, MuJoCo C API, **Wokwi 4.1.0** |
+| [market-and-standards.md](market-and-standards.md) | Competitors, the gap Triad fills, simulator-game lessons, standards, sources |
+| [evidence-ledger.md](evidence-ledger.md) | Every REA Evidence ID and artifact SHA-256 for both rounds |
 
 ## Method
 
-1. **Targets:** official Linux x64 builds: VSCodium 1.143.17232 (MIT build
-   of Code-OSS), Blender 5.3.0, KiCad 10.0.8 (official PPA), Renode 1.16.1,
-   ngspice 42 and simavr 1.6 (Ubuntu 24.04), MuJoCo 4.0.1, and npm packages
-   avr8js 0.21.1, rp2040js 1.4.2, @wokwi/elements 1.9.2 and eecircuit-engine 1.9.0.
-2. **Static analysis only.** Nothing downloaded was executed. REA read export
-   tables, ELF notes, Electron fuses, JavaScript module graphs, preload/IPC
-   facts and .NET metadata. Standard tools (`readelf`, `strings`, package
-   metadata) filled in dynamic dependencies and licenses.
-3. **Evidence discipline (from the REA skill):** each fact is tagged
-   observed, inferred, documentation or unknown, and tied to an Evidence ID.
-   Coverage limits are stated rather than hidden.
-4. **Legal scope:** we analyzed open-source or permissively distributed builds
-   only. Microsoft's branded VS Code (its license restricts reverse
-   engineering) was replaced by VSCodium, which comes from the same source under
-   MIT. Proprietary simulators (LTspice, Proteus, Wokwi's cloud, BeamNG, KSP) were
-   studied only through public docs and behavior. Our implementation is
-   clean-room: we learn the architecture and write our own code, or use the
-   open-source engines under their licenses.
+1. **Targets:** official Linux x64 builds.
+
+   | Target | Version and package |
+   |---|---|
+   | VS Code | VSCodium 1.143.17232 (an MIT build of Code-OSS, the same source as VS Code) |
+   | KiCad | 10.0.8 plus `kicad-dbg` debug symbols (official PPA) |
+   | FreeCAD | 1.1 pre-release (official daily PPA) |
+   | Blender | 5.3.0 |
+   | Renode | 1.16.1 |
+   | ngspice | 42 (Ubuntu) |
+   | simavr | 1.6 (Ubuntu) |
+   | MuJoCo | 4.0.1 |
+   | npm packages | avr8js 0.21.1, rp2040js 1.4.2, eecircuit-engine 1.9.0 |
+   | Wokwi for VS Code | 4.1.0 (Open VSX) |
+2. **Static analysis.** REA read export tables, ELF notes, complete symbol tables,
+   Electron fuses, JavaScript module graphs, preload/IPC facts and .NET metadata.
+   `addr2line`, `readelf` and `strings` filled in source-file placement, dynamic
+   dependencies and embedded paths. Running the downloaded apps (for example a
+   headless Blender API dump) was blocked by the session's safety policy, so
+   no runtime probes were made.
+3. **Evidence discipline:** each fact is tagged observed, inferred,
+   documentation or unknown, and tied to an Evidence ID. Coverage limits are stated.
+4. **Licenses are out of scope** for this research (owner's decision, 2026-11-23).
 
 ## Reproduce
 
 ```bash
-# build REA from the sibling repo (or let the script use npx rea-agents@6.7.0)
-cd ../rea && HUSKY=0 npm ci && npm run build:cached && cd -
-REA="node ../rea/scripts/rea.mjs" scripts/research/teardown.sh /abs/path/to/workdir
+cd ../rea && git checkout claude/unified-engineering-platform-jn5rmk \
+  && HUSKY=0 npm ci && npm run build:cached && cd -
+REA=../rea/scripts/rea-unbounded.sh scripts/research/teardown.sh /abs/path/to/workdir
 ```
