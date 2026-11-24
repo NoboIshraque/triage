@@ -1,4 +1,4 @@
-# Unbounded recipes (verified on real targets, 2026-11-23)
+# Unbounded recipes (verified on real targets, 2026-11-23/24)
 
 `$REA` = `/abs/path/to/rea/scripts/rea-unbounded.sh`. Put each downloaded target in its
 own directory, write evidence to a separate directory, and keep helper scripts outside
@@ -44,6 +44,43 @@ $REA inspect-analysis-view req.json --json
 Useful `javascript-facts` property keys: `api_key`, `members`, `world` (contextBridge),
 `channel`, `channel_expression`, `operation`, `side` (IPC), `preload_path`,
 `web_preferences`, `endpoint_kind`, `mechanism`, `specifier`.
+
+### Batches, budgets and counting (measured on VS Code, 2026-11-24)
+
+- **Files in one run share the parent's result budget, and REA reserves it for
+  static facts first.** Semantic graphs then exist only for the first few files:
+  13 of VS Code's 28 `out/` entry files, and 45 of 300 extension files across six
+  batches. For a semantic graph of every file, run **one file per invocation**
+  (a single `--source-path`), sequentially, and delete each bundle after
+  extracting what you need (each bundle repeats the whole inventory, 30–300 MB).
+- **Don't count from the summary view.** It lists only the first 30 unknowns
+  ("N additional unknowns omitted"). Count from the parent bundle, by file:
+  `Semantic graph for X exceeds` (graph over budget), `semantic analysis of X was
+  not started`, `Completed module facts for X exceed`, `Complete JavaScript file
+  facts exceed the effective transfer` (static facts unavailable) and `Owned
+  JavaScript worker exhausted` (worker heap). Semantic nodes per file: count
+  `"module_path"` values between `"nodes":[` and `"relations":[` inside the
+  bundle's `"semantic_graph":{"application_graph_id"` object (1 node = placeholder only).
+- **Per-file transfer ceiling** = min(2 GiB, max(512 MiB, parent result budget / 8)).
+  The budget measured about 1.28 × the parent heap (4.11 GB at
+  `REA_PARENT_HEAP_MB=3072`), so the ceiling passes 512 MiB only above about
+  3.2 GiB of parent heap and reaches 1 GiB at about 6.3 GiB. Over 512 MiB:
+  `agentHostMain.js` (3.0 MB), `extensionHostProcess.js` (2.3 MB), `typescript.js`
+  (9.1 MB). How far over is unknown.
+- **Pathological code shapes.** GWT-compiled JavaScript (elkjs, inlined by
+  Mermaid) stalls the alias fixpoint in `indexJavaScriptAmbientWritesSteps`.
+  After 1 h 55 min, 5,551 of 12,098 items were still queued, the queue did not
+  shrink over 7 min of sampling, and each item took about 10 s, so at least
+  15 h remained (inferred).
+  An ANTLR-style generated parser (`zenuml-definition-*.js`, 1.7 MB) exhausted a
+  6 GiB worker heap during static analysis. Isolate such files, record them as
+  unknown with the measurements, and re-run the rest.
+- **Is a long run stuck or slow?** `kill -USR1 <worker pid>` opens Node's
+  inspector on 127.0.0.1:9229 without stopping the run. Over CDP, take a 15 s
+  `Profiler.start`/`Profiler.stop` profile for the hot function. Then
+  `Debugger.pause`, read loop sizes with `Debugger.evaluateOnCallFrame`
+  (`throwOnSideEffect: true`), and `Debugger.resume`. Sample twice, a minute
+  apart, to get a rate.
 
 ## 2. Native app with debug symbols (KiCad 10.0.8 + `kicad-dbg`)
 
@@ -102,6 +139,8 @@ Bounded mode refuses this assembly at the 64 MiB metadata budget, even with
 |---|---|---|---|
 | VS Code workbench bundle alone (21 MB) | 6144 MiB | 5120 MiB | ~4 GB while parsing; projection needed > 6 GiB |
 | VS Code `extensions/` (927 sources) | 3072 MiB | 2048 MiB | ~2–3 GB |
+| VS Code `extensions/` batches (2–115 selected files) | 4096–6144 MiB | 3072 MiB | 3–4.5 GB; semantic graphs only for the first files of each batch |
+| One 1.7 MB generated parser (`zenuml-definition-*.js`) | 6144 MiB | 3072 MiB | ~7.4 GB host use; worker heap exhausted after 2 min |
 | Native exports / objdump symbols | – | default | under 1 GB |
 
 Keep the sum of worker heaps under host RAM, and run small native jobs alongside.
@@ -119,3 +158,9 @@ Keep the sum of worker heaps under host RAM, and run small native jobs alongside
   split long work into runs that finish within the restart window.
 - Executing downloaded apps can be blocked by the session's safety policy.
   Static evidence first, then ask the user.
+- Stopping a run: the parent can outlive its killed worker. Stop both
+  (`pkill -f javascriptAnalysisWorkerProcess; pkill -f analyze-javascript-application`),
+  and don't delete a summary file while its run still writes to it.
+- A memory guard helps on shared hosts: poll the summed RSS of the REA processes
+  and stop the current run above a limit (9 GiB here), so one file can't take the
+  host down.
