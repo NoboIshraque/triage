@@ -119,7 +119,7 @@ in the order of the [ROADMAP](ROADMAP.md).
 
 ```mermaid
 flowchart TB
-  subgraph TRIAD["Triad app (fork of VS Code, Electron)"]
+  subgraph TRIAD["Triad app: VS Code fork"]
     direction TB
     UI["Workbench renderer<br/>Code (Monaco) · Schematic · Board · 3D/CAD · Sim views<br/>native editors with GPU canvases"]
     MAIN["Main process<br/>windows, lifecycle, MessagePort broker"]

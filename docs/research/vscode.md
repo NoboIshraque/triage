@@ -1,80 +1,53 @@
 # Teardown: VS Code (Code-OSS)
 
-**Target:** VSCodium 1.143.17232 for Linux x64 (`codium_1.143.17232_amd64.deb`).
-VSCodium is an MIT-licensed build of Code-OSS, the open-source core of VS Code.
-We analyzed it instead of Microsoft's branded build because Microsoft's product
-license restricts reverse engineering. The source code is identical apart from
-branding and telemetry.
+**Target:** VSCodium 1.143.17232 for Linux x64 (`codium_1.143.17232_amd64.deb`), an
+MIT build of **Code-OSS**, the same source Microsoft builds VS Code from. It is
+the code Triad forks ([ADR 0001](../adr/0001-standalone-app-on-vscode-codebase.md)).
 
-**Method:** REA 6.7.0 CLI, static only. Nothing was executed. Evidence IDs are listed in
-[evidence-ledger.md](evidence-ledger.md).
+**Method:** REA static analysis. Round 1 used bounded defaults: 14 entry
+bundles, and the 21 MB workbench bundle timed out at 900 s. Round 2 used
+**unbounded mode** over the whole `out/` and `extensions/` trees (§5). Evidence IDs
+are in [evidence-ledger.md](evidence-ledger.md).
 
-Legend: **[O]** observed by REA in the shipped files · **[I]** inferred from
-observations · **[D]** from official documentation · **[?]** unknown.
+Legend: **[O]** observed in the shipped files · **[I]** inferred · **[D]** documentation · **[?]** unknown.
 
 ## 1. Packaging
 
 | Fact | Basis |
 |---|---|
-| 612 MB install; 2,998 files. Electron binary `codium` (224 MB ELF) plus Chromium resources | [O] desktop inventory |
-| App code is an **unpacked** `resources/app/` directory (`out/`, 95 built-in `extensions/`), not `app.asar`. Native modules live in `node_modules.asar` with an `.unpacked` sibling | [O] |
-| REA's Electron detector keys on `app.asar`, so it reported no Electron candidate here. The only runtime candidate was .NET: 4 PowerShell PSReadLine DLLs used by terminal shell integration | [O] |
-| `package.json` declares `"main": "./out/main.js"`, `"type": "module"`, license MIT | [O] |
+| 612 MB install; 2,998 files; Electron binary `codium` (224 MB ELF) | [O] |
+| App code is an **unpacked** `resources/app/`: `out/` (**58.8 MB of JS in 30 bundles**) and 95 built-in `extensions/` (**77.7 MB of JS in 418 files**). Native modules are in `node_modules.asar` (54 MB) + `.unpacked` | [O] |
+| Two giant bundles: `vs/workbench/workbench.desktop.main.js` **21.1 MB** (the IDE) and `vs/sessions/sessions.desktop.main.js` **22.3 MB** (the new agents window) | [O] |
+| `package.json`: `"main": "./out/main.js"`, ESM (`"type": "module"`) | [O] |
 
-### Electron fuses (compiled-in security switches)
-
-| Fuse | State | Meaning for us |
-|---|---|---|
-| RunAsNode | **enabled** | The same binary can run as plain Node (`ELECTRON_RUN_AS_NODE`). Used by the CLI and helpers [I] |
-| EnableNodeOptionsEnvironmentVariable | enabled | `NODE_OPTIONS` honored |
-| EnableNodeCliInspectArguments | enabled | `--inspect` honored, so debuggable |
-| OnlyLoadAppFromAsar | **disabled** | Consistent with the unpacked `resources/app` [O] |
-| EnableEmbeddedAsarIntegrityValidation | disabled | (enforced only on macOS/Windows anyway) |
-| EnableCookieEncryption | disabled | |
-| GrantFileProtocolExtraPrivileges | enabled | |
-
-**Why it matters to us:** Electron's docs say disabling RunAsNode breaks
-`child_process.fork`, the call extensions use to start Node helper processes [D].
-Because it is enabled, our extension can fork a Node helper for the JS MCU
-emulators. Hardening these fuses is VS Code's job, since we don't ship Electron.
+**Electron fuses** [O]: RunAsNode **on**, NodeOptions on, NodeCliInspect on,
+OnlyLoadAppFromAsar **off**, EmbeddedAsarIntegrityValidation off, CookieEncryption
+off, GrantFileProtocolExtraPrivileges on, WasmTrapHandlers on. Electron's docs say
+disabling RunAsNode breaks `child_process.fork` from the main process; utility
+processes are the replacement [D].
 
 ## 2. Process model
 
-Process entry points found in `out/` [O]:
-
-| Process | Entry bundle (size) | Role |
+| Process | Entry bundle | Role |
 |---|---|---|
-| Main (Electron browser process) | `out/main.js` (101 KB) → `out/mainImpl.js` (1.3 MB) | windows, lifecycle, menus, IPC hub |
-| Renderer / workbench | `out/vs/code/electron-browser/workbench/workbench.js` + `out/vs/workbench/workbench.desktop.main.js` (**21 MB**) | the whole UI: Monaco, editors, panels |
-| Preload (sandbox bridge) | `out/vs/base/parts/sandbox/electron-browser/preload.js` (2.3 KB) | exposes `window.vscode` |
-| Shared process | `out/vs/code/electron-utility/sharedProcess/sharedProcessMain.js` | extension management, background services [D] |
-| Extension host (Node) | `out/vs/workbench/api/node/extensionHostProcess.js` (2.3 MB) | runs extensions isolated from the UI |
-| Extension host (web worker) | `out/vs/workbench/api/worker/extensionHostWorkerMain.js` | browser-only extensions |
-| Pty host | `out/vs/platform/terminal/node/ptyHostMain.js` | terminals via `node-pty` |
-| File watcher | `out/vs/platform/files/node/watcher/watcherMain.js` | `@parcel/watcher` |
-| **Agent host** (new) | `out/vs/platform/agentHost/node/agentHostMain.js` (3 MB) | persistent AI agent sessions [D: Aug 2026 VS Code blog] |
-| CLI | `out/cli.js`, `out/vs/code/node/cliProcessMain.js` | `codium` command line |
-| Workers | `editorWebWorkerMain`, `languageDetectionWebWorkerMain`, `localFileSearchMain`, `profileAnalysisWorkerMain`, `outputLinkComputerMain` | CPU work off the UI thread |
+| Main | `out/main.js` → `out/mainImpl.js` (1.3 MB) | windows, lifecycle, IPC hub |
+| Workbench renderer | `out/vs/code/electron-browser/workbench/workbench.js` + `workbench.desktop.main.js` | the whole IDE UI |
+| Preload | `out/vs/base/parts/sandbox/electron-browser/preload.js` (2.3 KB) | exposes `window.vscode` |
+| Shared process | `vs/code/electron-utility/sharedProcess/sharedProcessMain.js` | extension management, background services |
+| Extension host | `vs/workbench/api/node/extensionHostProcess.js` (2.3 MB) | extensions, isolated from the UI |
+| Pty host | `vs/platform/terminal/node/ptyHostMain.js` | terminals (`node-pty`) |
+| File watcher | `vs/platform/files/node/watcher/watcherMain.js` | `@parcel/watcher` |
+| **Agent host** | `vs/platform/agentHost/node/agentHostMain.js` (3 MB) | persistent agent sessions |
+| Sessions window | `vs/sessions/sessions.desktop.main.js` | agents window UI |
+| CLI | `out/cli.js`, `vs/code/node/cliProcessMain.js` | command line |
+| Workers | editor, language detection, file search, profile analysis, output links, TextMate tokenization | off-thread work |
 
-**Static graph (REA `analyze_javascript_application`, 15 selected sources:
-13 JS bundles plus `package.json` and `product.json`):** all 13 JS files were
-parsed (7.7 M AST nodes, 5,799 findings, 0 parse failures). Analysis of the 21 MB
-workbench bundle **hit the 900 s per-file deadline**, so renderer-side facts are
-partial [O, coverage = partial]. From the analyzed files:
+**Round-1 static graph** (13 JS entry bundles parsed; workbench semantics partial) [O]:
+3 `BrowserWindow` sites, 1 `utilityProcess` site, 10 IPC operations (1 literal
+channel, `vscode:fetchShellEnv`; 9 computed), 14 sender-validation checks.
 
-- 3 `BrowserWindow` construction sites. Their `webPreferences` are built
-  dynamically, so the values are unresolved statically [O].
-- 1 `utilityProcess` launch site [O]. Docs say the extension host, pty host and
-  shared process run as Electron utility processes [D].
-- 10 IPC operations. Only **1 uses a literal channel, `vscode:fetchShellEnv`**
-  (renderer `invoke`); 9 compute their channel names at runtime [O]. VS Code
-  prefixes and validates channel names in the preload [I].
-- 14 sender-validation checks in main-process handlers [O].
-
-### The renderer's entire privileged surface
-
-The preload exposes exactly **one** `contextBridge` API, `window.vscode`, in
-the main world. It has **26 members and 0 unknown** [O]:
+**The renderer's privileged surface** is one `contextBridge` API, `window.vscode`,
+with **26 members and 0 unknown** [O]:
 
 ```
 context: configuration, resolveConfiguration
@@ -85,60 +58,42 @@ webFrame: setZoomLevel
 webUtils: getPathForFile
 ```
 
-**Key pattern: `ipcMessagePort.acquire`.** The sandboxed renderer asks main for a
-`MessagePort` and then talks **directly** to a utility process, such as the
-extension host or pty host, without routing traffic through main [O + D].
-This is how VS Code keeps a sandboxed UI fast. Extensions can't use this
-channel, so **our equivalent** for high-rate streams (simulation state,
-waveforms, geometry) is a direct localhost WebSocket from our engine process to
-our webview.
+**`ipcMessagePort.acquire`** is how the sandboxed renderer gets a direct `MessagePort`
+to a helper process without routing traffic through main [O + D]. Triad's engine
+connections use exactly this.
 
 ## 3. Native modules shipped
 
-Found in `node_modules.asar.unpacked` [O]:
+`node-pty`, `@parcel/watcher`, `@vscode/sqlite3`, `@vscode/spdlog`, `native-keymap`,
+`native-watchdog`, `kerberos`, policy watcher, OS proxy resolver, `native-is-elevated`,
+`windows-foreground-love`, `deviceid` [O].
 
-| Module | Purpose |
-|---|---|
-| `node-pty` (`pty.node`) | terminals |
-| `@parcel/watcher` | file watching |
-| `@vscode/sqlite3` | state storage |
-| `@vscode/spdlog` | logging |
-| `@vscodium/native-keymap` | keyboard layouts |
-| `@vscode/native-watchdog` | hang detection |
-| `kerberos` | proxy auth |
-| `@vscodium/policy-watcher`, `@vscodium/os-proxy-resolver-linux-x64-gnu` | enterprise policy, proxies |
-| `native-is-elevated`, `windows-foreground-love`, `@vscode/deviceid` | OS helpers |
+## 4. Where Triad plugs into the fork
 
-## 4. What we take from VS Code
+From the shipped layout above plus Code-OSS's source tree [I/D]. Verify each in
+ROADMAP P0-2/P0-3.
 
-**Decision (2026-11-23): Triad runs inside the real VS Code as extensions**
-([ADR 0001](../adr/0001-run-inside-vscode.md)). The teardown still shapes how we
-build:
+| Need | Where in Code-OSS | Triad change |
+|---|---|---|
+| Name, icons, data folder, gallery | `product.json`, `resources/` | Triad branding; **Open VSX** gallery |
+| Triad UI (editors, views, layout, walkthrough) | workbench contributions under `src/vs/workbench/contrib/` | a new `src/vs/workbench/contrib/triad/` (or `src/vs/triad/`) registered by one import line, as a patch |
+| Native editors (schematic, board, 3D, sim) | `EditorPane` + editor input/serializer registrations | Triad editors with GPU canvases inside the renderer (no webviews) |
+| Engine processes | the utility-process pattern used by the pty host and shared process (main spawns, hands the renderer a `MessagePort`) | `triadModel`, `triadEda`, `triadCad`, `triadSim`, `triadRender` entry points |
+| Bundling new entry points | the build's entry-point list (where `ptyHostMain` and `watcherMain` are declared) | add Triad engine broker entry points |
+| CLI | `cli.js` / `cliProcessMain` | `triad` subcommands, or a separate `cli/` package |
 
-1. **We inherit the platform.** Monaco, LSP/DAP, terminal, git, tasks, Test
-   Explorer, settings and the extension ecosystem come free, in the UI students
-   already know. That includes Microsoft's own C/C++ and Python extensions, which
-   are licensed only for Microsoft's VS Code.
-2. **Copy the isolation pattern.** VS Code keeps the UI sandboxed and pushes heavy
-   work into separate processes behind narrow message contracts. We do the same:
-   our editors are sandboxed webviews, and our engines (model, geometry, sim) are
-   separate processes launched by the extension.
-3. **Fast data paths.** The renderer's MessagePorts aren't available to
-   extensions. We use `postMessage` with transferred `ArrayBuffer`s (VS Code
-   1.57+), plus a direct localhost WebSocket from the sim service to the webview
-   for high-rate streams.
-4. **RunAsNode matters to us** (see the fuses section): it lets our extension fork
-   the Node helper for the JS emulators. We keep a fallback in case it changes.
-5. **Security posture:** narrow, schema-validated messages (the spirit of the
-   26-member preload), no Node in webviews, and Workspace Trust before building
-   or running a cloned project.
-6. **Reach:** publish to the VS Code Marketplace, and to Open VSX so VSCodium,
-   Cursor and other forks can install it too.
+## 5. Round 2: unbounded analysis of the whole app
 
-## 5. Unknowns and limits
+Runs: `out/` (all 39 sources) and `extensions/` (927 sources), with no deadline and no
+size caps. Results are recorded below when the runs complete.
 
-- [?] Renderer-side IPC and webview details inside the 21 MB bundle. Re-run with
-  `--analysis-timeout-ms 3600000` (see `scripts/research/teardown.sh`).
+- Status (2026-11-24): earlier attempts were stopped by session restarts (heavy
+  parallel runs reached ~10 GB of RAM). The workbench bundle is being re-run alone.
+  Notes follow below.
+
+## 6. Unknowns and limits
+
 - [?] Runtime behavior. Static analysis does not prove which code paths execute.
-- Process roles for the shared process, pty host and agent host come from
-  official docs, corroborated by entry-point names, not by runtime capture.
+- Process roles for shared, pty and agent hosts come from official docs plus entry-point names.
+- §4 maps the shipped layout onto the source tree by name. Confirm against the
+  source in P0-2.

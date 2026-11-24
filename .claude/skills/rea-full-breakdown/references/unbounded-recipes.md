@@ -105,5 +105,11 @@ Keep the sum of worker heaps under host RAM, and run small native jobs alongside
 - `--evidence_output` writes a **bundle** (`records[]`). Views need the single record.
 - `/usr/bin/time` may not exist. Use the shell's `time`.
 - objdump symbol rows: the flag column is 7 characters including `F`.
+- **Cloud sessions can restart and kill every process**, even ones started with
+  `setsid nohup`. It happened twice when parallel REA runs reached about 10 GB of RAM
+  together. Run one heavy JavaScript analysis at a time (about 2.5–4 GB for a
+  21 MB bundle), write logs and bundles to disk, and commit and push reports
+  between runs. A killed run leaves no Evidence (it is written at the end), so
+  split long work into runs that finish within the restart window.
 - Executing downloaded apps can be blocked by the session's safety policy.
   Static evidence first, then ask the user.
