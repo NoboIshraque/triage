@@ -33,4 +33,5 @@ pnpm-debug.log*
 /app/upstream/
 /app/VSCode-*/
 /app/.smoke/
+/app/.dist/
 /engines/*/upstream/

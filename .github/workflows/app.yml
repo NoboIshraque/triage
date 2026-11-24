@@ -22,6 +22,17 @@ on:
       - crates/**
       - examples/**
   workflow_dispatch:
+    inputs:
+      nightly:
+        description: Upload the builds as a nightly (kept 3 days)
+        type: boolean
+        default: false
+  # The nightly workflow (P0-7) calls this one.
+  workflow_call:
+    inputs:
+      nightly:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -147,10 +158,15 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: Upload the Windows build (try it on a Windows laptop)
-        if: runner.os == 'Windows' && success()
+      # ROADMAP P0-7: what testers download. Only builds that passed the smoke test.
+      - name: Archives for testers (Windows installer and zip, Linux tar.gz)
+        run: node app/build.mjs dist
+
+      - name: Upload the build
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: triage-win32-x64
-          path: app/VSCode-win32-x64/
-          retention-days: 3
+          name: triage-${{ runner.os }}${{ inputs.nightly && '-nightly' || '' }}
+          path: app/.dist/
+          compression-level: 0
+          # The repository is private: artifact storage is small, so keep few.
+          retention-days: ${{ inputs.nightly && 3 || 1 }}

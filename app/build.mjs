@@ -24,6 +24,10 @@
 //            model addon, and copy them into the packaged app (resources/app/
 //            engines/); on Windows, run from a Visual Studio developer shell
 //
+//   dist     (not run by default) archives for testers in app/.dist/ (P0-7): on
+//            Windows a portable zip and the per-user installer (VS Code's Inno
+//            Setup build), on Linux a .tar.gz
+//
 // Patch commands (P0-3):
 //   refresh-patches [--new NNNN-name]  turn edits in app/upstream into app/patches/
 //   check-patches                      apply every patch onto a fresh checkout
@@ -36,6 +40,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   statSync,
   writeFileSync,
 } from 'node:fs';
@@ -62,6 +67,8 @@ import {
 const appDir = import.meta.dirname;
 const upstreamDir = path.join(appDir, 'upstream');
 const STEPS = ['fetch', 'prepare', 'install', 'typecheck', 'package', 'engines'];
+/** Not part of the default steps: run after the smoke test passes. */
+const EXTRA_STEPS = ['dist'];
 const COMMANDS = ['refresh-patches', 'check-patches'];
 /** Folders in app/ whose files replace or add files at the same path in upstream. */
 const OVERLAY_ROOTS = ['src', 'resources'];
@@ -74,7 +81,8 @@ function parseArgs(argv) {
     else if (arg === '--min') options.min = true;
     else if (arg === '--arch') options.arch = argv[++i] ?? '';
     else if (arg === '--new') options.newPatch = argv[++i] ?? '';
-    else if (STEPS.includes(arg) || COMMANDS.includes(arg)) options.steps.push(arg);
+    else if (STEPS.includes(arg) || EXTRA_STEPS.includes(arg) || COMMANDS.includes(arg))
+      options.steps.push(arg);
     else if (arg === 'all') options.steps.push(...STEPS);
     else {
       throw new ForkError(
@@ -243,6 +251,43 @@ function buildEngines({ arch }) {
   }
 }
 
+function dist({ arch }) {
+  const { platform, folder } = packagedApp(arch);
+  if (!existsSync(folder)) throw new ForkError('run the package step first');
+  const out = path.join(appDir, '.dist');
+  rmSync(out, { recursive: true, force: true });
+  mkdirSync(out, { recursive: true });
+  const { nameShort } = JSON.parse(readFileSync(path.join(appDir, 'product.json'), 'utf8'));
+  const date = new Date().toISOString().slice(0, 10).replaceAll('-', '');
+  const stamp = `${date}-${git(repoRoot, ['rev-parse', '--short=8', 'HEAD'])}`;
+  const top = path.basename(folder);
+
+  if (platform === 'win32') {
+    // The updater the installer needs, then VS Code's own Inno Setup build.
+    pnpm(['run', 'gulp', `vscode-win32-${arch}-inno-updater`]);
+    pnpm(['run', 'gulp', `vscode-win32-${arch}-user-setup`]);
+    const setup = path.join(
+      upstreamDir,
+      '.build',
+      `win32-${arch}`,
+      'user-setup',
+      'VSCodeSetup.exe',
+    );
+    cpSync(setup, path.join(out, `${nameShort}UserSetup-${arch}-${stamp}.exe`));
+    // Windows' own tar (bsdtar) writes zip files; -s renames the top folder.
+    const tar = path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe');
+    const zip = path.join(out, `${nameShort}-win32-${arch}-${stamp}.zip`);
+    run(tar, ['-a', '-c', '-f', zip, '-s', `/^${top}/${nameShort}/`, '-C', appDir, top]);
+  } else {
+    const archive = path.join(out, `${nameShort}-${platform}-${arch}-${stamp}.tar.gz`);
+    run('tar', ['-czf', archive, `--transform=s,^${top},${nameShort},`, '-C', appDir, top]);
+  }
+  for (const file of readdirSync(out)) {
+    const mib = statSync(path.join(out, file)).size / 2 ** 20;
+    console.log(`${path.join('app', '.dist', file)}  ${mib.toFixed(0)} MiB`);
+  }
+}
+
 export function packagedApp(arch = process.arch) {
   const platform = isWindows ? 'win32' : process.platform;
   const folder = path.join(appDir, `VSCode-${platform}-${arch}`);
@@ -276,6 +321,7 @@ if (import.meta.filename === path.resolve(process.argv[1] ?? '')) {
       if (step === 'typecheck') typecheck();
       if (step === 'package') packageApp(options);
       if (step === 'engines') buildEngines(options);
+      if (step === 'dist') dist(options);
       if (step === 'refresh-patches') refreshAppPatches(options);
       if (step === 'check-patches') {
         console.log(

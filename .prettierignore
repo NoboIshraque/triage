@@ -4,6 +4,7 @@
 /app/src/
 /app/VSCode-*/
 /app/.smoke/
+/app/.dist/
 /engines/**/upstream/
 /engines/**/patches/
 
