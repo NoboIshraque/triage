@@ -57,3 +57,47 @@ label them **[O]**, observed in shipped files.
 2. Renode core peripheral and time API through REA. Blocked by the 64 MiB budget; use the source instead.
 3. Consumer of Blender's bundled `libJolt.so`.
 4. Runtime confirmation of KiCad's API threading (needs a running KiCad and an API client).
+
+## Round 2: unbounded full breakdown (2026-11-23/24)
+
+REA built from `NoboIshraque/rea` @ `6697bfd` with `REA_UNBOUNDED=1`. Raw Evidence stays in
+the analysis workdir (regenerate with `scripts/research/teardown.sh`). The KiCad size map
+combines these symbol tables with `addr2line` over each debug file. The FreeCAD table lists
+the 12 largest of 61 libraries (all 61 were inspected).
+
+| Target | REA operation | Evidence ID | Parent Evidence ID | Artifact SHA-256 | Finding |
+|---|---|---|---|---|---|
+| Renode `Infrastructure.dll` (unbounded) | inspect_managed_members → summary view | `ev_15f02809c2e9c78f0a77c49eccbcb9093b346bca01b834a41203b44cb1eabc67` | `ev_51b1f8a45ea78efcd44c272534e69f40e21d1f3a06f3c196fe3ccf9e0c186ada` | `11078524aa69cf173588aa60e79ff386846e1246297edc82d1493d0a86056310` | complete: 6,794 types, 45,476 methods, 205,442 call edges, 27,978 strings |
+| Wokwi for VS Code 4.1.0 extension | analyze_javascript_application → summary view | `ev_408d704afe79e25e1f6a0ed2ac1a015d52d7cb53f660ef082ad032c87aaa7555` | `ev_9d679c88d4ec229af2ed7fe1145c430cac83430b153c1c88dbce4d7cab5922a6` | `3740cd6b077b5e2cef2b1d1e9650c06609f0c221816bb500e300c0fe3506c1b4` | 3 JS files parsed; extension host, custom editor, bridges |
+| KiCad `pcbnew` debug file | inspect_with_objdump symbols (unbounded output) | `ev_bd75852b7088b79b2ca177b28c90f91f6a74f4501fa59fc3421092050c147c63` | – | `532c89e17ff3febf6ef789226bad9e1fb2e583c4a5d963d83c7561d6f5372529` | complete symbol table, output not truncated |
+| KiCad `eeschema` debug file | inspect_with_objdump symbols (unbounded output) | `ev_ad7467b11738d2cf23a50d9241d99dcad535d87624f6539d7491e5b855c76bc5` | – | `c9d7b8611f40d5c90b49daa8dd00974232841c3bd2e761f9f8b7d42cba1589aa` | complete symbol table, output not truncated |
+| KiCad `kicommon` debug file | inspect_with_objdump symbols (unbounded output) | `ev_cff75724aeef4287cb7bb31519219aa854490a5dcb909e0af3420d9ec4c0392c` | – | `985111b82ee4f00c47b3d4334817a0942a5fa9a1279fbee0bc0d78f28a6f503d` | complete symbol table, output not truncated |
+| KiCad `kigal` debug file | inspect_with_objdump symbols (unbounded output) | `ev_c498535606c581ab33b3bb1daf2ba776e3617430748b148b8b646d842ebc8dd5` | – | `85354c44d5084e82240af97e2f790883dd2b2e09a9e666025a4a53c2881fb7ac` | complete symbol table, output not truncated |
+| KiCad `kicad` debug file | inspect_with_objdump symbols (unbounded output) | `ev_f11e41989744c1cc2846590a7c9cc4389b419e626817741fea61b4339cd14969` | – | `4c7bf6a2112b25a4ab7d8a519566fe7d5a750eef29c4791d23f0e6a993c809f0` | complete symbol table, output not truncated |
+| KiCad `kicad-cli` debug file | inspect_with_objdump symbols (unbounded output) | `ev_581dd2896fbdc43e0891f230a901409b59af8c87f5d2ac36457319c4d63ca514` | – | `f04ec6c9379a907388c6e81b42d68af318809fddb77c5a23c78137b945fd8d4f` | complete symbol table, output not truncated |
+| KiCad `kipython` debug file | inspect_with_objdump symbols (unbounded output) | `ev_c271ff7ef85bd8f8559e305c0dfc75ebdc31e2777b74b06d7bbb3cd301fb808b` | – | `9c70887b35b1fbf628349b826c6d02c46610159d104c806557296a5310d2dfcd` | complete symbol table, output not truncated |
+| KiCad `kiapi` debug file | inspect_with_objdump symbols (unbounded output) | `ev_6904c16ba96b1b4ac560f2d29e98b9524323d43de86104ebe56b5ae312f0b104` | – | `ecb4d227bb92dcf9d2491d6306e5005183460ed8e44f02bfc69e02706b535826` | complete symbol table, output not truncated |
+| KiCad `cvpcb` debug file | inspect_with_objdump symbols (unbounded output) | `ev_e4e3ed42ab2c01bb04b98c4bab68becdcc96888929682d85fb1a8043652ab023` | – | `56f13488892f8cda19895e53bfbc44b97845415d519407b087d5279e653f5dbc` | complete symbol table, output not truncated |
+| KiCad `gerbview` debug file | inspect_with_objdump symbols (unbounded output) | `ev_e68c09bbdc7dd0a4664b493db160f2ce7f1f12dc45fec4b805df7b026ada71a5` | – | `27fc8b8a4f5b9ffe6ecd3c13f1fbfa313efd812726710f7419d061507985a7c0` | complete symbol table, output not truncated |
+| KiCad `pl_editor` debug file | inspect_with_objdump symbols (unbounded output) | `ev_54d033c751398bbd48ccdabd83501d646f39e939a3a4b4548c326e1f87317b86` | – | `c939ca4bce9935e18082f5cfebc539c786a870810c1d96ef47e5b77a565005a5` | complete symbol table, output not truncated |
+| KiCad `pcb_calculator` debug file | inspect_with_objdump symbols (unbounded output) | `ev_e440acd9bbb20b861a03c4547cf4d21017b843116e59d44347495225b27fcd74` | – | `73de23a059bf132980f90bec003d09c669c8fb6dcac9de6268c5108a0a6148b8` | complete symbol table, output not truncated |
+| KiCad `3dsg` debug file | inspect_with_objdump symbols (unbounded output) | `ev_a885e46edc95f65ac1e58691001dce0f57cd6bf570b85ba23a4e5a2b8cbbf5bc` | – | `06d0557fd9e27520772bf76f4aa91f1c49e1a9c2d96237705e62711484bf3393` | complete symbol table, output not truncated |
+| KiCad `_eeschema.kiface` | inspect_elf_notes | `ev_4323bd8a055184512289e23860fa0ca045936ddfadf612af81698048b364da57` | – | `764e1e2f769200e4bf3a7b16e021a914c733ab2fb85fc4b1f8632d5e5a546bc6` | GNU build-id → debug file |
+| KiCad `_pcbnew.kiface` | inspect_elf_notes | `ev_a4b44d01f2aa86ed4af072a608d44053087bc4741cfb2845da8c928f78704370` | – | `842e3516ebd7bf23a81ab9e08e5309dee2aa62518bcb32e524b076922ea4c0f4` | GNU build-id → debug file |
+| KiCad `kicad-cli` | inspect_elf_notes | `ev_cf18fe844188703d8b77feefa857e3778b7864da678a4619836eb3141e6637dd` | – | `a2625a7d5c3fc5be5e892927d0c0580ff1583f7afff32fc6e0f615bd316a7481` | GNU build-id → debug file |
+| KiCad `libkicommon.so.10.0.8` | inspect_elf_notes | `ev_6018fe8890662bc273ebf496e8ff120a674112552d3e5282d05d495159060b92` | – | `a8224513f95e4c7bc59a46ee1b6c956c3c9cd67ad9f1e2fa970e0135ffdf594f` | GNU build-id → debug file |
+| KiCad `libkigal.so.10.0.8` | inspect_elf_notes | `ev_6422ac1ade74fc140a3653f86a16155c1d53e2f9ed883fbc6cc47cf58d5675eb` | – | `ff783848a48d10c42cf030bfcada0216b2943450fb575c6eefd76a7b210c2705` | GNU build-id → debug file |
+| FreeCAD `libFreeCADGui.so` | inspect_native_exports | `ev_364abaefd2f27a80cdeceffb8d05e479dbd08a4ac7009a30debc748263852f51` | – | `708d8ca20c9840fddbb5092ad0a62a59a591c9d55371112b08e8ac624baed25f` | gui: 20365 exports, 9.58 MB .text |
+| FreeCAD `TechDrawGui.so` | inspect_native_exports | `ev_0ababfcc36e7ab06cec59dab378391baadc6587858a857a923a5e03557a4a0b0` | – | `74769772af8871e290cbfa53cf756f3fd2a401891c76f269fed85fab80720b2b` | gui: 5292 exports, 4.60 MB .text |
+| FreeCAD `Part.so` | inspect_native_exports | `ev_1b6e730040de979de3c926cca749004bbd31a9b779080d562bafece95eb2a3d1` | – | `651781602ddd3933a3685856bd1774eeb674fe2b7037daa0e76ac1268a4a4c8e` | app: 9208 exports, 3.67 MB .text |
+| FreeCAD `libFreeCADApp.so` | inspect_native_exports | `ev_d048364ce1b496d17d5a2e16d06acd5b1e111fe1936a66a0514ea9e4e0fa4e53` | – | `004b8c03069643ac1ab10a7cd7edb112346f3c8d87f527ba693e2c05596f7049` | app: 7241 exports, 3.42 MB .text |
+| FreeCAD `SketcherGui.so` | inspect_native_exports | `ev_5d0219148f5daed00b95a54a5a63f8dc3f70c4d56c6fc88161ad14f04830f316` | – | `0b9bd33db8cc64ffee19d836249c7beb15115175d9c20252efd14b574bbbddf1` | gui: 3983 exports, 3.22 MB .text |
+| FreeCAD `TechDraw.so` | inspect_native_exports | `ev_a2967e585931082864158979d9cd8164f0797bb8d586e11a4718c99394589a5a` | – | `02e07a7d751dea783e63eda42dda36ffd95b48ba25ea3924fe74adab1cd8e20f` | app: 4361 exports, 3.22 MB .text |
+| FreeCAD `PartGui.so` | inspect_native_exports | `ev_2ba7ed2fee75d88fef1bb0268489d6df872a919022b921513d586747f5c2fbcc` | – | `a7c6b48974cd254191aebbfcd7e1ab7171d9eadeb71693b36cc98837b085a67d` | gui: 4117 exports, 2.93 MB .text |
+| FreeCAD `Mesh.so` | inspect_native_exports | `ev_dad62f03840e2445c34d6788b66b48acd42fa4d2df7cb99f1dee756b7b8fb82a` | – | `653aba86fbcd8c20eee6df894cf2cbb8c4af1de9bb7d655f799869edba8a0b41` | app: 4546 exports, 2.10 MB .text |
+| FreeCAD `FemGui.so` | inspect_native_exports | `ev_2d6f4eafa57377ff608a007f7c7af2de53fa6995117768822054d0340e956211` | – | `9bc79af6dd70ee6975c7943440ce0df19367e42ca234069ac4f58e85abaaa528` | gui: 3765 exports, 1.71 MB .text |
+| FreeCAD `libFreeCADBase.so` | inspect_native_exports | `ev_372a6d57bf2613a6e20f0953efcf5fbe531a2e3a217c28711bf32033a5128979` | – | `3516a63d71ae935fa29629959fc5067c35d4b253352b3cef3e504884705ccdff` | app: 4408 exports, 1.64 MB .text |
+| FreeCAD `Sketcher.so` | inspect_native_exports | `ev_bc93c7167d609816f028701231a6ba4c12e652ed47e796c0af0ae023a0bb13ae` | – | `6cdf5d91d1f1dd613fd5bb0f03ee744abb05a7f05e04f01a4c37700a93b0048b` | app: 2393 exports, 1.61 MB .text |
+| FreeCAD `libStdMeshers.so` | inspect_native_exports | `ev_ed57650f4a418d100cfed3f99b6c0a4b94ffb5e3e432f78b808e7d49a166d9d5` | – | `a9cd2e3beca0f1084435bc7e41d8281567d40b8e0bc7282add34c7b8aa76664c` | app: 1420 exports, 1.60 MB .text |
+
+VS Code round-2 runs (unbounded, whole `out/` and `extensions/`) are recorded in [vscode.md](vscode.md).
