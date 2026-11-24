@@ -9,30 +9,32 @@ import { Action2 } from '../../platform/actions/common/actions.js';
 import { ServicesAccessor } from '../../platform/instantiation/common/instantiation.js';
 import { EditorGroupLayout, GroupOrientation, GroupsOrder, IEditorGroupsService } from '../../workbench/services/editor/common/editorGroupsService.js';
 import { IEditorService } from '../../workbench/services/editor/common/editorService.js';
-import { ENGINEERING_LAYOUT_COMMAND_ID, ENGINEERING_VIEWS, TRIAGE_CATEGORY } from '../common/triage.js';
+import { ENGINEERING_LAYOUT_COMMAND_ID, ENGINEERING_VIEWS, TRIAGE_CATEGORY, TriageViewKind } from '../common/triage.js';
 import { TriageViewInput } from './triageViewEditor.js';
 
 /**
- * Code on the left (40 %); on the right, Schematic and Board above 3D and Sim.
- * Leaf groups in grid order: Code, Schematic, Board, 3D, Sim.
- *
- * Sizes are fractions of the whole editor area, not of the parent (see
- * getDimensions in vs/base/browser/ui/grid/grid.ts): each row's two groups
- * add up to the right column's 0.6. Halves (0.5 + 0.5) overflowed the column
- * and squeezed the top row.
+ * Code on the left (40 %), then two columns: Schematic over 3D, Board over Sim.
+ * The same picture as two rows, but with the two-level tree VS Code's own
+ * "Grid (2x2)" layout uses; a three-level tree (rows inside a column) left the
+ * top row squeezed. Sizes are fractions of the whole editor area
+ * (getDimensions in vs/base/browser/ui/grid/grid.ts).
  */
 export const ENGINEERING_LAYOUT: EditorGroupLayout = {
 	orientation: GroupOrientation.HORIZONTAL,
 	groups: [
 		{ size: 0.4 },
-		{
-			size: 0.6,
-			groups: [
-				{ size: 0.5, groups: [{ size: 0.3 }, { size: 0.3 }] },
-				{ size: 0.5, groups: [{ size: 0.3 }, { size: 0.3 }] },
-			],
-		},
+		{ size: 0.3, groups: [{ size: 0.5 }, { size: 0.5 }] },
+		{ size: 0.3, groups: [{ size: 0.5 }, { size: 0.5 }] },
 	],
+};
+
+/** Which leaf group (in grid order: top to bottom, left to right) shows each tab. */
+const GROUP_INDEX: Record<TriageViewKind, number> = {
+	[TriageViewKind.Code]: 0,
+	[TriageViewKind.Schematic]: 1,
+	[TriageViewKind.ThreeD]: 2,
+	[TriageViewKind.Board]: 3,
+	[TriageViewKind.Sim]: 4,
 };
 
 export class OpenEngineeringLayoutAction extends Action2 {
@@ -52,8 +54,8 @@ export class OpenEngineeringLayoutAction extends Action2 {
 
 		editorGroupsService.applyLayout(ENGINEERING_LAYOUT);
 		const groups = editorGroupsService.getGroups(GroupsOrder.GRID_APPEARANCE);
-		await Promise.all(ENGINEERING_VIEWS.map((view, index) => {
-			const group = groups[Math.min(index, groups.length - 1)];
+		await Promise.all(ENGINEERING_VIEWS.map(view => {
+			const group = groups[Math.min(GROUP_INDEX[view.kind], groups.length - 1)];
 			return editorService.openEditor(new TriageViewInput(view), { pinned: true, preserveFocus: true }, group);
 		}));
 	}
