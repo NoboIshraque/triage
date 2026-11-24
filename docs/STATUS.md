@@ -111,6 +111,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Topic | Default | Needed by |
 |---|---|---|
 | If GitHub Copilot **doesn't accept Triage's own sign-in** (P0-8): use AI models with your own API key in the chat (no GitHub needed), keep VS Code's sign-in for the owner's personal builds only, or drop Copilot? | decided after the P0-8 test | P0-8 |
+| **The logo on dark backgrounds:** K3 Slate nearly disappears on the dark title bar and a dark Windows taskbar. Option C: in Triage's dark themes the title bar shows the reversed logo (white T, slate traces); the app icon stays K3 | K3 everywhere until the owner decides | P0-9 |
 | Remove the hidden Copilot extension from builds entirely? It is 56 MB of the app; hidden and disabled, it does nothing | kept (one setting turns VS Code's AI features back on) | P8 (installer size) |
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
@@ -251,6 +252,12 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
     logo (`vscode-icon.svg`, the Agents window), Code-OSS's icon and watermark,
     331 of 32,964 workbench strings and 104 strings in 27 built-in extensions
     naming VS Code (observed in the packaged Linux build).
+  - **Triage's logo:** the owner sketched a T with PCB traces; Claude drew it,
+    replaced the busy sketched traces with a three-track bus at the owner's
+    request, made the gaps equal, and the owner chose **K3 Slate `#1e293b`**
+    from 16 shades. Every icon now comes from `scripts/branding/icons.py`
+    (master files in `docs/brand/`). K3 is hard to see on dark backgrounds
+    (dark title bar, dark taskbar): open question below.
   - The "workflow run failed" notifications the owner saw come from App runs
     2, 8, 9 and 10 and CI run 7, the failures this session fixed (DV-11, DV-13,
     the swap-file disk issue).

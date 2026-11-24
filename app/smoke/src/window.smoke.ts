@@ -140,9 +140,9 @@ describe('packaged Triage app', () => {
         naming: [],
       });
     }
-    // Triage's teal replaces VS Code's logo and Code-OSS's icon.
+    // Triage's logo (K3 Slate, scripts/branding/icons.py) replaces VS Code's and Code-OSS's.
     for (const logo of ['code-icon.svg', 'vscode-icon.svg']) {
-      expect(readFileSync(path.join(appRoot, 'out', 'media', logo), 'utf8')).toContain('#0f766e');
+      expect(readFileSync(path.join(appRoot, 'out', 'media', logo), 'utf8')).toContain('#1e293b');
     }
   });
 
