@@ -31,6 +31,10 @@ behind a utility-process broker, survives being killed, and streams 114 MB/s
 4. Try the separate windows: drag a tab (say **Schematic**) out of the window,
    click the window button at the right of the tab bar, or click **Open in
    Separate Windows** in the Triage sidebar.
+5. Copilot is hidden, not removed. To use it: **File → Preferences → Settings**,
+   search **Disable AI Features**, untick it; the Sign In button and Copilot
+   icon return, and **Ctrl+Alt+I** opens the chat (checked on a local build;
+   signing in to a Copilot account isn't tested yet).
 
 Tell Claude what felt wrong. P0-7 is done when you have launched it.
 
