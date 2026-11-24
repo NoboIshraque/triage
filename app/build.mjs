@@ -20,9 +20,9 @@
 //            bundle, which needs more memory than 8 GB CI runners have), written
 //            to app/VSCode-<platform>-<arch>/
 //
-//   engines  build Triage's native engines (CMake preset "release") and copy them
-//            into the packaged app (resources/app/engines/); on Windows, run from a
-//            Visual Studio developer shell
+//   engines  build Triage's native engines (CMake preset "release") and the Rust
+//            model addon, and copy them into the packaged app (resources/app/
+//            engines/); on Windows, run from a Visual Studio developer shell
 //
 // Patch commands (P0-3):
 //   refresh-patches [--new NNNN-name]  turn edits in app/upstream into app/patches/
@@ -225,14 +225,20 @@ function buildEngines({ arch }) {
   const { folder } = packagedApp(arch);
   if (!existsSync(folder)) throw new ForkError('run the package step first');
   run('cmake', ['--workflow', '--preset', 'release'], { cwd: repoRoot });
+  // The Rust project model as a Node addon, for the model service (P0-5).
+  run(process.execPath, [path.join(repoRoot, 'crates', 'triage-model-node', 'build.mjs')], {
+    cwd: repoRoot,
+  });
   const target = path.join(folder, 'resources', 'app', 'engines');
   mkdirSync(target, { recursive: true });
-  for (const engine of ENGINES) {
-    const file = `${engine}${isWindows ? '.exe' : ''}`;
-    cpSync(
-      path.join(repoRoot, 'build', 'native', 'release', file),
-      path.join(target, path.basename(file)),
-    );
+  const files = [
+    ...ENGINES.map((engine) =>
+      path.join('build', 'native', 'release', `${engine}${isWindows ? '.exe' : ''}`),
+    ),
+    path.join('build', 'native', 'addons', 'triage_model.node'),
+  ];
+  for (const file of files) {
+    cpSync(path.join(repoRoot, file), path.join(target, path.basename(file)));
     console.log(`Copied ${path.basename(file)} into ${path.relative(process.cwd(), target)}`);
   }
 }

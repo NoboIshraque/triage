@@ -46,3 +46,24 @@
 .triage-view-editor .triage-view-arrives {
 	color: var(--vscode-descriptionForeground);
 }
+
+.triage-overview .triage-domain {
+	cursor: pointer;
+	padding: 2px 0;
+}
+
+.triage-overview .triage-domain:hover,
+.triage-overview .triage-domain:focus {
+	color: var(--vscode-textLink-activeForeground);
+	outline: none;
+}
+
+.triage-overview .triage-file {
+	padding-left: 12px;
+	font-size: 0.9em;
+}
+
+.triage-overview .triage-missing,
+.triage-overview .triage-project-error {
+	color: var(--vscode-errorForeground);
+}

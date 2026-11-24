@@ -39,6 +39,8 @@ describe('packaged Triage app', () => {
       executablePath: app.executable,
       // The flags VS Code's own smoke tests use, plus a throwaway profile.
       args: [
+        // ROADMAP P0-5: open the example project.
+        path.join(appDir, '..', 'examples', 'smart-fan'),
         '--skip-release-notes',
         '--skip-welcome',
         '--disable-telemetry',
@@ -83,6 +85,21 @@ describe('packaged Triage app', () => {
     await window.locator('.part.activitybar [aria-label^="Triage"]').first().click();
     await window.locator('.triage-overview').waitFor({ state: 'visible', timeout: 30_000 });
     await window.screenshot({ path: shot('sidebar') });
+  });
+
+  // ROADMAP P0-5: "Opening examples/smart-fan shows the four domains".
+  it('shows the four domains of the open Triage project', async () => {
+    await expect
+      .poll(() => window.locator('.triage-project-name').textContent(), { timeout: 60_000 })
+      .toBe('Smart Fan');
+    const domains = window.locator('.triage-overview .triage-domain');
+    const ids: (string | null)[] = [];
+    for (let i = 0; i < (await domains.count()); i++) {
+      ids.push(await domains.nth(i).getAttribute('data-domain'));
+    }
+    expect(ids).toEqual(['code', 'electronics', 'mechanical', 'simulation']);
+    await expect.poll(() => domains.first().textContent()).toContain('arduino-uno');
+    await window.screenshot({ path: shot('project') });
   });
 
   it('lays out Code, Schematic, Board, 3D and Sim with one command', async () => {

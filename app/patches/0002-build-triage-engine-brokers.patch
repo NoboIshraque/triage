@@ -1,19 +1,21 @@
-Bundle Triage's engine brokers as utility-process entry points (ROADMAP P0-4).
+Bundle Triage's utility-process modules as entry points (ROADMAP P0-4, P0-5).
 
-build/next/index.ts lists the modules esbuild bundles as entry points; the
-hello engine's broker (vs/triage/node/helloEngineBrokerMain) runs in a
-utility process started through IUtilityProcessWorkerWorkbenchService.
+build/next/index.ts lists the modules esbuild bundles as entry points. Both
+run in utility processes started through IUtilityProcessWorkerWorkbenchService:
+- vs/triage/node/helloEngineBrokerMain: the hello engine's broker;
+- vs/triage/node/projectModelMain: the model service (Rust addon).
 
 diff --git a/build/next/index.ts b/build/next/index.ts
-index dd534bff120ce02570bb2ab8f7540c84ee961fc3..9d0710cd454016c9c5c7ae599907e6fd2049a9ca 100644
+index dd534bff120ce02570bb2ab8f7540c84ee961fc3..9cce85a8cd56876204943bff51890c481e42dfa0 100644
 --- a/build/next/index.ts
 +++ b/build/next/index.ts
-@@ -108,6 +108,8 @@ const desktopEntryPoints = [
+@@ -108,6 +108,9 @@ const desktopEntryPoints = [
  	'vs/workbench/contrib/debug/node/telemetryApp',
  	'vs/platform/files/node/watcher/watcherMain',
  	'vs/platform/localTranscription/node/localTranscriptionMain',
 +	// Triage: engine brokers run in utility processes (app/src/vs/triage, ROADMAP P0-4)
 +	'vs/triage/node/helloEngineBrokerMain',
++	'vs/triage/node/projectModelMain',
  	'vs/platform/terminal/node/ptyHostMain',
  	'vs/platform/agentHost/node/agentHostMain',
  	'vs/platform/agentHost/node/diffWorkerMain',

@@ -13,8 +13,11 @@ import { INotificationService } from '../../platform/notification/common/notific
 import { TRIAGE_CATEGORY } from '../common/triage.js';
 import { HELLO_ENGINE_COMMANDS, ITriageHelloEngineService } from '../common/helloEngine.js';
 import { TriageHelloEngineService } from './helloEngineService.js';
+import { ITriageProjectService } from '../common/projectModel.js';
+import { TriageProjectService } from './projectService.js';
 
 registerSingleton(ITriageHelloEngineService, TriageHelloEngineService, InstantiationType.Delayed);
+registerSingleton(ITriageProjectService, TriageProjectService, InstantiationType.Delayed);
 
 registerAction2(class extends Action2 {
 	constructor() {
