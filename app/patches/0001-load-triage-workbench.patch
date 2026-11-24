@@ -1,7 +1,8 @@
 Load Triage's workbench code in the desktop workbench (ROADMAP P0-3).
 
-- workbench.desktop.main.ts imports vs/triage/browser/triage.contribution,
-  which app/build.mjs copies from app/src/vs/triage.
+- workbench.desktop.main.ts imports vs/triage/browser/triage.contribution
+  and vs/triage/electron-browser/triage.contribution, which app/build.mjs
+  copies from app/src/vs/triage.
 - build/next/resources.ts ships the walkthrough pages, since the build
   copies only listed resources.
 
@@ -19,15 +20,16 @@ index e76a1e3557ef41237acfc26fb88a158c3e467f8a..06cdceb51b97da1267166a24f341edcb
  	'vs/workbench/services/extensionManagement/common/media/*.svg',
  	'vs/workbench/services/extensionManagement/common/media/*.png',
 diff --git a/src/vs/workbench/workbench.desktop.main.ts b/src/vs/workbench/workbench.desktop.main.ts
-index 213bf58a577237118e4d07aebdac2c0c751f0cd9..67cc5af07ac3d9984ac235ec72b910de6ffd7c03 100644
+index 213bf58a577237118e4d07aebdac2c0c751f0cd9..41a46f7a49382d85c11d04b13bc7e02676c10724 100644
 --- a/src/vs/workbench/workbench.desktop.main.ts
 +++ b/src/vs/workbench/workbench.desktop.main.ts
-@@ -226,6 +226,9 @@ import './contrib/keybindingsExport/electron-browser/keybindingsExport.contribut
+@@ -226,6 +226,10 @@ import './contrib/keybindingsExport/electron-browser/keybindingsExport.contribut
  // System-wide (OS global) Keybindings
  import './contrib/keybindings/electron-browser/systemWideKeybindings.contribution.js';
  
-+// Triage (app/src/vs/triage, ROADMAP P0-3)
++// Triage (app/src/vs/triage, ROADMAP P0-3, P0-4)
 +import '../triage/browser/triage.contribution.js';
++import '../triage/electron-browser/triage.contribution.js';
 +
  //#endregion
  

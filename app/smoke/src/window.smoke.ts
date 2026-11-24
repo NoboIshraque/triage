@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -99,6 +99,49 @@ describe('packaged Triage app', () => {
       ENGINEERING_TABS.length,
     );
     await window.screenshot({ path: shot('engineering-layout') });
+  });
+
+  // ROADMAP P0-4: the hello engine behind a utility-process broker.
+  const engineStatus = () => window.locator('.triage-engine-status').textContent();
+
+  it('starts the hello engine when the Triage view opens', async () => {
+    await expect
+      .poll(engineStatus, { timeout: 60_000 })
+      .toMatch(/connected \(pid \d+, restarts 0\)/);
+  });
+
+  it('streams 100 MB/s or more from the engine into the window', async () => {
+    await runCommand(window, 'Triage: Benchmark Hello Engine');
+    const benchmark = window.locator('.triage-engine-benchmark');
+    await expect.poll(() => benchmark.textContent(), { timeout: 120_000 }).toContain('MB/s');
+    const text = (await benchmark.textContent()) ?? '';
+    const match = /(\d+) MB\/s into the window, (\d+) MB\/s to the broker \((\d+) MiB\)/.exec(text);
+    expect(match).not.toBeNull();
+    const report = {
+      what: 'hello engine -> broker (utility process) -> window, over a local socket and a MessagePort',
+      platform: process.platform,
+      intoWindowMBps: Number(match?.[1]),
+      toBrokerMBps: Number(match?.[2]),
+      mebibytes: Number(match?.[3]),
+    };
+    writeFileSync(
+      path.join(outputDir, `benchmark-${process.platform}.json`),
+      `${JSON.stringify(report, null, 2)}\n`,
+    );
+    console.log(JSON.stringify(report));
+    expect(report.intoWindowMBps).toBeGreaterThanOrEqual(100);
+  });
+
+  it('shows "reconnecting" when the engine is killed, then recovers', async () => {
+    const before = /pid (\d+)/.exec((await engineStatus()) ?? '')?.[1];
+    await runCommand(window, 'Triage: Kill Hello Engine (Restart Test)');
+    await expect.poll(engineStatus, { timeout: 30_000 }).toContain('reconnecting');
+    await expect
+      .poll(engineStatus, { timeout: 60_000 })
+      .toMatch(/connected \(pid \d+, restarts 1\)/);
+    const after = /pid (\d+)/.exec((await engineStatus()) ?? '')?.[1];
+    expect(after).not.toBe(before);
+    await window.screenshot({ path: shot('engine-recovered') });
   });
 
   it('offers the Triage walkthrough', async () => {

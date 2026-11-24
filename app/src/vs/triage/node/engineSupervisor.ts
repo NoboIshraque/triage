@@ -12,13 +12,9 @@ import { unlink } from 'fs/promises';
 import { createServer, Server, Socket } from 'net';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { encodeFrame, encodeStreamRequest, Frame, FrameDecoder, frameText, FrameType, parseHello, readU64 } from '../common/engineProtocol.js';
+import { encodeFrame, encodeStreamRequest, EngineState, Frame, FrameDecoder, frameText, FrameType, parseHello, readU64, StreamResult } from '../common/engineProtocol.js';
 
-export type EngineState =
-	| { readonly kind: 'starting' }
-	| { readonly kind: 'connected'; readonly pid: number; readonly version: string; readonly restarts: number }
-	| { readonly kind: 'reconnecting'; readonly attempt: number; readonly reason: string; readonly restarts: number }
-	| { readonly kind: 'stopped'; readonly reason: string };
+export type { EngineState, StreamResult };
 
 export interface EngineSupervisorOptions {
 	/** Path of the engine executable. */
@@ -29,13 +25,6 @@ export interface EngineSupervisorOptions {
 	readonly restartDelaysMs?: readonly number[];
 	/** How long a started engine may take to say Hello. */
 	readonly helloTimeoutMs?: number;
-}
-
-export interface StreamResult {
-	readonly bytes: number;
-	readonly frames: number;
-	readonly milliseconds: number;
-	readonly megabytesPerSecond: number;
 }
 
 type Listener<T> = (value: T) => void;

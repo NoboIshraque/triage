@@ -142,3 +142,17 @@ export function parseHello(text: string): { name: string; version: string; pid: 
 	const match = /^(\S+) (\S+) (\d+)$/.exec(text);
 	return match ? { name: match[1], version: match[2], pid: Number(match[3]) } : undefined;
 }
+
+/** The engine as its broker sees it (ROADMAP P0-4). */
+export type EngineState =
+	| { readonly kind: 'starting' }
+	| { readonly kind: 'connected'; readonly pid: number; readonly version: string; readonly restarts: number }
+	| { readonly kind: 'reconnecting'; readonly attempt: number; readonly reason: string; readonly restarts: number }
+	| { readonly kind: 'stopped'; readonly reason: string };
+
+export interface StreamResult {
+	readonly bytes: number;
+	readonly frames: number;
+	readonly milliseconds: number;
+	readonly megabytesPerSecond: number;
+}

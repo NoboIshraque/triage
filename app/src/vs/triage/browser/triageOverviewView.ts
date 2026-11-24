@@ -19,6 +19,7 @@ import { defaultButtonStyles } from '../../platform/theme/browser/defaultStyles.
 import { IThemeService } from '../../platform/theme/common/themeService.js';
 import { IViewPaneOptions, ViewPane } from '../../workbench/browser/parts/views/viewPane.js';
 import { IViewDescriptorService } from '../../workbench/common/views.js';
+import { describeEngineState, HELLO_ENGINE_COMMANDS, IHelloEngineBenchmark, ITriageHelloEngineService } from '../common/helloEngine.js';
 import { ENGINEERING_LAYOUT_COMMAND_ID, TRIAGE_WALKTHROUGH_ID } from '../common/triage.js';
 
 const DOMAINS = [
@@ -41,6 +42,7 @@ export class TriageOverviewView extends ViewPane {
 		@IThemeService themeService: IThemeService,
 		@IHoverService hoverService: IHoverService,
 		@ICommandService private readonly commandService: ICommandService,
+		@ITriageHelloEngineService private readonly helloEngine: ITriageHelloEngineService,
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
 	}
@@ -65,5 +67,22 @@ export class TriageOverviewView extends ViewPane {
 		const walkthrough = this._register(new Button(root, { ...defaultButtonStyles, secondary: true, title: true }));
 		walkthrough.label = localize('triage.overview.walkthrough', "Get Started with Triage");
 		this._register(walkthrough.onDidClick(() => this.commandService.executeCommand('workbench.action.openWalkthrough', TRIAGE_WALKTHROUGH_ID, false)));
+
+		// The hello engine (ROADMAP P0-4) starts when this view first shows.
+		append(root, $('h3', undefined, localize('triage.overview.engines', "Engines")));
+		const status = append(root, $('p.triage-engine-status'));
+		const benchmark = append(root, $('p.triage-engine-benchmark'));
+		const renderState = () => status.textContent = localize('triage.overview.helloEngine', "Hello engine: {0}", describeEngineState(this.helloEngine.state));
+		const renderBenchmark = (result: IHelloEngineBenchmark | undefined) => benchmark.textContent = result
+			? localize('triage.overview.benchmark', "Benchmark: {0} MB/s into the window, {1} MB/s to the broker ({2} MiB)", result.toWindow, result.toBroker, result.mebibytes)
+			: '';
+		renderState();
+		renderBenchmark(this.helloEngine.lastBenchmark);
+		this._register(this.helloEngine.onDidChangeState(renderState));
+		this._register(this.helloEngine.onDidBenchmark(renderBenchmark));
+		const run = this._register(new Button(root, { ...defaultButtonStyles, secondary: true, title: true }));
+		run.label = localize('triage.overview.runBenchmark', "Benchmark Hello Engine");
+		this._register(run.onDidClick(() => this.commandService.executeCommand(HELLO_ENGINE_COMMANDS.benchmark)));
+		this.helloEngine.start().catch(() => { /* shown in the status line */ });
 	}
 }

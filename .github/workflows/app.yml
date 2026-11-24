@@ -103,6 +103,18 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: MSVC developer environment (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Build the engines into the app (CMake, Ninja)
+        shell: bash
+        run: |
+          command -v ninja || { [ "$RUNNER_OS" = Linux ] && sudo apt-get install -y ninja-build || choco install ninja -y --no-progress; }
+          node app/build.mjs engines
+
       - name: Install the smoke test
         run: corepack pnpm install --frozen-lockfile --filter @triage/app-smoke
 

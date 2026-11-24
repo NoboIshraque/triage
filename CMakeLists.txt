@@ -13,7 +13,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(TRIAGE_WARNINGS_AS_ERRORS "Treat compiler warnings as errors" OFF)
-option(TRIAGE_USE_CCACHE "Use ccache (or sccache) when one is installed" ON)
+# Off by default: the Windows CI images carry an unrelated ccache (Strawberry Perl).
+option(TRIAGE_USE_CCACHE "Use ccache (or sccache) when one is installed" OFF)
 
 if(TRIAGE_USE_CCACHE)
   find_program(TRIAGE_COMPILER_LAUNCHER NAMES ccache sccache)

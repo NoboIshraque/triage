@@ -20,17 +20,37 @@
 //            bundle, which needs more memory than 8 GB CI runners have), written
 //            to app/VSCode-<platform>-<arch>/
 //
+//   engines  build Triage's native engines (CMake preset "release") and copy them
+//            into the packaged app (resources/app/engines/); on Windows, run from a
+//            Visual Studio developer shell
+//
 // Patch commands (P0-3):
 //   refresh-patches [--new NNNN-name]  turn edits in app/upstream into app/patches/
 //   check-patches                      apply every patch onto a fresh checkout
 //
 // Changing upstream: edit app/upstream, then refresh-patches. prepare refuses to
 // discard edits made since the last prepare (unless --force).
-import { cpSync, existsSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
+import {
+  cpSync,
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fetchUpstream } from '../scripts/forks/fetch.mjs';
-import { ForkError, git, isWindows, main, run, withRetries } from '../scripts/forks/lib.mjs';
+import {
+  ForkError,
+  git,
+  isWindows,
+  main,
+  repoRoot,
+  run,
+  withRetries,
+} from '../scripts/forks/lib.mjs';
 import {
   applyPatches,
   checkPatches,
@@ -41,7 +61,7 @@ import {
 
 const appDir = import.meta.dirname;
 const upstreamDir = path.join(appDir, 'upstream');
-const STEPS = ['fetch', 'prepare', 'install', 'typecheck', 'package'];
+const STEPS = ['fetch', 'prepare', 'install', 'typecheck', 'package', 'engines'];
 const COMMANDS = ['refresh-patches', 'check-patches'];
 /** Folders in app/ whose files replace or add files at the same path in upstream. */
 const OVERLAY_ROOTS = ['src', 'resources'];
@@ -198,6 +218,25 @@ function typecheck() {
   console.log("Triage's workbench code type-checks.");
 }
 
+/** Native engines that ship inside the app, built by the root CMakeLists.txt. */
+const ENGINES = [path.join('engines', 'hello', 'triage-hello-engine')];
+
+function buildEngines({ arch }) {
+  const { folder } = packagedApp(arch);
+  if (!existsSync(folder)) throw new ForkError('run the package step first');
+  run('cmake', ['--workflow', '--preset', 'release'], { cwd: repoRoot });
+  const target = path.join(folder, 'resources', 'app', 'engines');
+  mkdirSync(target, { recursive: true });
+  for (const engine of ENGINES) {
+    const file = `${engine}${isWindows ? '.exe' : ''}`;
+    cpSync(
+      path.join(repoRoot, 'build', 'native', 'release', file),
+      path.join(target, path.basename(file)),
+    );
+    console.log(`Copied ${path.basename(file)} into ${path.relative(process.cwd(), target)}`);
+  }
+}
+
 export function packagedApp(arch = process.arch) {
   const platform = isWindows ? 'win32' : process.platform;
   const folder = path.join(appDir, `VSCode-${platform}-${arch}`);
@@ -230,6 +269,7 @@ if (import.meta.filename === path.resolve(process.argv[1] ?? '')) {
       if (step === 'install') install();
       if (step === 'typecheck') typecheck();
       if (step === 'package') packageApp(options);
+      if (step === 'engines') buildEngines(options);
       if (step === 'refresh-patches') refreshAppPatches(options);
       if (step === 'check-patches') {
         console.log(
