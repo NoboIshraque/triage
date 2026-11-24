@@ -1,0 +1,38 @@
+# Patterns are anchored where they could match source folders inside the
+# forked upstream trees (VS Code has a source folder called build/, for example).
+
+# Dependencies and package-manager state
+node_modules/
+.pnpm-store/
+
+# Build outputs of Triage's own code
+/build/
+/target/
+/cli/dist/
+/sim/dist/
+/parts/dist/
+*.tsbuildinfo
+.turbo/
+/coverage/
+
+# Editors and OS files
+/.vscode/*
+!/.vscode/extensions.json
+/.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Logs and local environment
+npm-debug.log*
+pnpm-debug.log*
+/.env
+/.env.*
+
+# Forks: pinned upstream checkouts and their build outputs (GUIDELINES §6)
+/app/upstream/
+/app/VSCode-*/
+/app/.smoke/
+/app/.dist/
+/app/Triage/
+/engines/*/upstream/

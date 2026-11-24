@@ -1,0 +1,22 @@
+# Forked upstream trees keep their own formatting.
+/app/upstream/
+# Triage's VS Code code follows upstream's style (tabs), not Prettier's.
+/app/src/
+/app/VSCode-*/
+/app/.smoke/
+/app/.dist/
+/engines/**/upstream/
+/engines/**/patches/
+
+# Hand-written prose (tables are kept as written) and generated files.
+*.md
+pnpm-lock.yaml
+/docs/research/data/
+/.claude/
+
+# Build outputs
+/build/
+/target/
+dist/
+.turbo/
+coverage/

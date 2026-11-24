@@ -1,0 +1,17 @@
+# A Triage project (format 0). Schema: crates/triage-model/schema/triage.schema.json
+[project]
+name = "Smart Fan"
+format = 0
+description = "A desk fan that speeds up as the room warms (PLAN §3)."
+
+[firmware]
+board = "arduino-uno"
+build = "arduino-cli"
+
+[electronics]
+kicad_project = "smart-fan.kicad_pro"
+
+[mechanical]
+documents = ["enclosure.FCStd"]
+
+[simulation]

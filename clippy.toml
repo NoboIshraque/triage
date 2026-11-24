@@ -1,0 +1,7 @@
+# Product and project names that clippy's doc_markdown lint should accept
+# without backticks. ".." keeps clippy's default list.
+doc-valid-idents = ["KiCad", "FreeCAD", "MuJoCo", "ngspice", "OpenGL", "WebGL2", "WebGPU", "ESP32", "RP2040", "ATmega328P", ".."]
+
+# Tests may unwrap: a panic is the failure report.
+allow-unwrap-in-tests = true
+allow-expect-in-tests = true

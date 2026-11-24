@@ -59,6 +59,9 @@ clubs, capstone teams, and instructors who set and grade lab work.
 **Principles:**
 - **Everything in one window:** code, schematic, PCB, 3D and simulation are tabs of
   one app working on one project. No switching programs, no exporting between tools.
+  Any tab can also be dragged out, or popped out with a button, into a **separate
+  Triage window** (the owner, 2026-11-24): still Triage's own view of the same
+  project, never the stock KiCad or FreeCAD window.
 - **Check together or separately:** simulate the whole device, or just the circuit,
   the code or the mechanism, whenever you like (§4.7).
 - **One project, one truth, many views.**
@@ -503,7 +506,7 @@ expect:
 
 ```
 engineering-solution-/
-  app/                  # the VS Code fork: upstream snapshot + Triage source under src/vs/triage/
+  app/                  # the VS Code fork: upstream.json pin + Triage overlays (src/vs/triage/, resources/), product.json, patches/
   engines/
     eda/                # KiCad fork: upstream + patches/ + Triage additions (stream_gal/, remote_tools/, api/)
     cad/                # FreeCAD fork: upstream + patches/ + Triage RPC module
@@ -517,9 +520,11 @@ engineering-solution-/
   scripts/              # dev environment, builds, research reproduction
 ```
 
-Forks are kept as **upstream snapshot plus a patch queue** (`patches/*.patch`,
-applied by script). Triage-only code lives in separate folders, so upstream merges
-stay mechanical (GUIDELINES §6).
+Forks are kept as a **pinned upstream checkout plus a patch queue**: `upstream.json`
+names the release tag and commit, the build checks it out into `upstream/`
+(git-ignored), then applies `patches/*.patch` and Triage's overlay folders.
+Triage-only code lives in separate folders, so upstream merges stay mechanical
+(GUIDELINES §6).
 
 ### 4.13 Packaging
 
@@ -573,7 +578,7 @@ decision before P8.
 | D6 | **Core languages:** TypeScript (UI), Rust (model, kernel, solvers), C++ (forked engines), C (QEMU peripheral models) | proposed |
 | D7 | **License:** GPL-3.0-or-later for the combined app (compatible with everything reused; no further license work) | default |
 | D8 | **Name:** Triage | **confirmed** 2026-11-24 |
-| D9 | **Integration:** everything in one window; stock KiCad/FreeCAD windows only as a temporary fallback (§4.3); simulation scopes for checking together or separately (§4.7) | **confirmed** 2026-11-24 (the owner's requirement) |
+| D9 | **Integration:** everything in one window, with any tab poppable into a separate Triage window (§1); stock KiCad/FreeCAD windows only as a temporary fallback (§4.3); simulation scopes for checking together or separately (§4.7) | **confirmed** 2026-11-24 (the owner's requirement; separate windows added by the owner the same day, DV-14) |
 | D10 | **Editing path** for KiCad's interactive tools: remote tools vs direct hosting | open: decided by the P1-6 spike (ADR 0004) |
 
 ## 6. Risks and mitigations

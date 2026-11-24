@@ -1,0 +1,27 @@
+{
+	"$comment": "Typechecks Triage's workbench code (vs/triage) and what it imports. esbuild transpiles without type checking, so CI runs this before packaging: node app/build.mjs typecheck",
+	"extends": "./tsconfig.base.json",
+	"compilerOptions": {
+		"noEmit": true,
+		"esModuleInterop": true,
+		"preserveConstEnums": true,
+		"allowJs": true,
+		"resolveJsonModule": true,
+		"isolatedModules": false,
+		"skipLibCheck": true,
+		"types": [
+			"@webgpu/types",
+			"mocha",
+			"semver",
+			"sinon",
+			"trusted-types",
+			"winreg",
+			"wicg-file-system-access"
+		]
+	},
+	"include": [
+		"./vs/triage/node/nodeTypes.d.ts",
+		"./typings",
+		"./vs/triage/**/*.ts"
+	]
+}

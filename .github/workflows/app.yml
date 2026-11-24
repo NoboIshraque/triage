@@ -1,0 +1,162 @@
+# Builds the Triage desktop app from the pinned VS Code release on Windows and
+# Linux, then opens it with Playwright (ROADMAP P0-2). A build takes long, and the
+# repository is private (2-core runners, Windows minutes count double), so this
+# runs only when the app's inputs change, or by hand. P0-7 adds the nightly.
+name: App
+
+on:
+  push:
+    paths:
+      - app/**
+      - scripts/forks/**
+      - .github/workflows/app.yml
+      - engines/hello/**
+      - crates/**
+      - examples/**
+  pull_request:
+    paths:
+      - app/**
+      - scripts/forks/**
+      - .github/workflows/app.yml
+      - engines/hello/**
+      - crates/**
+      - examples/**
+  workflow_dispatch:
+    inputs:
+      nightly:
+        description: Upload the builds as a nightly (kept 3 days)
+        type: boolean
+        default: false
+  # The nightly workflow (P0-7) calls this one.
+  workflow_call:
+    inputs:
+      nightly:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+# A newer push waits for the running build instead of cancelling it (a build
+# is long); only the newest waiting run is kept.
+concurrency:
+  group: app-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  build:
+    name: Build and smoke test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # windows-2022: VS Code's native modules ask for Spectre-mitigated
+        # libraries, which the Visual Studio 2026 on windows-2025 lacked (DV-12).
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch the pinned VS Code release
+        run: node scripts/forks/fetch.mjs app
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: app/upstream/.nvmrc
+
+      # ROADMAP P0-6: the same setup scripts developers use. On Windows this also
+      # loads the Visual Studio environment (packaging runs signtool.exe).
+      - name: Set up the build machine (Linux)
+        if: runner.os == 'Linux'
+        timeout-minutes: 20
+        # Standard runners have about 14 GB of free disk and 8 GB of memory.
+        run: |
+          df -h / && free -h
+          scripts/dev/setup.sh --app
+
+      - name: Set up the build machine (Windows)
+        if: runner.os == 'Windows'
+        timeout-minutes: 30
+        shell: pwsh
+        run: ./scripts/dev/setup.ps1 -App -DevShell
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        shell: bash
+        working-directory: app/upstream
+        run: echo "path=$(corepack pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-app-${{ runner.os }}-${{ hashFiles('app/upstream/pnpm-lock.yaml', 'pnpm-lock.yaml') }}
+          restore-keys: pnpm-app-${{ runner.os }}-
+
+      - name: Patches apply onto a fresh checkout
+        run: node app/build.mjs check-patches
+
+      - name: Prepare (product.json, branding, overlays, patches)
+        run: node app/build.mjs prepare
+
+      - name: Install VS Code's dependencies
+        run: node app/build.mjs install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Type-check Triage's workbench code
+        run: node app/build.mjs typecheck
+
+      - name: Package the app
+        # Windows packages in about 8 minutes; a hang should fail with its log.
+        timeout-minutes: 45
+        run: node app/build.mjs package
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build the engines into the app (CMake, Ninja, Cargo)
+        run: node app/build.mjs engines
+
+      - name: Install the smoke test
+        run: corepack pnpm install --frozen-lockfile --filter @triage/app-smoke
+
+      - name: Smoke test (Linux, virtual display)
+        if: runner.os == 'Linux'
+        run: |
+          # Ubuntu 24.04 blocks the unprivileged user namespaces Chromium's sandbox uses.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          xvfb-run -a corepack pnpm --filter @triage/app-smoke smoke
+
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        run: corepack pnpm --filter @triage/app-smoke smoke
+
+      - name: Upload screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-${{ runner.os }}
+          path: app/.smoke/
+          # The folder name starts with a dot; upload-artifact skips those by default.
+          include-hidden-files: true
+          if-no-files-found: ignore
+          retention-days: 14
+
+      # ROADMAP P0-7: what testers download. Only builds that passed the smoke test.
+      - name: Archives for testers (Windows installer and zip, Linux tar.gz)
+        run: node app/build.mjs dist
+
+      - name: Upload the build
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: triage-${{ runner.os }}${{ inputs.nightly && '-nightly' || '' }}
+          path: app/.dist/
+          # The folder name starts with a dot; upload-artifact skips those by default.
+          include-hidden-files: true
+          compression-level: 0
+          # The repository is private: artifact storage is small, so keep few.
+          retention-days: ${{ inputs.nightly && 3 || 1 }}

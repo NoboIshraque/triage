@@ -7,13 +7,14 @@ in **one window**. Boards: **ESP32, Arduino, Raspberry Pi**. Platform: **Windows
 first** (the owner's laptop), Linux too, macOS later. The team is two: **the owner
 and Claude**.
 
-**Status: planning complete; build starts at ROADMAP P0-1.**
+**Status: building. `docs/STATUS.md` names the current work package.**
 
 ## Read first, every session
 
-1. `docs/STATUS.md`: current work package, open questions, session log.
+1. `docs/STATUS.md`: current phase and work package, open questions, session log.
 2. `docs/ROADMAP.md`: the work package you're on (goal, deliverable, done-when).
 3. `docs/GUIDELINES.md`: session routine, definition of done, forks, testing.
+   `docs/DEVIATIONS.md`: where the build already differs from the plan.
 4. `docs/PLAN.md` and `docs/adr/` for the sections your WP touches.
 5. `docs/research/` when integrating an engine (sizes, boundaries, APIs, evidence).
 
@@ -23,7 +24,8 @@ and Claude**.
   hidden **engine processes** behind Triage's own tabs (ADR 0002, accepted: Stream
   GAL, headless tools, CAD RPC). Don't reimplement an engine algorithm that the
   engine already has.
-- **One window:** everything the user does happens in Triage's tabs. The stock
+- **One window:** everything the user does happens in Triage's tabs (any tab can
+  also be popped out into a separate Triage window, DV-14). The stock
   KiCad or FreeCAD window is only a temporary fallback where the ROADMAP lists it.
   Simulation must work for the whole device and for any part alone (PLAN §4.7).
 - **Windows is first-class:** CI stays green on Windows and Linux. No Linux-only
@@ -35,6 +37,12 @@ and Claude**.
   in its own folders (GUIDELINES §6).
 - **Work in WP order**, one WP at a time unless the owner runs parallel sessions.
   Ask before ADR-level decisions (GUIDELINES §11).
+- **One phase per session.** The owner starts every phase (P0, P1, …) in a new
+  session. Finish the whole phase, update `docs/STATUS.md`, push, then tell the
+  owner the phase is done so they can start the next one (GUIDELINES §2).
+- **Log every deviation from the plan** in `docs/DEVIATIONS.md`, in the same
+  commit as the change: what the plan said, what was built, why. The owner
+  compares the final build with the plan from that list.
 - **Commit and push often:** cloud sessions can restart. Keep background jobs
   under ~6–8 GB RAM combined and launch long jobs detached.
 - **Never execute downloaded third-party binaries without the owner's OK**, and

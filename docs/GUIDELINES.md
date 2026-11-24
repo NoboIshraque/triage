@@ -35,6 +35,13 @@ project coherent across many sessions.
 3. Tell the owner what now works, how to try it on Windows (which nightly, which
    steps), what's next, and any questions.
 
+**One phase per session.** The owner starts each phase (P0, P1, …) in a new
+session. A session works through its phase's WPs in order. When the phase is
+done, it updates `STATUS.md` (phase done, next phase), pushes, and tells the
+owner plainly: "Phase Px is done; start Py in a new session." A session that
+can't finish its phase records where it stopped in `STATUS.md`, and the next
+session continues that phase.
+
 ## 3. Work package template
 
 ```markdown
@@ -59,6 +66,9 @@ before continuing.
 - **Milestone WPs:** the owner has run the exit demo on their Windows laptop.
 - No performance budget from PLAN §4.14 regresses (benchmarks for touched areas).
 - Docs updated: user-facing notes, `STATUS.md`, and an ADR if a decision was made or changed.
+- **Deviations logged:** anything built differently from PLAN, ROADMAP,
+  GUIDELINES or an ADR has an entry in `DEVIATIONS.md` (plan said · built · why ·
+  docs updated? · revisit), added in the same commit.
 
 ## 5. Branches and pull requests
 
@@ -71,10 +81,21 @@ before continuing.
 ## 6. Forks: VS Code, KiCad, FreeCAD, Espressif QEMU
 
 All four follow the same rules:
-- `upstream/`: a pinned upstream release, imported untouched.
+- `upstream.json` pins an upstream release (tag **and** commit).
+  `scripts/forks/fetch.mjs` checks out exactly that commit into `upstream/`,
+  untouched and **not committed** (git-ignored), and refuses a tag that moved.
+  The trees are large (VS Code 1.147.0: 411 MB, 21,462 files), so this repository
+  holds only the pin and Triage's changes.
 - `patches/`: numbered `*.patch` files with **small** changes to upstream
-  files, such as registration hooks or new backends. Apply and refresh them with
-  `scripts/forks/apply.sh` and `scripts/forks/refresh.sh` (created in P0-3).
+  files, such as registration hooks or new backends. `scripts/forks/patches.mjs`
+  applies them in order, refreshes them from edits in the checkout (each upstream
+  file belongs to one patch), and checks that they apply onto a fresh checkout.
+  For the app: `node app/build.mjs refresh-patches | check-patches`.
+- Overlay folders: files that replace upstream files or add new ones at the
+  same path. For the app: `app/src/` (Triage's code under `src/vs/triage/`) and
+  `app/resources/` (branding). Its `product.json` keys merge over upstream's.
+- Never edit `upstream/` by hand: the build resets it to the pinned commit
+  (`app/build.mjs prepare` refuses to discard edits it didn't make).
 - **Triage-only code lives in its own folders** (`app/src/vs/triage/`,
   `engines/eda/triage/`, `engines/cad/triage/`, `engines/qemu-esp32/triage/`), so
   upstream merges stay mechanical.
@@ -145,6 +166,26 @@ For source trees we have (the forks), read the source. REA is for shipped artifa
   append the flag to `NODE_OPTIONS`, not put it first. Putting it first silently
   overrode REA's parent heap in the planning runs. Check this before sizing Node
   builds (VS Code's build in P0-2) or analyses.
+
+**From the first build session (P0, 2026-11-24):**
+- **GitHub's 2-core runners have 8 GB of memory and about 14 GB of free
+  disk.** VS Code's bundler needed more than 7 GB; the app bundles one entry
+  point at a time without source maps (3.7 GB, DV-13). An 8 GB swap file then
+  filled the Linux disk during `pnpm install`, and the runner died without a
+  log: don't trade disk for memory there. A full `tsc` typecheck of VS Code ran
+  out of a 7 GB heap; type-check Triage's code with `src/tsconfig.triage.json`.
+- **Measure before guessing.** A watchdog that samples the process tree's RSS
+  (`/proc`) and kills it at a limit found the bundler's peak in two minutes,
+  safely inside a cloud session.
+- **Windows images differ:** `windows-2025` offers Visual Studio 2026, where VS
+  Code's native modules failed (Spectre libraries, inferred); the app builds on
+  `windows-2022` (DV-12). Windows runners also carry Strawberry Perl's `ccache`.
+- **App builds take about 30-45 minutes per OS**, so the App workflow queues
+  instead of cancelling, and runs only when the app's inputs change.
+- **New files must be formatted before their first commit:** the native
+  formatter lists files with `git ls-files`, so it now includes untracked ones.
+- **Electron is never run in Claude's sessions** (owner's OK pending): the app
+  is verified by the smoke test in CI, with screenshots in the artifacts.
 
 ## 11. When Claude stops and asks
 

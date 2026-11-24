@@ -1,0 +1,199 @@
+# Triage CI: Windows and Linux on every push (GUIDELINES §8, ADR 0003).
+# macOS joins by ROADMAP P8. P0-6 moves the tool installs below into
+# scripts/dev/setup.sh and scripts/dev/setup.ps1.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TELEMETRY_DISABLED: '1'
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: '0'
+
+jobs:
+  format:
+    name: Format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Prettier
+        run: pnpm format:check
+      - name: clang-format (Ubuntu's clang-format 18)
+        run: |
+          command -v clang-format-18 || { sudo apt-get update && sudo apt-get install -y clang-format-18; }
+          CLANG_FORMAT=clang-format-18 pnpm format:native:check
+      - name: rustfmt
+        run: |
+          rustup toolchain install
+          cargo fmt --all --check
+
+  typescript:
+    name: TypeScript (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build, typecheck, lint and test
+        run: pnpm check
+
+  rust:
+    name: Rust (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install the pinned toolchain (rust-toolchain.toml)
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Test
+        run: cargo test --workspace --locked
+      - name: Build the napi addon (triage_model.node)
+        run: node crates/triage-model-node/build.mjs
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @triage/model-node
+      - name: Addon and schema tests (ROADMAP P0-5)
+        run: pnpm --filter @triage/model-node test
+        env:
+          TRIAGE_REQUIRE_ADDON: '1'
+
+  native:
+    name: Native C++ (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: MSVC developer environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Ninja (Linux)
+        if: runner.os == 'Linux'
+        run: command -v ninja || { sudo apt-get update && sudo apt-get install -y ninja-build; }
+      - name: Ninja (Windows)
+        if: runner.os == 'Windows'
+        run: if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) { choco install ninja -y --no-progress }
+      - name: Tool versions
+        run: |
+          cmake --version
+          ninja --version
+      - name: Configure, build and test (CMake workflow preset "ci")
+        run: cmake --workflow --preset ci
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @triage/engine-tests
+      - name: Engine connection tests and benchmark (ROADMAP P0-4)
+        run: pnpm --filter @triage/engine-tests test
+        env:
+          TRIAGE_REQUIRE_ENGINE: '1'
+      - name: Upload the benchmark
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: benchmark-${{ runner.os }}
+          path: build/benchmarks/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  # ROADMAP P0-6: a fresh machine builds everything following only the setup scripts.
+  setup-linux:
+    name: Setup script (fresh ubuntu:24.04 container)
+    runs-on: ubuntu-24.04
+    container: ubuntu:24.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: scripts/dev/setup.sh
+        run: scripts/dev/setup.sh
+      - name: Build and test everything
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm check
+          cargo test --workspace --locked
+          cmake --workflow --preset ci
+          node crates/triage-model-node/build.mjs
+          TRIAGE_REQUIRE_ADDON=1 pnpm --filter @triage/model-node test
+          TRIAGE_REQUIRE_ENGINE=1 pnpm --filter @triage/engine-tests test
+
+  setup-windows:
+    name: Setup script (fresh Windows runner)
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: scripts/dev/setup.ps1 -DevShell
+        run: ./scripts/dev/setup.ps1 -DevShell
+      - name: Build and test everything
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          pnpm install --frozen-lockfile
+          pnpm check
+          cargo test --workspace --locked
+          cmake --workflow --preset ci
+          node crates/triage-model-node/build.mjs
+          $env:TRIAGE_REQUIRE_ADDON = '1'
+          pnpm --filter @triage/model-node test
+          $env:TRIAGE_REQUIRE_ENGINE = '1'
+          pnpm --filter @triage/engine-tests test
+
+  ci-ok:
+    name: CI result
+    if: always()
+    needs: [format, typescript, rust, native, setup-linux, setup-windows]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Every job passed on Windows and Linux
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "Job results: $RESULTS"
+          for result in $RESULTS; do
+            [ "$result" = success ] || exit 1
+          done

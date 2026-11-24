@@ -1,0 +1,21 @@
+{
+  "name": "@triage/model-node",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Tests of the triage-model napi addon and the triage.toml JSON Schema (ROADMAP P0-5).",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "build:addon": "node build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "ajv": "^8.17.0",
+    "smol-toml": "^1.4.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

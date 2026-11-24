@@ -1,0 +1,39 @@
+{
+  "name": "triage-monorepo",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Triage: one app for code, circuits and 3D design, with whole-device simulation.",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "typecheck": "turbo run typecheck",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "check": "turbo run build typecheck lint test lint:root test:root",
+    "format": "prettier --write . && node scripts/format/native.mjs --write",
+    "format:check": "prettier --check .",
+    "format:native": "node scripts/format/native.mjs --write",
+    "format:native:check": "node scripts/format/native.mjs --check",
+    "native": "cmake --workflow --preset dev",
+    "native:ci": "cmake --workflow --preset ci",
+    "lint:root": "eslint scripts app/build.mjs eslint.config.mjs",
+    "app:build": "node app/build.mjs",
+    "app:smoke": "pnpm --filter @triage/app-smoke smoke",
+    "test:root": "node --test \"scripts/**/*.test.mjs\""
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "@types/node": "catalog:",
+    "eslint": "^10.0.0",
+    "globals": "^17.0.0",
+    "prettier": "^3.6.0",
+    "turbo": "^2.5.0",
+    "typescript": "catalog:",
+    "typescript-eslint": "^8.50.0"
+  }
+}

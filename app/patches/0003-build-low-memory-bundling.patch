@@ -1,0 +1,26 @@
+Optional bundles without source maps (TRIAGE_NO_SOURCEMAPS; DV-13).
+
+Upstream bundles all 28 desktop entry points at once with linked source maps
+(sourcesContent: true) and keeps every output in memory before writing. On
+GitHub's 8 GB runners that exhausted memory. Measured on a 16 GB machine
+(non-minified desktop bundle, total RSS of the process tree):
+- upstream (parallel, source maps): past 7 GB after 93 s (esbuild 6 GB), stopped;
+- parallel, no source maps: 6.3 GB peak, 101 s;
+- sequential (0002), source maps: esbuild 3.4 GB, then Node ran out of heap;
+- sequential, no source maps: 3.7 GB peak, 96 s.
+app/build.mjs sets both switches unless --sourcemaps is given. Unset,
+nothing changes.
+
+diff --git a/build/next/bundle.ts b/build/next/bundle.ts
+index 4acfa41522b73833de879ebef2a5d3ef72117a16..163f30b709a0ab392afa143fd6e5ff2ea428e33f 100644
+--- a/build/next/bundle.ts
++++ b/build/next/bundle.ts
+@@ -16,7 +16,7 @@ export function getBundleOptions(minify: boolean, platform: 'neutral' | 'node'):
+ 		platform,
+ 		target: ['es2024'],
+ 		packages: 'external',
+-		sourcemap: 'linked',
++		sourcemap: process.env['TRIAGE_NO_SOURCEMAPS'] ? false : 'linked',
+ 		sourcesContent: true,
+ 		minify,
+ 		treeShaking: true,

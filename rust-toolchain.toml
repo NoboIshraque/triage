@@ -1,0 +1,6 @@
+# Pinned so local builds and both CI operating systems use the same compiler
+# and lints. `rustup toolchain install` (no arguments) installs it.
+[toolchain]
+channel = "1.97.0"
+profile = "minimal"
+components = ["rustfmt", "clippy"]

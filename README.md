@@ -17,8 +17,11 @@ reads sensors in a 3D physics world, with automated pass/fail tests. You can als
 simulate just the circuit, just the code or just the mechanism. Boards: **ESP32,
 Arduino and Raspberry Pi**. Everything runs locally on a laptop, **Windows first**.
 
-> **Status: planning complete.** The build starts at ROADMAP P0-1. The team is two:
-> the owner and Claude.
+> **Status: P0 Foundations done.** Triage builds from VS Code's source on Windows
+> and Linux, with its own sidebar, an Engineering layout, a native engine behind a
+> broker, `triage.toml` projects and a Windows installer. Next: P1 (KiCad's engine
+> inside Triage). See [docs/STATUS.md](docs/STATUS.md). The team is two: the owner
+> and Claude.
 
 ## Documents
 
@@ -28,9 +31,43 @@ Arduino and Raspberry Pi**. Everything runs locally on a laptop, **Windows first
 | [docs/PLAN.md](docs/PLAN.md) | Architecture: VS Code fork, hidden engines, project model, simulation kernel and scopes, decisions, risks |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Phases P0–P8 as work packages with acceptance checks; milestones M1–M5 |
 | [docs/GUIDELINES.md](docs/GUIDELINES.md) | How the owner and Claude build it: session routine, definition of done, forks, testing, Windows rules |
+| [docs/DEVIATIONS.md](docs/DEVIATIONS.md) | Where the build differs from the plan, and why |
 | [docs/adr/](docs/adr/0001-standalone-app-on-vscode-codebase.md) | Decisions: 0001 standalone app on VS Code's codebase, 0002 hidden engines, 0003 boards and Windows |
 | [docs/research/](docs/research/README.md) | Full REA breakdowns of VS Code, KiCad, FreeCAD, Blender and the simulators |
 | [CLAUDE.md](CLAUDE.md) | Instructions for every Claude session |
+
+## Build from source
+
+The setup scripts install or check everything (Node at the version in `.nvmrc`,
+pnpm, Rust, CMake, Ninja, a C++ compiler; MSVC on Windows). CI builds from a
+fresh machine with them:
+
+```sh
+scripts/dev/setup.sh            # Linux (Debian/Ubuntu); --check only reports, --app adds the VS Code fork's libraries
+scripts\dev\setup.ps1 -DevShell  # Windows; -Check only reports, -App adds Spectre-mitigated libraries
+```
+
+Then:
+
+```sh
+pnpm install
+pnpm check                      # TypeScript: build, typecheck, lint, test (Turborepo)
+cargo test --workspace          # Rust
+cmake --workflow --preset dev   # Triage's own native C++ (configure, build, test)
+pnpm format:check               # Prettier; `pnpm format:native:check` for C/C++ (clang-format 18)
+```
+
+CI runs the same checks on Windows and Linux ([.github/workflows/ci.yml](.github/workflows/ci.yml)).
+
+| Folder | What |
+|---|---|
+| `app/` | the VS Code fork (P0-2) |
+| `engines/` | native engine processes: KiCad, FreeCAD, Espressif QEMU forks, render scripts, hello engine |
+| `crates/` | Rust: project model, simulation kernel, solvers |
+| `sim/` | Node helpers for emulators, adapters, Pi bridge, network gateway |
+| `parts/` | smart part library |
+| `cli/` | the `triage` command line |
+| `docs/`, `scripts/` | plan and research; dev, build and research scripts |
 
 ## The core idea
 

@@ -1,0 +1,92 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://triage.invalid/schema/triage.toml/v0.json",
+  "title": "Triage project manifest (triage.toml), format 0",
+  "description": "The file at the root of a Triage project. It names the project and where each domain's files live. The domain files themselves (KiCad, FreeCAD, firmware, scenarios) stay in their own formats.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["project"],
+  "properties": {
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "format"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Shown in Triage's project explorer."
+        },
+        "format": { "const": 0, "description": "Manifest format version. Triage reads format 0." },
+        "description": { "type": "string" }
+      }
+    },
+    "firmware": {
+      "description": "Code: firmware or scripts.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": { "$ref": "#/$defs/relativePath", "default": "firmware" },
+        "board": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Board profile, e.g. arduino-uno, esp32-devkitc, pico."
+        },
+        "build": {
+          "enum": [
+            "platformio",
+            "arduino-cli",
+            "cmake",
+            "esp-idf",
+            "pico-sdk",
+            "micropython",
+            "python"
+          ],
+          "description": "How the code is built or run."
+        }
+      }
+    },
+    "electronics": {
+      "description": "Electronics: a KiCad project.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": { "$ref": "#/$defs/relativePath", "default": "electronics" },
+        "kicad_project": {
+          "$ref": "#/$defs/relativePath",
+          "pattern": "\\.kicad_pro$",
+          "description": "Relative to path."
+        }
+      }
+    },
+    "mechanical": {
+      "description": "Mechanical: FreeCAD documents.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": { "$ref": "#/$defs/relativePath", "default": "mechanical" },
+        "documents": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/relativePath", "pattern": "\\.FCStd$" },
+          "description": "Relative to path."
+        }
+      }
+    },
+    "simulation": {
+      "description": "Simulation: environment, scopes and scenario tests.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "path": { "$ref": "#/$defs/relativePath", "default": "simulation" }
+      }
+    }
+  },
+  "$defs": {
+    "relativePath": {
+      "type": "string",
+      "minLength": 1,
+      "description": "A path inside the project, with forward slashes. Not absolute, no '..'.",
+      "pattern": "^(?![A-Za-z]:)(?!/)(?!.*\\\\)(?!(.*/)?\\.\\.(/|$)).+$"
+    }
+  }
+}

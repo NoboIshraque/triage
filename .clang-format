@@ -1,0 +1,9 @@
+# Style for Triage's own C/C++ (engines/hello and later Triage-only native code).
+# Code inside forked engines follows that upstream's style and its own
+# .clang-format file (CLAUDE.md, Conventions).
+BasedOnStyle: LLVM
+ColumnLimit: 100
+IndentWidth: 2
+PointerAlignment: Right
+AllowShortFunctionsOnASingleLine: Inline
+IncludeBlocks: Regroup
