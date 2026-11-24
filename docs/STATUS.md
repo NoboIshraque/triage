@@ -4,8 +4,8 @@
 
 **Last updated:** 2026-11-24 · **Phase P0 Foundations: P0-1 … P0-7 done** (the owner ran
 the Windows build on 2026-11-24). **Next:** **P0-8, Triage's own GitHub sign-in**
-(added at the owner's request; waiting on the owner's registration, steps
-below), then **P1 Electronics engine + views** in a new session (P1-1, KiCad
+(added at the owner's request; the app is registered and patched in, the
+owner's sign-in test is next, steps below), then **P1 Electronics engine + views** in a new session (P1-1, KiCad
 fork builds).
 
 ### P0 in one paragraph
@@ -40,7 +40,20 @@ Triage's own registration therefore needs the device flow and no secret:
 4. Give Claude the **Client ID** (it usually starts with `Ov23`). It isn't
    secret: GitHub shows it to everyone who signs in.
 
-Claude then patches it into the build. **Unknown:** whether GitHub Copilot
+**Done 2026-11-24:** the owner registered the app; its client ID
+`Ov23liajKvj7l41nmMfw` is in `app/patches/0004-github-sign-in-as-triage.patch`,
+and the smoke test checks the packaged app carries it (and not VS Code's).
+Claude's sessions can't check sign-in themselves: their network refuses
+GitHub's sign-in endpoints (observed 2026-11-24).
+
+**The owner's test (P0-8 done-when),** on a Windows build with patch 0004:
+
+1. In Triage, click the **Accounts** icon (bottom left), pick the GitHub
+   account and **Sign Out**: the earlier sign-in went through VS Code's app.
+2. Sign in again (the **Sign In** button). GitHub's page should name **Triage**.
+3. Send a Copilot prompt, and tell Claude whether it answers or the error.
+
+**Unknown:** whether GitHub Copilot
 accepts a sign-in from an app other than VS Code. Other unofficial Copilot
 clients reuse official GitHub app IDs rather than their own, which hints it may
 not (inferred). The P0-8 test settles it.
@@ -107,7 +120,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Phase | WP | Status |
 |---|---|---|
-| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in | P0-1 … P0-7 **done**; **P0-8 in progress** (waiting on the owner's GitHub registration) |
+| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in | P0-1 … P0-7 **done**; **P0-8 in progress** (app registered, patch 0004 in; the owner's sign-in test next) |
 | P1 Electronics engine + views (M1) | P1-1 … P1-7 | not started |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |

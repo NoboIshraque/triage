@@ -1,0 +1,25 @@
+GitHub sign-in as Triage, not Visual Studio Code (ROADMAP P0-8, DV-15).
+
+VS Code's open-source GitHub sign-in uses VS Code's own GitHub OAuth app
+(client ID 01ab8ac9400c4e429b23), so GitHub told users they were authorizing
+"Visual Studio Code". Triage uses the OAuth app the owner registered for it
+(device flow on, token expiry off, no client secret). Microsoft adds VS Code's
+client secret only to its own builds, so Triage signs in with the device flow
+either way.
+
+diff --git a/extensions/github-authentication/src/config.ts b/extensions/github-authentication/src/config.ts
+index 8cd3a9ed79310ae6ee1bd54f47d283e7b9cdc354..7a2780a6016bc409d2e050fe41a79c99054c906b 100644
+--- a/extensions/github-authentication/src/config.ts
++++ b/extensions/github-authentication/src/config.ts
+@@ -14,6 +14,10 @@ export interface IConfig {
+ // NOTE: GitHub client secrets cannot be secured when running in a native client so in other words, the client secret is
+ // not really a secret... so we allow the client secret in code. It is brought in before we publish VS Code. Reference:
+ // https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/best-practices-for-creating-an-oauth-app#client-secrets
++// Triage (ROADMAP P0-8): Triage's own GitHub OAuth app, registered by the owner
++// with the device flow on and no client secret, so GitHub names Triage, not
++// Visual Studio Code, when a user signs in. Without a secret, sign-in uses the
++// device flow (see getFlows in flows.ts).
+ export const Config: IConfig = {
+-	gitHubClientId: '01ab8ac9400c4e429b23'
++	gitHubClientId: 'Ov23liajKvj7l41nmMfw'
+ };

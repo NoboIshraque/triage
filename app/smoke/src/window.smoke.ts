@@ -10,6 +10,10 @@ import { appDir, packagedApp, triageProduct } from './app.js';
 const outputDir = path.join(appDir, '.smoke');
 const shot = (name: string) => path.join(outputDir, `${name}-${process.platform}.png`);
 
+/** GitHub OAuth apps: Triage's own and VS Code's (app/patches/0004-github-sign-in-as-triage.patch). */
+const TRIAGE_GITHUB_CLIENT_ID = 'Ov23liajKvj7l41nmMfw';
+const VSCODE_GITHUB_CLIENT_ID = '01ab8ac9400c4e429b23';
+
 /** The tabs of the Engineering layout (app/src/vs/triage/common/triage.ts). */
 const ENGINEERING_TABS = ['code', 'schematic', 'board', '3d', 'sim'];
 
@@ -69,6 +73,17 @@ describe('packaged Triage app', () => {
     expect(packaged['extensionsGallery']).toMatchObject({
       serviceUrl: 'https://open-vsx.org/vscode/gallery',
     });
+  });
+
+  // ROADMAP P0-8: GitHub names Triage, not Visual Studio Code, at sign-in.
+  it("signs in to GitHub with Triage's own OAuth app", () => {
+    const extensions = path.join(path.dirname(app.productJson), 'extensions');
+    const signIn = readFileSync(
+      path.join(extensions, 'github-authentication', 'dist', 'extension.js'),
+      'utf8',
+    );
+    expect(signIn).toContain(TRIAGE_GITHUB_CLIENT_ID);
+    expect(signIn).not.toContain(VSCODE_GITHUB_CLIENT_ID);
   });
 
   it('opens a window showing the workbench', async () => {
