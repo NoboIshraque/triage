@@ -41,6 +41,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  renameSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -269,7 +270,6 @@ function dist({ arch }) {
   const { nameShort } = JSON.parse(readFileSync(path.join(appDir, 'product.json'), 'utf8'));
   const date = new Date().toISOString().slice(0, 10).replaceAll('-', '');
   const stamp = `${date}-${git(repoRoot, ['rev-parse', '--short=8', 'HEAD'])}`;
-  const top = path.basename(folder);
 
   if (platform === 'win32') {
     // The updater the installer needs, then VS Code's own Inno Setup build.
@@ -283,13 +283,24 @@ function dist({ arch }) {
       'VSCodeSetup.exe',
     );
     cpSync(setup, path.join(out, `${nameShort}UserSetup-${arch}-${stamp}.exe`));
-    // Windows' own tar (bsdtar) writes zip files; -s renames the top folder.
-    const tar = path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe');
-    const zip = path.join(out, `${nameShort}-win32-${arch}-${stamp}.zip`);
-    run(tar, ['-a', '-c', '-f', zip, '-s', `/^${top}/${nameShort}/`, '-C', appDir, top]);
-  } else {
-    const archive = path.join(out, `${nameShort}-${platform}-${arch}-${stamp}.tar.gz`);
-    run('tar', ['-czf', archive, `--transform=s,^${top},${nameShort},`, '-C', appDir, top]);
+  }
+  // Archive the folder under the product's name: rename it for the moment
+  // (Windows' bsdtar has no option to rename while archiving).
+  const named = path.join(appDir, nameShort);
+  if (existsSync(named)) throw new ForkError(`${named} is in the way; remove it`);
+  renameSync(folder, named);
+  try {
+    if (platform === 'win32') {
+      // Windows' own tar (bsdtar) writes zip files.
+      const tar = path.join(process.env.SystemRoot ?? 'C:\\Windows', 'System32', 'tar.exe');
+      const zip = path.join(out, `${nameShort}-win32-${arch}-${stamp}.zip`);
+      run(tar, ['-a', '-c', '-f', zip, '-C', appDir, nameShort]);
+    } else {
+      const archive = path.join(out, `${nameShort}-${platform}-${arch}-${stamp}.tar.gz`);
+      run('tar', ['-czf', archive, '-C', appDir, nameShort]);
+    }
+  } finally {
+    renameSync(named, folder);
   }
   for (const file of readdirSync(out)) {
     const mib = statSync(path.join(out, file)).size / 2 ** 20;

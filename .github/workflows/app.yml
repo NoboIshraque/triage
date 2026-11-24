@@ -148,6 +148,8 @@ jobs:
         with:
           name: smoke-${{ runner.os }}
           path: app/.smoke/
+          # The folder name starts with a dot; upload-artifact skips those by default.
+          include-hidden-files: true
           if-no-files-found: ignore
           retention-days: 14
 
@@ -160,6 +162,8 @@ jobs:
         with:
           name: triage-${{ runner.os }}${{ inputs.nightly && '-nightly' || '' }}
           path: app/.dist/
+          # The folder name starts with a dot; upload-artifact skips those by default.
+          include-hidden-files: true
           compression-level: 0
           # The repository is private: artifact storage is small, so keep few.
           retention-days: ${{ inputs.nightly && 3 || 1 }}
