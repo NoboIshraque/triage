@@ -176,6 +176,18 @@ describe('packaged Triage app', () => {
       .waitFor({ state: 'visible', timeout: 30_000 });
     await window.screenshot({ path: shot('walkthrough') });
   });
+  // The owner's request (2026-11-24): VS Code's built-in Copilot chat stays hidden.
+  // Checked late, after the chat would have offered itself.
+  it("hides VS Code's built-in Copilot chat", async () => {
+    expect(await window.locator('.part.auxiliarybar').isVisible()).toBe(false);
+    expect(
+      await window.locator('.part.titlebar').getByText('Sign In', { exact: true }).count(),
+    ).toBe(0);
+    const statusItems = await window.locator('.part.statusbar .statusbar-item').all();
+    const statusIds = await Promise.all(statusItems.map((item) => item.getAttribute('id')));
+    expect(statusIds.filter((id) => id !== null && /chat|copilot/i.test(id))).toEqual([]);
+    expect(await window.locator('.notification-toast', { hasText: 'Copilot' }).count()).toBe(0);
+  });
   // The owner's request (2026-11-24): views can also live in windows of their own.
   it('opens Schematic, Board, 3D and Sim in separate windows', async () => {
     const app = electronApp;
