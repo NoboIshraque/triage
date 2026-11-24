@@ -2,9 +2,33 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-24 · **Phase:** P0 Foundations.
-**Done:** **P0-1 Repository skeleton** (CI green on Windows and Linux).
-**Current work package:** **P0-2 VS Code fork imported**.
+**Last updated:** 2026-11-24 · **Phase P0 Foundations: done** (one owner check
+left, below). **Next:** start **P1 Electronics engine + views** in a new session
+(P1-1, KiCad fork builds).
+
+### P0 in one paragraph
+
+Triage now builds as its own desktop app from VS Code 1.147.0, on Windows and
+Linux, in CI. Opening a folder with a `triage.toml` shows the project's four
+domains in the Triage sidebar. One command lays out Code, Schematic, Board, 3D
+and Sim tabs (placeholders until P1–P3 fill them). A native "hello engine" runs
+behind a utility-process broker, survives being killed, and streams 114 MB/s
+into the window. CI builds the Windows per-user installer and a portable zip.
+
+### Try it on Windows (the P0-7 owner check)
+
+1. Open the repository's **Actions** tab → workflow **App** → the newest green
+   run on branch `claude/intelligent-allen-bqg63r` → artifact **triage-Windows**
+   (kept 1 day; nightlies, kept 3 days, start once this branch is merged into
+   the default branch).
+2. Unzip it. Either run `TriageUserSetup-x64-….exe` (per-user, no admin) or
+   unzip `Triage-win32-x64-….zip` and start `Triage\Triage.exe`. Windows
+   SmartScreen will warn: the build is unsigned (decision due before P8).
+3. Open a folder with a `triage.toml` (for example `examples/smart-fan` from a
+   clone), click the Triage icon at the top of the activity bar, then **Open
+   Engineering Layout** and **Benchmark Hello Engine**.
+
+Tell Claude what felt wrong. P0-7 is done when you have launched it.
 
 ## Decisions confirmed by the owner (2026-11-24)
 
@@ -19,7 +43,7 @@
 ## Deviations from the plan
 
 Every place the build differs from the plan is logged in
-[DEVIATIONS.md](DEVIATIONS.md) (10 entries so far, DV-01 … DV-10), so the
+[DEVIATIONS.md](DEVIATIONS.md) (13 entries, DV-01 … DV-13, plus choices the plan left open), so the
 owner can compare the final build with the plan.
 
 ## Open questions
@@ -28,9 +52,10 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Topic | Default | Needed by |
 |---|---|---|
-| **May Claude run Electron in its cloud sessions?** Building VS Code downloads Electron and other prebuilt helpers, and CLAUDE.md says not to run downloaded third-party binaries without the owner's OK | no: the app is built and smoke-tested only in CI (GitHub's machines). Saying yes makes P0-3's UI work faster, because Claude could open the app and take screenshots locally | P0-3 |
-| GitHub Copilot ships **built in** to VS Code 1.147 (`extensions/copilot`). Keep, hide or remove it in Triage? (VSCodium removes it) | keep upstream's for now | P0-7 |
-| GitHub Actions minutes: the repository is private, so runners have 2 cores and Windows minutes count double. The app build runs only when `app/` changes | that trigger rule, plus a nightly from P0-7 | P0-7 |
+| **May Claude run Electron in its cloud sessions?** Building VS Code downloads Electron and other prebuilt helpers, and CLAUDE.md says not to run downloaded third-party binaries without the owner's OK | no: the app is built and smoke-tested only in CI, with screenshots in the artifacts (that worked for all of P0, at about 25 minutes per round trip). Saying yes would speed up UI work in P1-4 | P1-4 |
+| **GitHub Copilot and agents are built into VS Code 1.147**: the screenshots show its chat panel open on the right, a Copilot sign-in prompt, and a startup error ("agentHostManagement timed out"). Keep, hide or remove? | recommendation: hide by default in P1 (product defaults) and remove later if you prefer; kept as upstream ships it so far | P1 |
+| **Merge this branch into the default branch?** Scheduled nightlies run only from the default branch | Claude opens a pull request when you ask | before nightlies |
+| GitHub Actions minutes and storage: private repository, 2-core runners, Windows minutes count double. An App build takes about 25 minutes per OS (Windows ~25, the installer adds ~7); the Windows artifacts are about 660 MB | App builds only when the app's inputs change, nightlies only after commits, 1–3 days retention | now |
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
 | Windows code-signing certificate (avoids SmartScreen warnings) | unsigned nightlies; decide before P8-2 | P8 |
@@ -40,7 +65,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Phase | WP | Status |
 |---|---|---|
-| P0 Foundations, Windows + Linux | **P0-1 skeleton: done** · P0-2 VS Code fork: in progress · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies | in progress |
+| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies | **done** (P0-7: owner check pending) |
 | P1 Electronics engine + views (M1) | P1-1 … P1-7 | not started |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
@@ -105,3 +130,39 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
     adds a cached one.
   - `ilammy/msvc-dev-cmd@v1` targets Node 20, so GitHub forces it onto Node 24
     with a warning. It works.
+- **2026-11-24 (P0 done, first build session).** Every P0 work package, with
+  the evidence for its "done when" (ROADMAP P0):
+
+  | WP | Done when | Evidence |
+  |---|---|---|
+  | P0-1 | CI green on Windows and Linux | CI run 1: all 8 jobs green |
+  | P0-2 | Running builds on Linux and Windows; a Playwright smoke test opens a window on both | App run 10, Windows: build, package, smoke test 10/10 with screenshots. Linux: App run 11 pending (runs 9–10 died on a full disk; fixed in be7fc80) |
+  | P0-3 | Triage sidebar and layout visible; the patch queue re-applies onto a fresh upstream checkout | smoke checks (sidebar, five tabs in five groups, walkthrough); `check-patches` step on every App run; 6 patch-queue tests |
+  | P0-4 | ≥ 100 MB/s of binary frames on Windows and Linux; a killed engine shows "reconnecting" and recovers | engine → broker: 543–612 MB/s (Windows CI), 1.2–1.7 GB/s (Linux); into the window: 114–115 MB/s (Windows smoke). Kill → reconnecting → recovered in the engine tests (both OSes) and the smoke test |
+  | P0-5 | `examples/smart-fan` shows the four domains; Rust and TS unit tests | smoke check and screenshot; 12 Rust tests; addon and JSON Schema tests on both OSes |
+  | P0-6 | A fresh container and a fresh Windows runner build following only the scripts | CI jobs `setup-linux` (fresh `ubuntu:24.04` container) and `setup-windows` green in run 14 |
+  | P0-7 | The owner downloads the nightly and launches it on Windows | Windows installer and zip built and uploaded (run 10); **waiting for the owner** |
+
+  Built along the way: the pinned-checkout fork model with overlays and a
+  patch queue (3 patches), `app/build.mjs` (fetch, prepare, install,
+  typecheck, package, engines, dist), Triage's workbench code in
+  `app/src/vs/triage/`, the C++ hello engine with Unix-socket and named-pipe
+  transports, the Rust project model with its napi addon, setup scripts for
+  both systems, and the App and Nightly workflows.
+
+  **Known issues for the next phases:**
+  - Into-window throughput (114 MB/s) is barely above target. VS Code's IPC
+    channel is the narrow part (285 MB/s reach the broker). P1-3/P1-4 should
+    give display lists a direct MessagePort with transferable buffers.
+  - Upstream's Copilot/agent UI shows on first start, with an
+    "agentHostManagement timed out" error (open question above).
+  - The installer shows VS Code's wizard images and MIT license page (P8-2).
+  - Builds have no source maps (DV-13); stack traces point into bundles.
+  - Copilot ships 51 MB of extension in the app; removing it shrinks builds.
+
+  **Corrections:** an early commit said the first App run "sat in apt-get for
+  over ten minutes"; it had been about two minutes (misread timestamps). The
+  Windows build failure on `windows-2025` is attributed to missing Spectre
+  libraries by inference (DV-12), not from the log. The first Linux hangs were
+  blamed on memory and that held (measured, DV-13), but runs 9–10 then died on
+  a full disk caused by the swap file added as a memory fix.

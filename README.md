@@ -17,9 +17,11 @@ reads sensors in a 3D physics world, with automated pass/fail tests. You can als
 simulate just the circuit, just the code or just the mechanism. Boards: **ESP32,
 Arduino and Raspberry Pi**. Everything runs locally on a laptop, **Windows first**.
 
-> **Status: building.** P0-1 (repository skeleton, CI on Windows and Linux) is
-> done; see [docs/STATUS.md](docs/STATUS.md) for the current work package. The
-> team is two: the owner and Claude.
+> **Status: P0 Foundations done.** Triage builds from VS Code's source on Windows
+> and Linux, with its own sidebar, an Engineering layout, a native engine behind a
+> broker, `triage.toml` projects and a Windows installer. Next: P1 (KiCad's engine
+> inside Triage). See [docs/STATUS.md](docs/STATUS.md). The team is two: the owner
+> and Claude.
 
 ## Documents
 
