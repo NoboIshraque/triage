@@ -68,9 +68,6 @@ jobs:
         with:
           node-version-file: app/upstream/.nvmrc
 
-      - name: Enable corepack (each package.json pins its pnpm)
-        run: corepack enable
-
       - name: More swap (Linux)
         if: runner.os == 'Linux'
         # The 2-core runners have 8 GB of memory; VS Code's bundling can need more.
@@ -81,12 +78,18 @@ jobs:
           sudo swapon /mnt/triage.swap
           free -h
 
-      - name: Linux build and display packages
+      # ROADMAP P0-6: the same setup scripts developers use. On Windows this also
+      # loads the Visual Studio environment (packaging runs signtool.exe).
+      - name: Set up the build machine (Linux)
         if: runner.os == 'Linux'
-        timeout-minutes: 15
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends pkg-config xvfb libgtk-3-0 libxkbfile-dev libkrb5-dev libgbm1
+        timeout-minutes: 20
+        run: scripts/dev/setup.sh --app
+
+      - name: Set up the build machine (Windows)
+        if: runner.os == 'Windows'
+        timeout-minutes: 30
+        shell: pwsh
+        run: ./scripts/dev/setup.ps1 -App -DevShell
 
       - name: Locate the pnpm store
         id: pnpm-store
@@ -116,24 +119,14 @@ jobs:
         run: node app/build.mjs typecheck
 
       - name: Package the app
+        # Windows packages in about 8 minutes; a hang should fail with its log.
+        timeout-minutes: 45
         run: node app/build.mjs package
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: MSVC developer environment (Windows)
-        if: runner.os == 'Windows'
-        uses: ilammy/msvc-dev-cmd@v1
-        with:
-          arch: x64
-
-      - name: Rust toolchain (rust-toolchain.toml) for the model addon
-        run: rustup toolchain install
-
       - name: Build the engines into the app (CMake, Ninja, Cargo)
-        shell: bash
-        run: |
-          command -v ninja || { [ "$RUNNER_OS" = Linux ] && sudo apt-get install -y ninja-build || choco install ninja -y --no-progress; }
-          node app/build.mjs engines
+        run: node app/build.mjs engines
 
       - name: Install the smoke test
         run: corepack pnpm install --frozen-lockfile --filter @triage/app-smoke
