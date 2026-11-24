@@ -2,9 +2,11 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-24 · **Phase P0 Foundations: done** (one owner check
-left, below). **Next:** start **P1 Electronics engine + views** in a new session
-(P1-1, KiCad fork builds).
+**Last updated:** 2026-11-24 · **Phase P0 Foundations: P0-1 … P0-7 done** (the owner ran
+the Windows build on 2026-11-24). **Next:** **P0-8, Triage's own GitHub sign-in**
+(added at the owner's request; the app is registered and patched in, the
+owner's sign-in test is next, steps below) and **P0-9, the branding sweep**, then **P1 Electronics engine + views** in a new session (P1-1, KiCad
+fork builds).
 
 ### P0 in one paragraph
 
@@ -15,6 +17,83 @@ and Sim tabs (placeholders until P1–P3 fill them); any of them can be dragged 
 popped out into a separate window. A native "hello engine" runs
 behind a utility-process broker, survives being killed, and streams 114 MB/s
 (Windows CI) to 237 MB/s (Linux CI) into the window. CI builds the Windows per-user installer and a portable zip.
+
+### P0-8: register Triage on GitHub (the owner's step)
+
+Triage signs in to GitHub, and so to Copilot, with VS Code's own registration,
+inherited from the open-source code; GitHub then says "Visual Studio Code".
+Triage's build has no GitHub client secret (Microsoft adds VS Code's when it
+publishes VS Code), so its sign-in uses GitHub's **device flow**: a code typed
+on github.com (observed in `extensions/github-authentication/src/flows.ts`).
+Triage's own registration therefore needs the device flow and no secret:
+
+1. Signed in to GitHub, open <https://github.com/settings/applications/new>
+   (Settings → Developer settings → OAuth Apps → New OAuth App).
+2. **Application name:** `Triage`. **Homepage URL:** the repository's URL.
+   **Redirect URI** (formerly "Authorization callback URL"):
+   `http://127.0.0.1/callback`; the device flow doesn't use it. Leave **Allow
+   wildcard matching** off.
+3. Keep **Enable Device Flow** on. Turn **Expire user access tokens** off:
+   VS Code's sign-in keeps only the access token and never refreshes it
+   (observed in `flows.ts`), so expiring tokens would sign the user out. Then
+   **Register application**. Don't generate a client secret.
+4. Give Claude the **Client ID** (it usually starts with `Ov23`). It isn't
+   secret: GitHub shows it to everyone who signs in.
+
+**Done 2026-11-24:** the owner registered the app; its client ID
+`Ov23liajKvj7l41nmMfw` is in `app/patches/0004-github-sign-in-as-triage.patch`,
+and the smoke test checks the packaged app carries it (and not VS Code's).
+Claude's sessions can't check sign-in themselves: their network refuses
+GitHub's sign-in endpoints (observed 2026-11-24).
+
+**The owner's test (P0-8 done-when),** on a Windows build with patch 0004:
+
+1. In Triage, click the **Accounts** icon (bottom left), pick the GitHub
+   account and **Sign Out**: the earlier sign-in went through VS Code's app.
+2. Sign in again (the **Sign In** button). GitHub's page should name **Triage**.
+3. Send a Copilot prompt, and tell Claude whether it answers or the error.
+
+**First result (2026-11-24, the owner, Windows build from App run 22):** in the
+Agents window a prompt with the **Auto** model failed: "Auto couldn't pick a
+model: the routing service is unavailable (a server error after 2 attempts)".
+The message comes from GitHub's Copilot runtime (`runtime.node` in
+`@github/copilot-sdk`), which asks Copilot's servers for a model
+(`/models/session`); GitHub's status page showed Copilot operational at the
+time (observed). The same Agents prompt worked earlier with VS Code's sign-in,
+so Triage's own app is the likely cause (**inferred**). **Second result:**
+after signing out and in again, the same error; the model picker offers only
+"Copilot Fusion" (the automatic choice), so Copilot's servers sent no model
+list either (observed by the owner). With VS Code's sign-in the same prompt
+worked: **Copilot doesn't accept Triage's own sign-in** (strongly indicated;
+the chat panel, Ctrl+Alt+I, not yet tried). The Copilot SDK's README documents
+`gitHubToken` and BYOK providers (OpenAI, Azure, Anthropic, Google, Ollama) but
+not which GitHub token types Copilot accepts (unknown).
+
+**Why, and the fix being tried (2026-11-24):** GitHub documents the route
+Triage needs: "You create a GitHub OAuth App (or GitHub App), users authorize
+it, and you pass their access token to the SDK. Copilot requests are made on
+behalf of each authenticated user, using their Copilot subscription"
+([Copilot SDK, GitHub OAuth](https://docs.github.com/en/copilot/how-tos/copilot-sdk/setup/github-oauth);
+token types `gho_`, `ghu_`, `github_pat_` in
+[Authenticate the Copilot SDK](https://docs.github.com/en/copilot/how-tos/copilot-sdk/authenticate-copilot-sdk/authenticate-copilot-sdk)).
+But VS Code's agent host labels its traffic as VS Code's integration
+(`GITHUB_COPILOT_INTEGRATION_ID=code-oss`, and `Copilot-Integration-Id:
+code-oss` on its own Copilot API calls). Triage's token under VS Code's label
+is the likely cause (**inferred**). Patches 0005 and 0006 drop the label, so
+the runtime identifies as an SDK host and Copilot authorizes against the
+user's own entitlement. The owner's Windows test decides.
+
+If that still fails, documented routes remain: a **GitHub App** instead of the
+OAuth App (GitHub calls it "recommended for new projects"); a **fine-grained
+personal access token** with the "Copilot Requests" permission, which the
+Copilot runtime's own messages name as supported (observed in
+`runtime.node`); reusing an existing **GitHub CLI / Copilot CLI** login (the
+runtime supports it); or AI models with the user's **own API key**.
+
+**Unknown:** whether GitHub Copilot
+accepts a sign-in from an app other than VS Code. Other unofficial Copilot
+clients reuse official GitHub app IDs rather than their own, which hints it may
+not (inferred). The P0-8 test settles it.
 
 ### Try it on Windows (the P0-7 owner check)
 
@@ -34,9 +113,10 @@ behind a utility-process broker, survives being killed, and streams 114 MB/s
 5. Copilot is hidden, not removed. To use it: **File → Preferences → Settings**,
    search **Disable AI Features**, untick it; the Sign In button and Copilot
    icon return, and **Ctrl+Alt+I** opens the chat (checked on a local build;
-   signing in to a Copilot account isn't tested yet).
+   the owner signed in with GitHub and ran an agent prompt on Windows,
+   2026-11-24).
 
-Tell Claude what felt wrong. P0-7 is done when you have launched it.
+The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt wrong.
 
 ## Decisions confirmed by the owner (2026-11-24)
 
@@ -51,12 +131,15 @@ Tell Claude what felt wrong. P0-7 is done when you have launched it.
 | — | Claude's sessions **may run Electron** (build and open the app, not only in CI) | CLAUDE.md, GUIDELINES §10, [DV-07](DEVIATIONS.md) |
 | — | VS Code's built-in **Copilot chat is hidden** by default | `app/src/vs/triage/browser/triage.contribution.ts`, [choices](DEVIATIONS.md#choices-the-plan-left-open) |
 | — | P0 **merged into the default branch** (PR #1); nightlies run from it | `.github/workflows/nightly.yml` |
+| — | Triage gets **its own GitHub sign-in** (OAuth app) now, before P1 | ROADMAP P0-8, [DV-15](DEVIATIONS.md) |
+| — | Triage's logo: the owner's T in **K3 Slate**; Triage's dark themes show it **reversed** (light T, slate traces; option C) | `scripts/branding/icons.py`, `docs/brand/`, [choices](DEVIATIONS.md#choices-the-plan-left-open) |
+| — | **No VS Code name or logo** in Triage now (P0-9), and a **public release checklist** before builds are shared (P8-7) | ROADMAP P0-9, P8-7, [DV-16](DEVIATIONS.md) |
 | — | GitHub Actions **minutes are no concern** (the owner's GitHub student account): the App workflow runs on every push except documentation-only ones | [DV-08](DEVIATIONS.md) |
 
 ## Deviations from the plan
 
 Every place the build differs from the plan is logged in
-[DEVIATIONS.md](DEVIATIONS.md) (14 entries, DV-01 … DV-14, plus choices the plan left open), so the
+[DEVIATIONS.md](DEVIATIONS.md) (16 entries, DV-01 … DV-16, plus choices the plan left open), so the
 owner can compare the final build with the plan.
 
 ## Open questions
@@ -65,6 +148,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Topic | Default | Needed by |
 |---|---|---|
+| GitHub Copilot **doesn't accept Triage's own sign-in** (P0-8). Choose: **(A)** AI models with the user's own API key (Anthropic, OpenAI, Google, or a local model through Ollama) in the same chat panel, no GitHub needed; **(B)** the owner's personal builds sign in as VS Code, so Copilot works for the owner, while shared builds stay Triage; **(C)** both (Claude's recommendation); **(D)** drop Copilot | Triage's own sign-in, Copilot unavailable, until the owner decides | P0-8 |
 | Remove the hidden Copilot extension from builds entirely? It is 56 MB of the app; hidden and disabled, it does nothing | kept (one setting turns VS Code's AI features back on) | P8 (installer size) |
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
@@ -75,7 +159,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Phase | WP | Status |
 |---|---|---|
-| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies | **done** (P0-7: owner check pending) |
+| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | P0-1 … P0-7 **done**; **P0-8 in progress** (app registered, patch 0004 in; the owner's sign-in test next); **P0-9 in progress** |
 | P1 Electronics engine + views (M1) | P1-1 … P1-7 | not started |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
@@ -194,6 +278,25 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
     timed out" error no longer shows; the smoke test checks the chat stays hidden.
   - **Minutes no concern:** the App workflow now runs on every push except
     documentation-only ones.
+  - The owner ran the **Windows build** (P0-7 done), turned the AI features
+    back on, signed in with GitHub and ran a Copilot agent prompt: it works.
+  - GitHub called the app "Visual Studio Code" at sign-in: Triage uses VS
+    Code's GitHub registration from the open-source code. The owner chose to
+    give Triage **its own GitHub sign-in before P1**: new WP **P0-8** (DV-15).
+  - The owner asked what else could get Triage flagged once shared. Six items
+    became the **public release checklist (P8-7)**; the owner asked for the
+    trademark item now: **P0-9, branding sweep** (DV-16). It found VS Code's
+    logo (`vscode-icon.svg`, the Agents window), Code-OSS's icon and watermark,
+    331 of 32,964 workbench strings and 104 strings in 27 built-in extensions
+    naming VS Code (observed in the packaged Linux build).
+  - **Triage's logo:** the owner sketched a T with PCB traces; Claude drew it,
+    replaced the busy sketched traces with a three-track bus at the owner's
+    request, made the gaps equal, and the owner chose **K3 Slate `#1e293b`**
+    from 16 shades. Every icon now comes from `scripts/branding/icons.py`
+    (master files in `docs/brand/`). K3 nearly disappears on dark backgrounds,
+    so the owner chose option C: Triage's dark themes (the default) show the
+    reversed logo in the title bar and the other places VS Code shows its
+    logo; the app icon and installer stay K3. The smoke test checks it.
   - The "workflow run failed" notifications the owner saw come from App runs
     2, 8, 9 and 10 and CI run 7, the failures this session fixed (DV-11, DV-13,
     the swap-file disk issue).

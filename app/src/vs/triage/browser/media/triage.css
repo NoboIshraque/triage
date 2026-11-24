@@ -67,3 +67,24 @@
 .triage-overview .triage-project-error {
 	color: var(--vscode-errorForeground);
 }
+
+/*
+ * Triage's logo on dark themes (ROADMAP P0-9, the owner's option C): K3 Slate
+ * disappears on dark backgrounds, so the places VS Code shows the product logo
+ * (code-icon.svg) show the reversed logo instead: a light T with slate traces.
+ * scripts/branding/icons.py draws it.
+ */
+.monaco-workbench.vs-dark .part.titlebar > .titlebar-container > .titlebar-left > .window-appicon:not(.codicon),
+.monaco-workbench.hc-black .part.titlebar > .titlebar-container > .titlebar-left > .window-appicon:not(.codicon),
+.monaco-workbench.vs-dark .part.banner .icon-container.custom-icon,
+.monaco-workbench.hc-black .part.banner .icon-container.custom-icon,
+.monaco-workbench.vs-dark.file-icons-enabled .show-file-icons .vscode_getting_started_page-name-file-icon.file-icon::before,
+.monaco-workbench.hc-black.file-icons-enabled .show-file-icons .vscode_getting_started_page-name-file-icon.file-icon::before,
+.monaco-workbench.vs-dark.file-icons-enabled .show-file-icons .vs_code_editor_walkthrough\.md-name-file-icon.md-ext-file-icon.ext-file-icon.markdown-lang-file-icon.file-icon::before,
+.monaco-workbench.hc-black.file-icons-enabled .show-file-icons .vs_code_editor_walkthrough\.md-name-file-icon.md-ext-file-icon.ext-file-icon.markdown-lang-file-icon.file-icon::before,
+.monaco-workbench.vs-dark .update-tooltip .product-logo,
+.monaco-workbench.hc-black .update-tooltip .product-logo,
+.monaco-workbench.vs-dark .onboarding-a-signin-brand-icon,
+.monaco-workbench.hc-black .onboarding-a-signin-brand-icon {
+	background-image: url('./triage-logo-dark.svg');
+}

@@ -10,7 +10,7 @@ and its commit, and the build checks out exactly that commit into `app/upstream/
 |---|---|---|
 | [`upstream.json`](upstream.json) | the pinned VS Code release (1.147.0) | P0-2 |
 | [`product.json`](product.json) | Triage's keys merged over upstream's: name, data folders, Windows app IDs, **Open VSX** gallery | P0-2 |
-| [`resources/`](resources/) | files that replace upstream's at the same path (placeholder icon from `scripts/branding/placeholder_icons.py`) | P0-2 |
+| [`resources/`](resources/) | files that replace upstream's at the same path (Triage's icons, drawn by `scripts/branding/icons.py`) | P0-2 |
 | [`src/vs/triage/`](src/vs/triage/) | Triage's workbench code (VS Code's style: tabs, its APIs), copied to the same path in upstream: Triage sidebar, Engineering layout, walkthrough | P0-3 |
 | [`src/tsconfig.triage.json`](src/tsconfig.triage.json) | type-checks `vs/triage` and what it imports (576 files) | P0-3 |
 | [`patches/`](patches/) | numbered `*.patch` files, small changes to upstream files. `0001` loads `vs/triage` in the workbench and ships its walkthrough pages | P0-3 |

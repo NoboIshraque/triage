@@ -29,3 +29,4 @@
 *.hex text eol=lf
 *.uf2 binary
 *.bin binary
+*.bmp binary

@@ -1,0 +1,64 @@
+The agent host's Copilot API calls omit VS Code's integration id (ROADMAP P0-8).
+
+Companion to patch 0005. The agent host's own Copilot API client
+(@vscode/copilot-api: models list, chat completions, utility requests) sends
+Copilot-Integration-Id: code-oss unless a request suppresses it; upstream's
+comment says suppressing it makes CAPI "authorize against the token's real
+entitlement". Triage's users sign in with Triage's own GitHub OAuth app, so
+every request suppresses it. This is the likely reason the owner's model
+picker offered only "Copilot Fusion" (inferred).
+
+diff --git a/src/vs/platform/agentHost/node/shared/copilotApiService.ts b/src/vs/platform/agentHost/node/shared/copilotApiService.ts
+index 8b6b45ed48f2b9e3f5c587ed375a8d022a365f60..9c20ba7ff041dab75af07f63b3281afadd731449 100644
+--- a/src/vs/platform/agentHost/node/shared/copilotApiService.ts
++++ b/src/vs/platform/agentHost/node/shared/copilotApiService.ts
+@@ -19,6 +19,14 @@ import { IAgentHostGitHubEndpointService } from '../agentHostGitHubEndpointServi
+ import type { IAgentHostGitHubTelemetryContext } from '../agentHostRestrictedTelemetry.js';
+ import { getUtilityModelCallFailureOutcome, reportUtilityModelCall, toUtilityModelCallGitHubTelemetry, type AgentHostUtilityModelCallOutcome, type IAgentHostUtilityModelCallTelemetryContext } from './utilityModelCallTelemetry.js';
+ 
++/**
++ * Triage (ROADMAP P0-8): Triage is not VS Code, so its requests don't carry VS
++ * Code's `Copilot-Integration-Id` (`code-oss`). Users sign in with Triage's own
++ * GitHub OAuth app, and CAPI then authorizes against the token's real
++ * entitlement (see `ICopilotApiServiceRequestOptions.suppressIntegrationId`).
++ */
++const TRIAGE_SUPPRESS_INTEGRATION_ID = true;
++
+ // #region Types
+ 
+ /**
+@@ -688,7 +696,7 @@ export class CopilotApiService extends Disposable implements ICopilotApiService
+ 				},
+ 				// Opt-in per request — see
+ 				// `ICopilotApiServiceRequestOptions.suppressIntegrationId`.
+-				suppressIntegrationId: options?.suppressIntegrationId,
++				suppressIntegrationId: TRIAGE_SUPPRESS_INTEGRATION_ID || options?.suppressIntegrationId,
+ 				signal: options?.signal,
+ 			},
+ 			{ type: RequestType.Models },
+@@ -735,7 +743,7 @@ export class CopilotApiService extends Disposable implements ICopilotApiService
+ 				},
+ 				// Opt-in per request — see
+ 				// `ICopilotApiServiceRequestOptions.suppressIntegrationId`.
+-				suppressIntegrationId: options?.suppressIntegrationId,
++				suppressIntegrationId: TRIAGE_SUPPRESS_INTEGRATION_ID || options?.suppressIntegrationId,
+ 				body,
+ 				signal: options?.signal,
+ 			},
+@@ -791,6 +799,7 @@ export class CopilotApiService extends Disposable implements ICopilotApiService
+ 						'OpenAI-Intent': UTILITY_INTENT,
+ 					},
+ 					body,
++					suppressIntegrationId: TRIAGE_SUPPRESS_INTEGRATION_ID,
+ 					signal: options?.signal,
+ 				},
+ 				{ type: RequestType.ChatCompletions },
+@@ -954,7 +963,7 @@ export class CopilotApiService extends Disposable implements ICopilotApiService
+ 					// paths already omit it). Thread a real per-turn initiator here if
+ 					// that signal ever becomes available at the proxy boundary.
+ 				},
+-				suppressIntegrationId: options?.suppressIntegrationId,
++				suppressIntegrationId: TRIAGE_SUPPRESS_INTEGRATION_ID || options?.suppressIntegrationId,
+ 				body,
+ 				signal: options?.signal,
+ 			},

@@ -184,6 +184,10 @@ For source trees we have (the forks), read the source. REA is for shipped artifa
   instead of cancelling. It skips documentation-only pushes.
 - **New files must be formatted before their first commit:** the native
   formatter lists files with `git ls-files`, so it now includes untracked ones.
+- **The Welcome page takes focus about 300 ms after it opens**, which closes
+  a command palette opened in between. Smoke tests wait for its step to have
+  focus, and `runCommand` retries opening the palette, as upstream's
+  `openQuickAccessWithRetry` does.
 - **Claude's sessions may build and run the app** (the owner OK'd Electron on
   2026-11-24): `node app/build.mjs package && node app/build.mjs engines`, then
   `xvfb-run -a pnpm --filter @triage/app-smoke smoke` on Linux. CI stays the

@@ -1,4 +1,12 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -10,14 +18,45 @@ import { appDir, packagedApp, triageProduct } from './app.js';
 const outputDir = path.join(appDir, '.smoke');
 const shot = (name: string) => path.join(outputDir, `${name}-${process.platform}.png`);
 
+/** GitHub OAuth apps: Triage's own and VS Code's (app/patches/0004-github-sign-in-as-triage.patch). */
+const TRIAGE_GITHUB_CLIENT_ID = 'Ov23liajKvj7l41nmMfw';
+const VSCODE_GITHUB_CLIENT_ID = '01ab8ac9400c4e429b23';
+
+/** Microsoft products named as such; scripts/branding/rebrand.mjs keeps them (KEEP). */
+const MICROSOFT_PRODUCTS = [
+  'VS Code Speech',
+  'VS Code for the Web',
+  'Insiders VS Code',
+  'Insiders version of VS Code',
+];
+const VSCODE_NAME = /Visual Studio Code|VS Code/;
+
+/** Texts that still name VS Code once Microsoft's product names are taken out. */
+function namingVSCode(texts: readonly string[]): string[] {
+  return texts.filter((text) =>
+    VSCODE_NAME.test(MICROSOFT_PRODUCTS.reduce((rest, name) => rest.split(name).join(''), text)),
+  );
+}
+
 /** The tabs of the Engineering layout (app/src/vs/triage/common/triage.ts). */
 const ENGINEERING_TABS = ['code', 'schematic', 'board', '3d', 'sim'];
 
-/** Runs a command through the command palette, as upstream's smoke tests do. */
+/**
+ * Runs a command through the command palette, as upstream's smoke tests do. Like
+ * their openQuickAccessWithRetry (test/automation/src/quickaccess.ts), it retries
+ * opening the palette: "Other parts of code might steal focus away from quickinput".
+ */
 async function runCommand(window: Page, title: string): Promise<void> {
-  await window.keyboard.press('F1');
   const input = window.locator('.quick-input-widget .quick-input-box input');
-  await input.waitFor({ state: 'visible', timeout: 30_000 });
+  for (let attempt = 1; ; attempt++) {
+    await window.keyboard.press('F1');
+    try {
+      await input.waitFor({ state: 'visible', timeout: 10_000 });
+      break;
+    } catch (error) {
+      if (attempt === 5) throw error;
+    }
+  }
   await input.fill(`>${title}`);
   await window
     .locator('.quick-input-widget .monaco-list-row', { hasText: title })
@@ -71,9 +110,54 @@ describe('packaged Triage app', () => {
     });
   });
 
+  // ROADMAP P0-8: GitHub names Triage, not Visual Studio Code, at sign-in.
+  it("signs in to GitHub with Triage's own OAuth app", () => {
+    const extensions = path.join(path.dirname(app.productJson), 'extensions');
+    const signIn = readFileSync(
+      path.join(extensions, 'github-authentication', 'dist', 'extension.js'),
+      'utf8',
+    );
+    expect(signIn).toContain(TRIAGE_GITHUB_CLIENT_ID);
+    expect(signIn).not.toContain(VSCODE_GITHUB_CLIENT_ID);
+  });
+
+  // ROADMAP P0-9: no VS Code name or logo in Triage's interface.
+  it("doesn't name VS Code in its interface text or logos", () => {
+    const appRoot = path.dirname(app.productJson);
+    const messages = JSON.parse(
+      readFileSync(path.join(appRoot, 'out', 'nls.messages.json'), 'utf8'),
+    ) as unknown[];
+    expect(namingVSCode(messages.filter((m): m is string => typeof m === 'string'))).toEqual([]);
+    const extensions = path.join(appRoot, 'extensions');
+    for (const name of readdirSync(extensions)) {
+      const nls = path.join(extensions, name, 'package.nls.json');
+      if (!existsSync(nls)) continue;
+      const strings = Object.values(
+        JSON.parse(readFileSync(nls, 'utf8')) as Record<string, unknown>,
+      ).map((value) => JSON.stringify(value));
+      expect({ extension: name, naming: namingVSCode(strings) }).toEqual({
+        extension: name,
+        naming: [],
+      });
+    }
+    // Triage's logo (K3 Slate, scripts/branding/icons.py) replaces VS Code's and Code-OSS's.
+    for (const logo of ['code-icon.svg', 'vscode-icon.svg']) {
+      expect(readFileSync(path.join(appRoot, 'out', 'media', logo), 'utf8')).toContain('#1e293b');
+    }
+  });
+
   it('opens a window showing the workbench', async () => {
     await window.locator('.monaco-workbench').waitFor({ state: 'visible', timeout: 120_000 });
     await window.screenshot({ path: shot('window') });
+  });
+
+  // ROADMAP P0-9, the owner's option C: dark themes (the default) show the
+  // reversed logo, since K3 Slate disappears on a dark title bar.
+  it('shows the reversed logo in the dark title bar', async () => {
+    const image = await window.evaluate(
+      "getComputedStyle(document.querySelector('.part.titlebar .window-appicon')).backgroundImage",
+    );
+    expect(String(image)).toContain('triage-logo-dark');
   });
 
   it('titles the window with the product name', async () => {
@@ -174,6 +258,14 @@ describe('packaged Triage app', () => {
     await window
       .locator('.gettingStartedContainer', { hasText: 'Get Started with Triage' })
       .waitFor({ state: 'visible', timeout: 30_000 });
+    // The Welcome page moves focus to its first step about 300 ms after it opens
+    // (observed); that focus move closes a command palette a later test opened.
+    await window
+      .locator('.getting-started-step.expanded:focus')
+      .waitFor({ state: 'visible', timeout: 10_000 });
+    // ROADMAP P0-9: the Welcome page names Triage, not VS Code.
+    const welcome = await window.locator('.gettingStartedContainer').innerText();
+    expect(namingVSCode([welcome])).toEqual([]);
     await window.screenshot({ path: shot('walkthrough') });
   });
   // The owner's request (2026-11-24): VS Code's built-in Copilot chat stays hidden.
