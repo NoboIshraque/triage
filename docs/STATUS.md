@@ -30,10 +30,13 @@ Triage's own registration therefore needs the device flow and no secret:
 1. Signed in to GitHub, open <https://github.com/settings/applications/new>
    (Settings → Developer settings → OAuth Apps → New OAuth App).
 2. **Application name:** `Triage`. **Homepage URL:** the repository's URL.
-   **Authorization callback URL:** `http://127.0.0.1/callback` (the form needs
-   one; the device flow doesn't use it).
-3. Tick **Enable Device Flow**, then **Register application**. Don't generate
-   a client secret.
+   **Redirect URI** (formerly "Authorization callback URL"):
+   `http://127.0.0.1/callback`; the device flow doesn't use it. Leave **Allow
+   wildcard matching** off.
+3. Keep **Enable Device Flow** on. Turn **Expire user access tokens** off:
+   VS Code's sign-in keeps only the access token and never refreshes it
+   (observed in `flows.ts`), so expiring tokens would sign the user out. Then
+   **Register application**. Don't generate a client secret.
 4. Give Claude the **Client ID** (it usually starts with `Ov23`). It isn't
    secret: GitHub shows it to everyone who signs in.
 
