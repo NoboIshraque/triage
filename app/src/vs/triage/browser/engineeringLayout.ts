@@ -15,6 +15,11 @@ import { TriageViewInput } from './triageViewEditor.js';
 /**
  * Code on the left (40 %); on the right, Schematic and Board above 3D and Sim.
  * Leaf groups in grid order: Code, Schematic, Board, 3D, Sim.
+ *
+ * Sizes are fractions of the whole editor area, not of the parent (see
+ * getDimensions in vs/base/browser/ui/grid/grid.ts): each row's two groups
+ * add up to the right column's 0.6. Halves (0.5 + 0.5) overflowed the column
+ * and squeezed the top row.
  */
 export const ENGINEERING_LAYOUT: EditorGroupLayout = {
 	orientation: GroupOrientation.HORIZONTAL,
@@ -23,8 +28,8 @@ export const ENGINEERING_LAYOUT: EditorGroupLayout = {
 		{
 			size: 0.6,
 			groups: [
-				{ size: 0.5, groups: [{ size: 0.5 }, { size: 0.5 }] },
-				{ size: 0.5, groups: [{ size: 0.5 }, { size: 0.5 }] },
+				{ size: 0.5, groups: [{ size: 0.3 }, { size: 0.3 }] },
+				{ size: 0.5, groups: [{ size: 0.3 }, { size: 0.3 }] },
 			],
 		},
 	],

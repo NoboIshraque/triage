@@ -115,6 +115,12 @@ describe('packaged Triage app', () => {
     expect(await window.locator('.part.editor .editor-group-container').count()).toBe(
       ENGINEERING_TABS.length,
     );
+    // Schematic (top row) and 3D (bottom row) get about the same height.
+    const top = await window
+      .locator('.triage-view-editor[data-triage-view="schematic"]')
+      .boundingBox();
+    const bottom = await window.locator('.triage-view-editor[data-triage-view="3d"]').boundingBox();
+    expect(top?.height ?? 0).toBeGreaterThan((bottom?.height ?? 0) * 0.6);
     await window.screenshot({ path: shot('engineering-layout') });
   });
 

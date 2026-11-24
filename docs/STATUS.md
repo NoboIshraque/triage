@@ -13,7 +13,7 @@ Linux, in CI. Opening a folder with a `triage.toml` shows the project's four
 domains in the Triage sidebar. One command lays out Code, Schematic, Board, 3D
 and Sim tabs (placeholders until P1–P3 fill them). A native "hello engine" runs
 behind a utility-process broker, survives being killed, and streams 114 MB/s
-into the window. CI builds the Windows per-user installer and a portable zip.
+(Windows CI) to 237 MB/s (Linux CI) into the window. CI builds the Windows per-user installer and a portable zip.
 
 ### Try it on Windows (the P0-7 owner check)
 
@@ -136,9 +136,9 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   | WP | Done when | Evidence |
   |---|---|---|
   | P0-1 | CI green on Windows and Linux | CI run 1: all 8 jobs green |
-  | P0-2 | Running builds on Linux and Windows; a Playwright smoke test opens a window on both | App run 10, Windows: build, package, smoke test 10/10 with screenshots. Linux: App run 11 pending (runs 9–10 died on a full disk; fixed in be7fc80) |
+  | P0-2 | Running builds on Linux and Windows; a Playwright smoke test opens a window on both | App runs 10–11: build, package, engines, smoke test 10/10 with screenshots on **Windows and Linux** (Linux: the whole job in 10 minutes) |
   | P0-3 | Triage sidebar and layout visible; the patch queue re-applies onto a fresh upstream checkout | smoke checks (sidebar, five tabs in five groups, walkthrough); `check-patches` step on every App run; 6 patch-queue tests |
-  | P0-4 | ≥ 100 MB/s of binary frames on Windows and Linux; a killed engine shows "reconnecting" and recovers | engine → broker: 543–612 MB/s (Windows CI), 1.2–1.7 GB/s (Linux); into the window: 114–115 MB/s (Windows smoke). Kill → reconnecting → recovered in the engine tests (both OSes) and the smoke test |
+  | P0-4 | ≥ 100 MB/s of binary frames on Windows and Linux; a killed engine shows "reconnecting" and recovers | engine → broker: 543–612 MB/s (Windows CI), 1.2–1.7 GB/s (Linux); into the window: 114–115 MB/s (Windows), 237 MB/s (Linux) in the smoke test. Kill → reconnecting → recovered in the engine tests (both OSes) and the smoke test |
   | P0-5 | `examples/smart-fan` shows the four domains; Rust and TS unit tests | smoke check and screenshot; 12 Rust tests; addon and JSON Schema tests on both OSes |
   | P0-6 | A fresh container and a fresh Windows runner build following only the scripts | CI jobs `setup-linux` (fresh `ubuntu:24.04` container) and `setup-windows` green in run 14 |
   | P0-7 | The owner downloads the nightly and launches it on Windows | Windows installer and zip built and uploaded (run 10); **waiting for the owner** |
@@ -151,7 +151,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   both systems, and the App and Nightly workflows.
 
   **Known issues for the next phases:**
-  - Into-window throughput (114 MB/s) is barely above target. VS Code's IPC
+  - Into-window throughput on Windows (114 MB/s) is barely above target. VS Code's IPC
     channel is the narrow part (285 MB/s reach the broker). P1-3/P1-4 should
     give display lists a direct MessagePort with transferable buffers.
   - Upstream's Copilot/agent UI shows on first start, with an
