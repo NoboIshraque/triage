@@ -23,8 +23,8 @@ export const ENGINEERING_LAYOUT: EditorGroupLayout = {
 		{
 			size: 0.6,
 			groups: [
-				{ groups: [{}, {}] },
-				{ groups: [{}, {}] },
+				{ size: 0.5, groups: [{ size: 0.5 }, { size: 0.5 }] },
+				{ size: 0.5, groups: [{ size: 0.5 }, { size: 0.5 }] },
 			],
 		},
 	],

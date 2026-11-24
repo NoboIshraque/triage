@@ -168,10 +168,15 @@ For source trees we have (the forks), read the source. REA is for shipped artifa
   builds (VS Code's build in P0-2) or analyses.
 
 **From the first build session (P0, 2026-11-24):**
-- **GitHub's 2-core runners have 8 GB of memory.** VS Code's minified,
-  mangled bundle shut a Linux runner down; the app builds non-minified by
-  default (DV-11) and Linux jobs add swap. A full `tsc` typecheck of VS Code
-  ran out of a 7 GB heap; type-check Triage's code with `src/tsconfig.triage.json`.
+- **GitHub's 2-core runners have 8 GB of memory and about 14 GB of free
+  disk.** VS Code's bundler needed more than 7 GB; the app bundles one entry
+  point at a time without source maps (3.7 GB, DV-13). An 8 GB swap file then
+  filled the Linux disk during `pnpm install`, and the runner died without a
+  log: don't trade disk for memory there. A full `tsc` typecheck of VS Code ran
+  out of a 7 GB heap; type-check Triage's code with `src/tsconfig.triage.json`.
+- **Measure before guessing.** A watchdog that samples the process tree's RSS
+  (`/proc`) and kills it at a limit found the bundler's peak in two minutes,
+  safely inside a cloud session.
 - **Windows images differ:** `windows-2025` offers Visual Studio 2026, where VS
   Code's native modules failed (Spectre libraries, inferred); the app builds on
   `windows-2022` (DV-12). Windows runners also carry Strawberry Perl's `ccache`.

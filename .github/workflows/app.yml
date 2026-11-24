@@ -68,22 +68,15 @@ jobs:
         with:
           node-version-file: app/upstream/.nvmrc
 
-      - name: More swap (Linux)
-        if: runner.os == 'Linux'
-        # The 2-core runners have 8 GB of memory; VS Code's bundling can need more.
-        run: |
-          sudo fallocate -l 8G /mnt/triage.swap
-          sudo chmod 600 /mnt/triage.swap
-          sudo mkswap /mnt/triage.swap
-          sudo swapon /mnt/triage.swap
-          free -h
-
       # ROADMAP P0-6: the same setup scripts developers use. On Windows this also
       # loads the Visual Studio environment (packaging runs signtool.exe).
       - name: Set up the build machine (Linux)
         if: runner.os == 'Linux'
         timeout-minutes: 20
-        run: scripts/dev/setup.sh --app
+        # Standard runners have about 14 GB of free disk and 8 GB of memory.
+        run: |
+          df -h / && free -h
+          scripts/dev/setup.sh --app
 
       - name: Set up the build machine (Windows)
         if: runner.os == 'Windows'
