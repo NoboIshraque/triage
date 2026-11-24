@@ -16,9 +16,10 @@
 //   install  pnpm install in app/upstream (pnpm version pinned by upstream)
 //   typecheck  type-check Triage's workbench code (src/tsconfig.triage.json); the
 //            package step transpiles with esbuild, which doesn't check types
-//   package  gulp vscode-<platform>-<arch> (add --min for the minified, mangled
-//            bundle, which needs more memory than 8 GB CI runners have), written
-//            to app/VSCode-<platform>-<arch>/
+//   package  gulp vscode-<platform>-<arch>, written to app/VSCode-<platform>-<arch>/.
+//            Bundles one entry point at a time without source maps, to fit 8 GB
+//            machines; --sourcemaps keeps upstream's parallel bundling and maps,
+//            --min the minified, mangled bundle (both need more memory)
 //
 //   engines  build Triage's native engines (CMake preset "release") and the Rust
 //            model addon, and copy them into the packaged app (resources/app/
@@ -74,11 +75,19 @@ const COMMANDS = ['refresh-patches', 'check-patches'];
 const OVERLAY_ROOTS = ['src', 'resources'];
 
 function parseArgs(argv) {
-  const options = { steps: [], arch: process.arch, force: false, min: false, newPatch: undefined };
+  const options = {
+    steps: [],
+    arch: process.arch,
+    force: false,
+    min: false,
+    sourcemaps: false,
+    newPatch: undefined,
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--force') options.force = true;
     else if (arg === '--min') options.min = true;
+    else if (arg === '--sourcemaps') options.sourcemaps = true;
     else if (arg === '--arch') options.arch = argv[++i] ?? '';
     else if (arg === '--new') options.newPatch = argv[++i] ?? '';
     else if (STEPS.includes(arg) || EXTRA_STEPS.includes(arg) || COMMANDS.includes(arg))
@@ -298,12 +307,15 @@ export function packagedApp(arch = process.arch) {
   return { platform, folder, executable };
 }
 
-function packageApp({ arch, min }) {
+function packageApp({ arch, min, sourcemaps }) {
   const { platform, executable } = packagedApp(arch);
   if (platform !== 'linux' && platform !== 'win32') {
     throw new ForkError(`packaging on ${platform} is not set up yet (macOS joins in P8)`);
   }
-  pnpm(['run', 'gulp', `vscode-${platform}-${arch}${min ? '-min' : ''}`]);
+  // Patches 0002/0003: bundle one entry point at a time, without source maps, so
+  // the build fits 8 GB machines (3.7 GB peak instead of more than 7 GB; DV-13).
+  const lowMemory = sourcemaps ? {} : { TRIAGE_SEQUENTIAL_BUNDLES: '1', TRIAGE_NO_SOURCEMAPS: '1' };
+  pnpm(['run', 'gulp', `vscode-${platform}-${arch}${min ? '-min' : ''}`], lowMemory);
   if (!existsSync(executable)) {
     throw new ForkError(`packaging finished but ${executable} is missing`);
   }

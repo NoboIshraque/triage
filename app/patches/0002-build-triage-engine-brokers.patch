@@ -1,12 +1,15 @@
-Bundle Triage's utility-process modules as entry points (ROADMAP P0-4, P0-5).
+Build changes in build/next/index.ts (ROADMAP P0-4, P0-5; DV-13).
 
-build/next/index.ts lists the modules esbuild bundles as entry points. Both
-run in utility processes started through IUtilityProcessWorkerWorkbenchService:
-- vs/triage/node/helloEngineBrokerMain: the hello engine's broker;
-- vs/triage/node/projectModelMain: the model service (Rust addon).
+- Bundle Triage's utility-process modules as entry points; both run in
+  utility processes started through IUtilityProcessWorkerWorkbenchService:
+  vs/triage/node/helloEngineBrokerMain (the hello engine's broker) and
+  vs/triage/node/projectModelMain (the model service, Rust addon).
+- TRIAGE_SEQUENTIAL_BUNDLES: bundle the entry points one at a time, as
+  upstream already does for its mobile target, instead of all 28 at once.
+  Unset, nothing changes. See 0003 for the memory measurements.
 
 diff --git a/build/next/index.ts b/build/next/index.ts
-index dd534bff120ce02570bb2ab8f7540c84ee961fc3..9cce85a8cd56876204943bff51890c481e42dfa0 100644
+index dd534bff120ce02570bb2ab8f7540c84ee961fc3..561420880eeeda607f0223858f3fde53314e05b6 100644
 --- a/build/next/index.ts
 +++ b/build/next/index.ts
 @@ -108,6 +108,9 @@ const desktopEntryPoints = [
@@ -19,3 +22,12 @@ index dd534bff120ce02570bb2ab8f7540c84ee961fc3..9cce85a8cd56876204943bff51890c48
  	'vs/platform/terminal/node/ptyHostMain',
  	'vs/platform/agentHost/node/agentHostMain',
  	'vs/platform/agentHost/node/diffWorkerMain',
+@@ -572,7 +575,7 @@ async function bundleToOutput(outDir: string, doMinify: boolean, doNls: boolean,
+ 
+ 		buildResults.push({ outPath, result });
+ 	};
+-	if (mobile) {
++	if (mobile || process.env['TRIAGE_SEQUENTIAL_BUNDLES']) {
+ 		for (const entryPoint of allEntryPoints) {
+ 			await bundleEntryPoint(entryPoint);
+ 		}
