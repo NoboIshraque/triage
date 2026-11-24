@@ -1,6 +1,6 @@
-# How we build Triad (the owner + Claude)
+# How we build Triage (the owner + Claude)
 
-Triad is built by two: **the owner** and **Claude**, working in Claude Code
+Triage is built by two: **the owner** and **Claude**, working in Claude Code
 sessions. These guidelines make every session productive on its own and keep the
 project coherent across many sessions.
 
@@ -10,8 +10,8 @@ project coherent across many sessions.
 |---|---|
 | Product direction and priorities | Implementation, tests, documentation |
 | Decisions (confirms ADRs, answers open questions) | Proposes options with a recommendation; writes ADRs |
-| Tries builds on their own laptop and reports what felt wrong | Keeps builds green and `STATUS.md` current |
-| Engineering-student perspective: what courses and boards need | Research with REA when integrating engines |
+| Tries nightly builds on their **Windows** laptop and reports what felt wrong | Keeps builds green on Windows and Linux, and `STATUS.md` current |
+| Engineering-student perspective: what courses and boards need (ESP32, Arduino, Raspberry Pi) | Research with REA when integrating engines |
 | Merges pull requests | Opens pull requests when a work package is done (only when asked) |
 
 ## 2. Session routine
@@ -32,7 +32,8 @@ project coherent across many sessions.
 **End**
 1. Update `docs/STATUS.md`: WP status, what's done, what's next, known issues.
 2. Push.
-3. Tell the owner what now works, how to try it, what's next, and any questions.
+3. Tell the owner what now works, how to try it on Windows (which nightly, which
+   steps), what's next, and any questions.
 
 ## 3. Work package template
 
@@ -52,7 +53,10 @@ before continuing.
 
 - The "done when" checks pass and are automated where possible.
 - New code has tests. Engine integrations have golden files.
-- CI is green on Linux (Windows and macOS once P0-6 lands).
+- CI is green on **Windows and Linux** (macOS from P8).
+- **One window:** the feature works inside Triage. Needing the stock KiCad or
+  FreeCAD window is allowed only where the ROADMAP lists the fallback.
+- **Milestone WPs:** the owner has run the exit demo on their Windows laptop.
 - No performance budget from PLAN §4.14 regresses (benchmarks for touched areas).
 - Docs updated: user-facing notes, `STATUS.md`, and an ADR if a decision was made or changed.
 
@@ -64,17 +68,19 @@ before continuing.
 - Parallel sessions on **independent** WPs are fine, with separate branches and
   no shared files beyond `STATUS.md` (merge that by hand).
 
-## 6. Forks: VS Code, KiCad, FreeCAD
+## 6. Forks: VS Code, KiCad, FreeCAD, Espressif QEMU
 
-All three follow the same rules:
+All four follow the same rules:
 - `upstream/`: a pinned upstream release, imported untouched.
 - `patches/`: numbered `*.patch` files with **small** changes to upstream
   files, such as registration hooks or new backends. Apply and refresh them with
   `scripts/forks/apply.sh` and `scripts/forks/refresh.sh` (created in P0-3).
-- **Triad-only code lives in its own folders** (`app/src/vs/triad/`,
-  `engines/eda/triad/`, `engines/cad/triad/`), so upstream merges stay mechanical.
+- **Triage-only code lives in its own folders** (`app/src/vs/triage/`,
+  `engines/eda/triage/`, `engines/cad/triage/`, `engines/qemu-esp32/triage/`), so
+  upstream merges stay mechanical.
 - **Update cadence:** VS Code every 2–3 months; KiCad and FreeCAD on stable
-  releases. An update is its own WP. Re-run the REA breakdown (§9) first to
+  releases; Espressif QEMU at a pinned commit (its `esp-develop` branch is
+  force-pushed), merged on a schedule. An update is its own WP. Re-run the REA breakdown (§9) first to
   see what changed (new protos, GAL methods, process entry points, exports).
 
 ## 7. Testing strategy
@@ -84,18 +90,25 @@ All three follow the same rules:
 | Rust and TypeScript units | `cargo test`, Vitest |
 | KiCad engine | round-trip and render goldens on the `kicad-demos` corpus (36 projects); Stream GAL display-list goldens; ERC/DRC parity with `kicad-cli` |
 | CAD engine | recompute goldens for FreeCAD test documents; tessellation checksums |
-| App | Playwright on the Electron app: open project, edit, run sim |
-| Simulation | deterministic scenario replays; per-part scenarios; scheduler property tests |
+| App | Playwright on the Electron app, on Windows and Linux: open project, edit, run sim |
+| Simulation | deterministic scenario replays; per-part scenarios; per-scope runs (whole device, circuit, code, mechanism); scheduler property tests |
+| Boards | per-board scenario suites (Uno, Nano, Mega, ESP32, ESP32-S3, Pico, Raspberry Pi bridge) on every emulator or peripheral-model change |
 | Performance | benchmarks for PLAN §4.14, tracked in CI |
 
 ## 8. Build and CI
 
 - Toolchains: Node (VS Code's pinned version), pnpm, Rust stable, CMake + Ninja,
-  and the C/C++ compilers per OS. Dependencies install via `scripts/dev/setup.sh`.
-- CI: GitHub Actions matrix (Linux first, then Windows and macOS), with **ccache**,
-  cargo and pnpm caches. Native engine builds are cached by upstream version and
-  patch hash.
-- Nightly builds are uploaded as artifacts, so the owner can try them.
+  and the C/C++ compilers per OS (GCC on Linux, **MSVC** on Windows). Dependencies
+  install via `scripts/dev/setup.sh` (Linux) and `scripts/dev/setup.ps1` (Windows).
+- CI: GitHub Actions matrix with **Windows and Linux from the first commit** (macOS
+  by P8), with **ccache**, cargo and pnpm caches. Windows engine builds use vcpkg
+  (KiCad), LibPack or conda/pixi (FreeCAD) and MSYS2 (QEMU). Native engine builds
+  are cached by upstream version and patch hash.
+- **Windows rules:** no Linux-only scripts or paths in product code; keep platform
+  code (paths, pipes, process spawning, file locking) behind small interfaces;
+  long-path-safe file handling; test engine restarts with files open.
+- Nightly builds (Windows installer and portable zip, Linux) are uploaded as
+  artifacts, so the owner can try them.
 
 ## 9. Using REA (reverse engineering)
 
@@ -121,6 +134,12 @@ For source trees we have (the forks), read the source. REA is for shipped artifa
   inside sessions, and ask the owner before any workaround. Never bypass a refusal.
 - Large native builds (KiCad, FreeCAD, VS Code) take long. Use ccache, build only
   needed targets, and prefer CI for full builds.
+- **Claude's sessions run Linux only.** Windows is checked by CI and by the owner's
+  nightly tests, so push early enough for the Windows jobs to report before a
+  session ends.
+- **REA's limits are gone, but memory isn't.** The 21 MB VS Code workbench bundle
+  parsed fully in 30 minutes, but its semantic graph needed more than the 6 GiB
+  worker heap. For open-source trees, read the source instead.
 
 ## 11. When Claude stops and asks
 

@@ -1,9 +1,11 @@
-# CLAUDE.md: building Triad
+# CLAUDE.md: building Triage
 
-Triad (working name) is a **standalone desktop app built from VS Code's source**
-that unifies firmware coding, electronics (KiCad's engine), parametric 3D design
-(FreeCAD's engine, Blender-style UX), rendering (Blender) and **whole-device
-simulation**. The team is two: **the owner and Claude**.
+Triage is a **standalone desktop app built from VS Code's source** that unifies
+firmware coding, electronics (KiCad's engine), parametric 3D design (FreeCAD's
+engine, Blender-style UX), rendering (Blender) and **whole-device simulation**, all
+in **one window**. Boards: **ESP32, Arduino, Raspberry Pi**. Platform: **Windows
+first** (the owner's laptop), Linux too, macOS later. The team is two: **the owner
+and Claude**.
 
 **Status: planning complete; build starts at ROADMAP P0-1.**
 
@@ -17,12 +19,19 @@ simulation**. The team is two: **the owner and Claude**.
 
 ## Rules
 
-- **Architecture:** Triad forks VS Code (ADR 0001). KiCad, FreeCAD and Blender run as
-  headless **engine processes** behind Triad's UI (ADR 0002: Stream GAL, remote tools,
-  CAD RPC). Don't reimplement an engine algorithm that the engine already has.
+- **Architecture:** Triage forks VS Code (ADR 0001). KiCad, FreeCAD and Blender run as
+  hidden **engine processes** behind Triage's own tabs (ADR 0002, accepted: Stream
+  GAL, headless tools, CAD RPC). Don't reimplement an engine algorithm that the
+  engine already has.
+- **One window:** everything the user does happens in Triage's tabs. The stock
+  KiCad or FreeCAD window is only a temporary fallback where the ROADMAP lists it.
+  Simulation must work for the whole device and for any part alone (PLAN §4.7).
+- **Windows is first-class:** CI stays green on Windows and Linux. No Linux-only
+  scripts, paths or assumptions in product code (GUIDELINES §8). Boards and
+  emulators: ADR 0003.
 - **Files are the source of truth:** KiCad files (electronics) and FreeCAD files
   (mechanical) must stay openable in stock KiCad and FreeCAD. Keep golden tests green.
-- **Forks:** upstream stays untouched; changes go in `patches/`; Triad code lives
+- **Forks:** upstream stays untouched; changes go in `patches/`; Triage code lives
   in its own folders (GUIDELINES §6).
 - **Work in WP order**, one WP at a time unless the owner runs parallel sessions.
   Ask before ADR-level decisions (GUIDELINES §11).
@@ -51,6 +60,6 @@ Reproduce the research: `REA=$REA scripts/research/teardown.sh /abs/workdir`.
 ## Conventions
 
 - TypeScript (strict) in the app; Rust for model, kernel and solvers; C++ in the
-  forked engines (follow upstream style there).
+  forked engines and C in the QEMU peripheral models (follow upstream style there).
 - Conventional Commits. Develop on the branch assigned to the session.
 - Every WP meets the definition of done (GUIDELINES §4) and updates `docs/STATUS.md`.

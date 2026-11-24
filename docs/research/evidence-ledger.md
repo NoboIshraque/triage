@@ -100,4 +100,6 @@ the 12 largest of 61 libraries (all 61 were inspected).
 | FreeCAD `Sketcher.so` | inspect_native_exports | `ev_bc93c7167d609816f028701231a6ba4c12e652ed47e796c0af0ae023a0bb13ae` | – | `6cdf5d91d1f1dd613fd5bb0f03ee744abb05a7f05e04f01a4c37700a93b0048b` | app: 2393 exports, 1.61 MB .text |
 | FreeCAD `libStdMeshers.so` | inspect_native_exports | `ev_ed57650f4a418d100cfed3f99b6c0a4b94ffb5e3e432f78b808e7d49a166d9d5` | – | `a9cd2e3beca0f1084435bc7e41d8281567d40b8e0bc7282add34c7b8aa76664c` | app: 1420 exports, 1.60 MB .text |
 
-VS Code round-2 runs (unbounded, whole `out/` and `extensions/`) are recorded in [vscode.md](vscode.md).
+| VSCodium `vs/workbench/workbench.desktop.main.js` (21.1 MB) | analyze_javascript_application (unbounded, worker heap 6144 MiB) → summary view | `ev_20728c1c500a684f0b744b4eb69a11713bd8e42e7ce166c1037f3252534a90ad` | `ev_9b375b8e3f8b39fe9e24182b55d7d1beeaf0265909fbc734e05a30b72aa738f7` | `4c5712efc8141eb3589d3f1b9781ef15baa8fb6a9bcbdddbc27db03d6730cc91` | parsed completely: 5,318,098 AST nodes, 3,017 findings, 0 parse failures; no BrowserWindow/IPC/utility-process sites; semantic projection exhausted the 6 GiB heap, so relations are partial (observed) |
+
+The remaining VS Code round-2 runs (sessions bundle, other `out/` files, `extensions/`) are recorded in [vscode.md](vscode.md) §5 as they complete.

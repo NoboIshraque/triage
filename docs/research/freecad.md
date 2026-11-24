@@ -5,7 +5,7 @@ engineering CAD (see [blender.md](blender.md)). Product enclosures need **parame
 B-rep CAD**: constrained sketches, features, assemblies and STEP output. FreeCAD is
 the leading open-source parametric CAD, built on OCCT, with an engine that
 runs **without its UI** (`FreeCADCmd`, Python). It is the natural engine for
-Triad's mechanical workspace, while Blender contributes rendering, mesh tools
+Triage's mechanical workspace, while Blender contributes rendering, mesh tools
 and UX ideas.
 
 **Target:** `libfreecad-daily-python3-1.1_1.1~pre1~202508270404~ubuntu24.04.1_amd64.deb`
@@ -52,14 +52,14 @@ not missing) [O].
 | Spreadsheet (parameters) | 0.66 MB | 833 | 0.57 MB | 889 |
 | Measure, Surface, Import, Points, Robot, Inspection, ReverseEngineering, MeshPart, flatmesh... | ~3.4 MB | ~5,400 | ~1.9 MB | ~2,900 |
 
-## 3. What Triad takes from FreeCAD
+## 3. What Triage takes from FreeCAD
 
-1. **Run FreeCAD's App layer as Triad's CAD engine process.** It covers
+1. **Run FreeCAD's App layer as Triage's CAD engine process.** It covers
    documents with recompute and undo, the feature tree, Part (OCCT), PartDesign,
    Sketcher with its solver, Assembly with the Ondsel solver, Materials,
    Spreadsheet parameters, Import/Export (STEP, IGES, STL...), Mesh, FEM with
-   meshing, TechDraw and CAM. That is ~29 MB of engine code Triad doesn't write.
-2. **Replace the Qt/Coin3D UI (~28 MB) with Triad's 3D workspace:** a GPU viewport
+   meshing, TechDraw and CAM. That is ~29 MB of engine code Triage doesn't write.
+2. **Replace the Qt/Coin3D UI (~28 MB) with Triage's 3D workspace:** a GPU viewport
    (tessellation streamed from the engine), a feature tree, property panels and a
    sketcher overlay, using Blender-style UX (outliner, properties, gizmos,
    modifier-style feature stack).
@@ -77,4 +77,4 @@ not missing) [O].
 - [?] Runtime behavior. Executing the downloaded build was not permitted in this
   session, so findings are static.
 - The 1.1 build is a pre-release snapshot. Re-run the breakdown on the release
-  Triad pins.
+  Triage pins.

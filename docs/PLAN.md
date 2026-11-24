@@ -1,8 +1,9 @@
-# Triad: master plan (standalone app)
+# Triage: master plan (standalone app)
 
-> **Triad** is a working name for the three pillars (Code · Circuit · Form) plus
-> the simulation that joins them. Rename freely.
-> Status: **plan v0.2**, 2026-11-23. Built from the unbounded teardown in
+> **Triage** is the product name (the owner's choice, 2026-11-24).
+> Status: **plan v0.3**, 2026-11-24: the owner's answers applied (one window,
+> simulation together or separately, ESP32/Arduino/Raspberry Pi, Windows first).
+> Built from the unbounded teardown in
 > [research/](research/README.md). Delivery: [ROADMAP.md](ROADMAP.md) · how we
 > work: [GUIDELINES.md](GUIDELINES.md) · progress: [STATUS.md](STATUS.md).
 > **Team:** the project owner and Claude.
@@ -15,27 +16,31 @@
 source**, that does the work of VS Code, KiCad, a parametric CAD tool and
 Blender in one window, and adds **whole-device simulation**. A student writes
 firmware, draws the schematic, lays out the PCB and designs the enclosure side
-by side. **Run** then executes the firmware on an emulated microcontroller,
-drives the simulated circuit, and moves motors and reads sensors in a 3D
-physics world, with automated tests that pass or fail. It runs offline on a
-laptop.
+by side, **as tabs of the same window**, on one linked project. **Run** then
+executes the firmware on an emulated microcontroller, drives the simulated
+circuit, and moves motors and reads sensors in a 3D physics world, with automated
+tests that pass or fail. It can simulate **everything together or any part on its
+own** (just the circuit, just the code, just the mechanism). Boards: **ESP32,
+Arduino and Raspberry Pi**. It runs offline on a laptop, **Windows first**.
 
 **Five big bets**
 
 | # | Bet | Evidence |
 |---|---|---|
-| 1 | **Fork VS Code (Code-OSS) into the Triad app.** Native editors, new engine processes and our own layout are compiled into the workbench ([ADR 0001](adr/0001-standalone-app-on-vscode-codebase.md)) | VS Code's process model (utility processes + MessagePort, a narrow 26-member preload) is built for exactly this ([vscode.md](research/vscode.md)) |
-| 2 | **Keep the engines, replace the UIs.** KiCad, FreeCAD and Blender become headless **engine processes** behind Triad's UI ([ADR 0002](adr/0002-absorb-engines-headless.md)) | KiCad's engine is 42–49% of its code and its graphics boundary is **68 methods**. FreeCAD splits **29.3 MB engine / 28.3 MB UI** ([kicad.md](research/kicad.md), [freecad.md](research/freecad.md)) |
-| 3 | **Triad's own co-simulation kernel** wires MCU emulators, ngspice, MuJoCo and a virtual network together, with **wiring generated from the schematic and assembly** | ngspice `Init_Sync`/`SetBkpt`, MuJoCo `mjs_`/`mjcb_`, Renode's sync phases and `.repl` netlists, Wokwi's network gateway ([simulators.md](research/simulators.md)) |
+| 1 | **Fork VS Code (Code-OSS) into the Triage app.** Native editors, new engine processes and our own layout are compiled into the workbench ([ADR 0001](adr/0001-standalone-app-on-vscode-codebase.md)) | VS Code's process model (utility processes + MessagePort, a narrow 26-member preload) is built for exactly this ([vscode.md](research/vscode.md)) |
+| 2 | **Keep the engines, replace the UIs.** KiCad, FreeCAD and Blender become headless **engine processes** behind Triage's UI ([ADR 0002](adr/0002-absorb-engines-headless.md)) | KiCad's engine is 42–49% of its code and its graphics boundary is **68 methods**. FreeCAD splits **29.3 MB engine / 28.3 MB UI** ([kicad.md](research/kicad.md), [freecad.md](research/freecad.md)) |
+| 3 | **Triage's own co-simulation kernel** wires MCU emulators, ngspice, MuJoCo and a virtual network together, with **wiring generated from the schematic and assembly** | ngspice `Init_Sync`/`SetBkpt`, MuJoCo `mjs_`/`mjcb_`, Renode's sync phases and `.repl` netlists, Wokwi's network gateway ([simulators.md](research/simulators.md)) |
 | 4 | **One project, one link graph.** Pins, nets, parts, boards, bodies and code are linked across domains, so nothing is retyped or re-exported | the walkthrough below |
-| 5 | **Build in vertical slices, companion first.** Ship a working end-to-end slice early using the stock apps as companions, then absorb each engine | two-person team: value early, risk retired step by step |
+| 5 | **Build in vertical slices, inside one window from the start.** Each engine first appears as in-app views with simple edits, then gains full in-app editing. Stock KiCad and FreeCAD windows are only a temporary fallback | the owner's requirement (§1); a two-person team gets value early and retires risk step by step |
 
 **Out of scope for v1.0** (guardrails against an infinite project): HDI/RF PCB
 design · FEA/CFD beyond FreeCAD FEM basics · cloud accounts and collaboration ·
 mobile. Blender's animation and VFX features stay inside the optional render engine.
 
-**Open questions for you** (§5): which **laptop OS** you test on, which **first
-boards** your courses use, and the **name**.
+**Confirmed with the owner (2026-11-24, §5):** everything integrated in one app;
+simulation of everything together or any part separately; boards ESP32, Arduino
+and Raspberry Pi ([ADR 0003](adr/0003-boards-and-windows.md)); a Windows laptop;
+the name Triage; hidden engines ([ADR 0002](adr/0002-absorb-engines-headless.md)).
 
 ---
 
@@ -47,29 +52,34 @@ clubs, capstone teams, and instructors who set and grade lab work.
 **Jobs to be done**
 1. Design a device end to end without juggling 3–4 tools and manual exports.
 2. **See it working before buying parts**: catch wiring, firmware, fit and power
-   mistakes in simulation.
+   mistakes in simulation, for the whole device or one part at a time.
 3. Hand off to manufacturing: Gerbers, BOM, pick-and-place, STEP, STL/3MF, firmware.
 4. (Instructors) ship templates and auto-graded test scenarios.
 
 **Principles:**
+- **Everything in one window:** code, schematic, PCB, 3D and simulation are tabs of
+  one app working on one project. No switching programs, no exporting between tools.
+- **Check together or separately:** simulate the whole device, or just the circuit,
+  the code or the mechanism, whenever you like (§4.7).
 - **One project, one truth, many views.**
 - **Links, not exports.**
 - **Progressive fidelity:** a game-like interactive sim by default, accurate
   engineering analysis one click away.
 - **Open file formats:** KiCad and FreeCAD files stay openable in the original tools.
 - **Teach through feedback:** errors explain physics.
-- **Runs on a normal laptop:** 8–16 GB RAM, integrated GPU, offline.
+- **Runs on a normal laptop:** Windows first (Linux and macOS too), 8–16 GB RAM,
+  integrated GPU, offline.
 
 ---
 
 ## 2. What the full breakdown showed
 
-| App | How it's really built (shipped builds, REA unbounded) | What Triad does with it |
+| App | How it's really built (shipped builds, REA unbounded) | What Triage does with it |
 |---|---|---|
-| **VS Code 1.143** | Electron main process, sandboxed renderer, and utility processes (extension host, pty host, shared process, file watcher, **agent host**). One 26-member preload API. Renderers reach helpers over **MessagePort**. ~59 MB of core JS (two 21–22 MB workbench bundles) plus ~78 MB of built-in extensions | **Fork it.** Add Triad editors to the workbench and Triad engines as utility processes, using the same MessagePort pattern |
-| **KiCad 10.0.8** | Launcher plus `KIFACE_1` plugins. ~158k functions, ~81 MB of code. pcbnew is **42% engine / 21% UI dialogs / 5% tools**. **GAL = 68 methods**. Router adapter `pns_kicad_iface.cpp`. Protobuf/nng API (15 protos). ngspice dlopen'd. OCCT for STEP. kicad-cli for every fab format | **EDA engine process** from KiCad source: **Stream GAL** for rendering, **remote tools** for editing, extended protobuf API, dialogs rebuilt in Triad |
-| **FreeCAD 1.1** | Every module is an **App/Gui library pair**. Engine 29.3 MB (Part, PartDesign, Sketcher, Assembly + Ondsel solver, FEM, TechDraw, Materials). UI 28.3 MB (Qt + Coin3D) | **CAD engine process** (App layer + JSON-RPC). Triad draws the viewport and panels |
-| **Blender 5.3** | 197 MB binary with embedded CPython. Cycles (Embree/HIP-RT/SYCL), OSL, USD, OpenVDB, Bullet, Mantaflow. UI is Python over RNA (273 panels, 505 menus, 348 Python operators) | **Optional render engine** (Cycles, mesh/sculpt) plus the **UX model** for Triad's 3D workspace |
+| **VS Code 1.143** | Electron main process, sandboxed renderer, and utility processes (extension host, pty host, shared process, file watcher, **agent host**). One 26-member preload API. Renderers reach helpers over **MessagePort**. ~59 MB of core JS (two 21–22 MB workbench bundles) plus ~78 MB of built-in extensions | **Fork it.** Add Triage editors to the workbench and Triage engines as utility processes, using the same MessagePort pattern |
+| **KiCad 10.0.8** | Launcher plus `KIFACE_1` plugins. ~158k functions, ~81 MB of code. pcbnew is **42% engine / 21% UI dialogs / 5% tools**. **GAL = 68 methods**. Router adapter `pns_kicad_iface.cpp`. Protobuf/nng API (15 protos). ngspice dlopen'd. OCCT for STEP. kicad-cli for every fab format | **EDA engine process** from KiCad source: **Stream GAL** for rendering, **remote tools** for editing, extended protobuf API, dialogs rebuilt in Triage |
+| **FreeCAD 1.1** | Every module is an **App/Gui library pair**. Engine 29.3 MB (Part, PartDesign, Sketcher, Assembly + Ondsel solver, FEM, TechDraw, Materials). UI 28.3 MB (Qt + Coin3D) | **CAD engine process** (App layer + JSON-RPC). Triage draws the viewport and panels |
+| **Blender 5.3** | 197 MB binary with embedded CPython. Cycles (Embree/HIP-RT/SYCL), OSL, USD, OpenVDB, Bullet, Mantaflow. UI is Python over RNA (273 panels, 505 menus, 348 Python operators) | **Optional render engine** (Cycles, mesh/sculpt) plus the **UX model** for Triage's 3D workspace |
 | **Simulators** | ngspice co-sim hooks. simavr IRQ graph. avr8js/rp2040js cycle clocks. **Renode: 1,248 peripheral models, 143 CPU types, grant/sync/unblock/wait time phases**. MuJoCo 822-function API. **Wokwi: client-side emulation, a Go/WASM virtual network gateway, GDB and RFC2217 bridges** | **Sim engine** units and design patterns (§4.7) |
 
 ---
@@ -79,8 +89,8 @@ clubs, capstone teams, and instructors who set and grade lab work.
 This is the target experience for v1.0. Earlier milestones deliver parts of it,
 in the order of the [ROADMAP](ROADMAP.md).
 
-1. **Open Triad → New Project → "Smart Fan (Arduino Uno)".** It creates one
-   folder with `firmware/`, `electronics/` (KiCad files), `mechanical/` (FreeCAD
+1. **Open Triage → New Project → "Smart Fan (Arduino Uno)"** (the same template
+   exists for ESP32 and Raspberry Pi Pico). It creates one folder with `firmware/`, `electronics/` (KiCad files), `mechanical/` (FreeCAD
    files) and `simulation/`. The window opens in the **Engineering layout**:
    Code | Schematic | Board | 3D | Sim.
 2. **Electronics.** Maya places an NTC thermistor + 10 kΩ divider on A0, a
@@ -89,7 +99,7 @@ in the order of the [ROADMAP](ROADMAP.md).
 3. **Code.** `#include "board_pins.h"` is generated from the schematic. Hovering
    `FAN_PWM` highlights the net. `analogWrite(10, …)` gets a squiggle: *"D10 is not
    connected to anything"*.
-4. **PCB.** She places and routes the board in Triad's PCB editor, using KiCad's
+4. **PCB.** She places and routes the board in Triage's PCB editor, using KiCad's
    push-and-shove router underneath. The **3D view updates live inside the enclosure.**
 5. **Mechanical.** "Enclosure from board" (FreeCAD engine): 2 mm walls, 5 mm
    clearance, **automatic cutouts** for USB and the DC jack, a fan grille, and
@@ -98,7 +108,10 @@ in the order of the [ROADMAP](ROADMAP.md).
 6. **Run (F5).** The firmware compiles and the emulated ATmega328P boots. A
    room-temperature slider sits in the environment panel. At 35 °C, PWM reaches
    80% and **the fan spins in 3D**. **The OLED on the 3D model shows "35.0C 80%"**.
-   A scope shows motor current.
+   A scope shows motor current. Next to Run, a **scope picker** runs just part of
+   the device: earlier she used *Circuit only* to check the divider voltage before
+   writing any code, and *Code only* (with a virtual I/O panel of LEDs, buttons and
+   sliders) to test her menu logic before the board existed (§4.7).
 7. **Accuracy tier.** She switches the power stage to SPICE and deletes the
    flyback diode. The scope shows a **61 V spike**, flagged *"exceeds MOSFET VDS max
    (55 V)"*.
@@ -106,9 +119,9 @@ in the order of the [ROADMAP](ROADMAP.md).
    together**. She steps through and watches the PWM pin.
 9. **Test.** `simulation/scenarios/overheat.yaml` ramps 20 → 40 °C and expects duty
    ≥ 0.8 by 8 s and "HOT" on the OLED. It runs in the Test Explorer and as
-   `triad test` in CI.
+   `triage test` in CI.
 10. **Render and release.** A Cycles product shot from the render engine, then
-    `triad export release` writes Gerbers, drill files, BOM and CPL, STEP, 3MF,
+    `triage export release` writes Gerbers, drill files, BOM and CPL, STEP, 3MF,
     `firmware.hex`, the test report and renders.
 
 ---
@@ -119,13 +132,13 @@ in the order of the [ROADMAP](ROADMAP.md).
 
 ```mermaid
 flowchart TB
-  subgraph TRIAD["Triad app: VS Code fork"]
+  subgraph TRIAGE["Triage app: VS Code fork"]
     direction TB
     UI["Workbench renderer<br/>Code (Monaco) · Schematic · Board · 3D/CAD · Sim views<br/>native editors with GPU canvases"]
     MAIN["Main process<br/>windows, lifecycle, MessagePort broker"]
     EXT["Extension host<br/>Open VSX extensions, language servers, toolchains"]
   end
-  subgraph ENGINES["Triad engine processes"]
+  subgraph ENGINES["Triage engine processes"]
     MODEL["Model service<br/>project, link graph, codegen"]
     EDA["EDA engine<br/>KiCad core + Stream GAL"]
     CAD["CAD engine<br/>FreeCAD App layer"]
@@ -133,7 +146,7 @@ flowchart TB
     REN["Render engine<br/>Blender, optional"]
   end
   subgraph UNITS["Simulation units"]
-    MCU["MCU emulators<br/>avr8js, rp2040js, Renode, QEMU"]
+    MCU["Board emulators<br/>avr8js (Arduino), rp2040js (Pico),<br/>QEMU (ESP32), Renode, Pi Python bridge"]
     SPICE["ngspice"]
     PHYS["MuJoCo"]
     NET["Virtual network gateway"]
@@ -157,29 +170,35 @@ flowchart TB
 | Process | Built from | Responsibilities | If it crashes |
 |---|---|---|---|
 | Main | VS Code fork | windows, lifecycle, menus. Spawns engines and hands **MessagePorts** to the renderer (the observed `ipcMessagePort.acquire` pattern) | app restarts |
-| Workbench renderer | VS Code fork + Triad editors (TS) | Monaco, all Triad editors and panels, GPU canvases (WebGL2/WebGPU), workers for heavy client work | window reloads, state restored |
+| Workbench renderer | VS Code fork + Triage editors (TS) | Monaco, all Triage editors and panels, GPU canvases (WebGL2/WebGPU), workers for heavy client work | window reloads, state restored |
 | Extension host | VS Code fork | Open VSX extensions, clangd, PlatformIO/arduino-cli/CMake tasks | extensions restart |
-| **Model service** | Triad (Rust via napi-rs, in a utility process) | `triad.toml`, link graph, change propagation, pin-map codegen, scenario files | reconnect, reload from disk |
+| **Model service** | Triage (Rust via napi-rs, in a utility process) | `triage.toml`, link graph, change propagation, pin-map codegen, scenario files | reconnect, reload from disk |
 | **EDA engine** | **KiCad fork** (C++, headless) | schematic and board models, connectivity, router, DRC, zones, IO, plotters, simulator glue, jobs. **Stream GAL** display lists. **Remote tools**. Extended protobuf API | editors show "reconnecting", reload files |
 | **CAD engine** | **FreeCAD fork** (C++/Python, App layer) | documents, features, sketches with solver, assemblies, materials, STEP/STL/3MF, FEM, TechDraw. Tessellation streaming. JSON-RPC | CAD ops retry |
-| **Sim engine** | Triad (Rust kernel via napi-rs + Node utility process for the JS emulators) | scheduler, signal bus, units, recording/replay. Spawns Renode and QEMU | simulation stops with an error |
-| **Render engine** | Blender (`blender -b` + Triad RPC script), optional | Cycles renders, mesh/sculpt operations, glTF/USD exchange | render job fails, retry |
+| **Sim engine** | Triage (Rust kernel via napi-rs + Node utility process for the JS emulators) | scheduler, signal bus, units, scopes and stubs, recording/replay. Spawns QEMU (ESP32), Renode and the Raspberry Pi Python bridge | simulation stops with an error |
+| **Render engine** | Blender (`blender -b` + Triage RPC script), optional | Cycles renders, mesh/sculpt operations, glTF/USD exchange | render job fails, retry |
 
 **Transport.** Engines are native executables. A small Node **broker** in each
 engine's utility process speaks to its engine over a local socket (KiCad's nng for
-the EDA engine) and relays to the renderer over MessagePort with **transferable
+the EDA engine; named pipes on Windows, Unix sockets elsewhere) and relays to the renderer over MessagePort with **transferable
 ArrayBuffers**. Control uses JSON-RPC or protobuf. Bulk data uses binary frames:
 display lists, tessellations, waveforms.
 
 ### 4.3 How each original app is absorbed
 
-Every domain moves through three stages. Each stage is shippable.
+Everything the user does happens in Triage's tabs, from the first release. Each
+domain moves through two stages, and each stage ships:
 
 | Stage | Electronics (KiCad) | Mechanical (FreeCAD) | Render (Blender) |
 |---|---|---|---|
-| **A. Companion** | Triad launches stock KiCad for editing. `kicad-cli` provides netlist, ERC/DRC, GLB/STEP, fab outputs. IPC API cross-probing | Triad launches stock FreeCAD. `FreeCADCmd` scripts generate enclosures and export STEP/GLB | `blender -b` scripts render product shots |
-| **B. Engine + viewer** | **EDA engine** built from KiCad source. **Stream GAL** renders schematic and board inside Triad tabs, pixel-identical, with live selection and cross-probe | **CAD engine** (FreeCAD App) inside Triad: live tessellated 3D, feature tree, properties | render engine bundled with Triad, render queue panel |
-| **C. Native editing** | **Remote tools:** Triad canvas input drives KiCad's tool framework (select, move, wire, place, **route** with push-and-shove, zones). Dialogs rebuilt in Triad. KiCad window optional | Triad sketcher overlay and feature UI over FreeCAD's solver. Assemblies with joints feed MuJoCo | mesh/sculpt handoff with stable IDs |
+| **1. Engine + in-app views** (P1, P2) | **EDA engine** built from KiCad source. **Stream GAL** renders schematic and board inside Triage tabs, pixel-identical, with live selection and cross-probe. Simple edits (move, rotate, values, place, wire, track) through engine commits | **CAD engine** (FreeCAD App layer) inside Triage: live tessellated 3D, feature tree, properties, enclosure from board, fit checks | – |
+| **2. Full in-app editing** (P5, P6, P8) | KiCad's interactive tools run headlessly (select, move, wire, place, **route** with push-and-shove, zones), as **remote tools** or by **hosting** them directly (spike P1-6, ADR 0004). Dialogs rebuilt in Triage | Triage sketcher overlay and feature UI over FreeCAD's solver. Assemblies with joints feed MuJoCo | render engine bundled with Triage, render queue panel; mesh/sculpt handoff with stable IDs |
+
+**Temporary fallback, not a workflow.** Until stage 2 covers an edit, "Edit in
+KiCad" or "Edit in FreeCAD" opens the same files in the stock editor window, and
+Triage reloads them on save (§4.4, external edits). The fallback leaves the default
+UI once P5 and P6 land. Exports and checks (fab outputs, STEP, ERC/DRC) always run
+inside the engines, never in a separate program the user has to open.
 
 **Stream GAL details** (from [kicad.md](research/kicad.md)): implement the ~45 drawing
 methods of `KIGFX::GAL` (lines, segments, arcs, circles, polygons, curves, glyphs,
@@ -188,14 +207,18 @@ per cached group**. The renderer composes layers on the GPU, and KiCad's own
 `VIEW` caching decides what to redraw. **Remote tools:** convert canvas
 mouse/keyboard events into KiCad `TOOL_EVENT`s and run the tool framework on the
 engine's main loop. Tools that open wx dialogs are wrapped so the dialog becomes
-a Triad form over the API. **This bridge is the main technical risk**, so it gets
-an early spike (ROADMAP P3).
+a Triage form over the API. **Direct hosting** is the alternative the teardown
+points to: some tools have clean adapters, such as the push-and-shove router behind
+`pns_kicad_iface.cpp`, so the engine can host the router itself and feed it cursor
+positions from Triage, without the wx tool framework. **Driving KiCad's tools
+headlessly is the main technical risk**, so both paths get an early spike (ROADMAP
+P1-6, decided in ADR 0004).
 
 ### 4.4 The unified project model
 
 ```
 smart-fan/
-  triad.toml                 # manifest: name, targets, boards, sim defaults
+  triage.toml                 # manifest: name, targets, boards, sim defaults
   firmware/                  # PlatformIO / Arduino / CMake / Zephyr / MicroPython
     src/main.cpp
     generated/board_pins.h   # generated from the schematic (do not edit)
@@ -203,9 +226,10 @@ smart-fan/
   mechanical/                # FreeCAD documents (.FCStd) + exports/
   simulation/
     environment.toml         # temperature, light, gravity, obstacles, network
+    scopes/*.toml            # saved scopes: which parts run, how the rest is stubbed
     scenarios/*.yaml         # stimulus + expectations (tests)
   parts/                     # project-local smart parts
-  .triad/links.json          # cross-domain link graph (stable IDs)
+  .triage/links.json          # cross-domain link graph (stable IDs)
 ```
 
 - **Source of truth per domain:** KiCad files (electronics), FreeCAD files
@@ -234,7 +258,7 @@ erDiagram
 ```
 
 - **Stable IDs:** KiCad UUIDs for symbols, footprints and nets; FreeCAD object
-  names and UUIDs for bodies and features; UUIDv7 for Triad entities.
+  names and UUIDs for bodies and features; UUIDv7 for Triage entities.
 - **Change propagation:** edits are commands. Dependents recompute through a
   small dependency graph. Renaming net `FAN_PWM` updates `board_pins.h`, the
   generated Renode `.repl`, scenarios and 3D labels in one transaction.
@@ -243,7 +267,7 @@ erDiagram
 - **External edits** (a file changed in stock KiCad or FreeCAD): watch, re-parse,
   reconcile links by ID, and list broken links in a Links problems view.
 
-### 4.5 Cross-domain features (why Triad exists)
+### 4.5 Cross-domain features (why Triage exists)
 
 1. **Pin map sync:** a generated header, devicetree overlay or Python module, plus
    diagnostics for unknown, unconnected or misused pins.
@@ -258,7 +282,9 @@ erDiagram
 7. **Debug the world:** a breakpoint pauses CPU, circuit and physics together.
 8. **Test:** scenario files hold stimulus plus expectations, run in the Test
    Explorer and CI.
-9. **Release bundle:** fab, mechanical, firmware, BOM with cost, test report and renders.
+9. **Check together or separately:** run the whole device or any part of it, and
+   get ERC, DRC, fit and pin checks continuously while designing (§4.7).
+10. **Release bundle:** fab, mechanical, firmware, BOM with cost, test report and renders.
 
 ### 4.6 Smart parts
 
@@ -272,7 +298,7 @@ parts/hc-sr04/
   firmware/          # optional driver hints
 ```
 
-The **Part SDK** is Triad's own WebAssembly API (C, Rust or AssemblyScript) for
+The **Part SDK** is Triage's own WebAssembly API (C, Rust or AssemblyScript) for
 behavioral models. It covers pins, watches, timers, bus devices, analog outputs,
 a framebuffer, **UI controls** and access to the physics frame for sensors. The
 manifest shape (pins + controls + display) follows the pattern observed in
@@ -291,22 +317,68 @@ can serve them into stock KiCad too.
 | **T1 Accurate** | ngspice transient on selected islands, co-simulated | same | same | 0.05–1× real time |
 | **T2 Analysis** | ngspice OP/DC/AC/noise/sweeps/Monte Carlo, offline | – | FEM via the CAD engine | batch |
 
+**Simulation scopes: everything together, or any part on its own.** The owner
+wants to check the design "together or separately, however I want". A **scope**
+picks which parts of the device a run simulates. Everything outside it is replaced
+by a **stub**, so any part can run alone.
+
+| Scope | What runs | What stands in for the rest | Typical question |
+|---|---|---|---|
+| **Whole device** (default) | firmware on the emulated board + circuit + mechanics + environment | nothing | "Does my device work?" |
+| **Circuit only** | the circuit solver: interactive (T0) with switches and sliders, or SPICE (T1/T2) | the MCU's pins become sources and probes you control | "Is the divider voltage right? Does the MOSFET survive?" |
+| **Code only** | the emulated board and its firmware | a **virtual I/O panel**: LEDs, buttons, sliders, a serial terminal and smart-part devices (an OLED, a sensor) wired ideally to the pins; no circuit, no physics | "Does my menu logic work?" |
+| **Mechanism only** | MuJoCo with the assembly | actuators driven by sliders or scripted profiles; sensors read out directly | "Does the arm reach? Does the robot tip over?" |
+| **Custom** | any subset of units, for example firmware + circuit without physics | stubs on every connection that crosses the scope boundary | anything else |
+
+Stubs come in a few kinds: **control** (a UI slider, switch or signal generator),
+**hold** (a fixed value), **trace** (replays a signal recorded in an earlier run, so
+a part sees exactly what the rest of the device fed it), **ideal** (an ideal
+source, load or motor) and **open** (disconnected). The kernel builds the
+co-simulation graph from the link graph, cuts it at the scope boundary and inserts
+the stubs. Scopes can be saved:
+
+```toml
+# simulation/scopes/power-stage.toml
+name = "Power stage only"
+run  = ["circuit"]          # any of: firmware, circuit, mechanics, environment, parts
+tier = "T1"                 # SPICE for this island
+[stubs]
+"net:FAN_PWM" = { kind = "control", signal = "pwm", duty = 0.8, freq_hz = 490 }
+"part:M1"     = { kind = "ideal", model = "dc-motor" }
+```
+
+**Where a run starts:** the scope picker next to Run; "Simulate this" in each tab
+(schematic → circuit only, code → code only, 3D → mechanism only, starting from the
+selection); scenario files (the `scope:` key); and the CLI
+(`triage sim run --scope power-stage`).
+
+**Checks without running:** ERC, DRC, fit and clearance, pin conflicts and the
+power budget run continuously in the background while you design, and report in
+the Problems panel. **Edits during a run:** value changes (a resistor, an
+environment slider) apply live in T0. Wiring, geometry and code changes rebuild
+the run and replay its recorded inputs up to the same moment.
+
 **Units.** Each engine is wrapped as a unit with an FMI-3-like contract:
 `doStep(t, Δt) → reached | earlyReturn(t_e, events)`, plus event handling and
 state save/restore.
 
 | Unit | Engine | Notes |
 |---|---|---|
-| AVR (Uno, Nano) | avr8js | in the sim engine's Node helper |
-| RP2040/RP2350 (Pico) | rp2040js | PIO, USB-CDC, MicroPython |
-| STM32, nRF52, RISC-V… | **Renode** (child process) | `.repl` generated from the netlist. Inject at sync points (`ExecuteInNearestSyncedState`-style). GPIO over its co-sim protocol |
-| ESP32 family | **QEMU** (Espressif fork, child process) | **virtual network gateway** for Wi-Fi/Internet (user-space TCP/IP + DHCP/DNS, like Wokwi's `wokwigw`) |
-| Circuit T0 | Triad Rust MNA + logic solver | analog islands, logic nets |
+| **Arduino** Uno, Nano, Mega 2560 (AVR) | avr8js | in the sim engine's Node helper. 22-bit PC support for the Mega is present [O] |
+| **Raspberry Pi Pico** (RP2040), Nano RP2040 Connect | rp2040js | PIO, USB-CDC, MicroPython. No RP2350 (Pico 2) in 1.4.2 [O]: later (P7) |
+| **ESP32**, ESP32-S3, ESP32-C3 (incl. Arduino Nano ESP32) | **QEMU** (Espressif fork, child process) + Triage **peripheral models** | The fork emulates the CPU, UART, flash, timers, crypto, TWAI, LEDC (ESP32 only) and a virtual Ethernet MAC, but **not** the GPIO matrix, I²C, SPI, RMT, Wi-Fi or Bluetooth [D]. Triage adds those models, wired to the kernel, and a **Wi-Fi shim** over the emulated Ethernet into the **virtual network gateway** (user-space TCP/IP + DHCP/DNS, like Wokwi's `wokwigw`) |
+| **Raspberry Pi 4/5** (Linux, Python) | **Python bridge** (child process) | a gpiozero **pin factory** plus `RPi.GPIO`, `smbus2`, `spidev` and `pyserial` shims route the script's pins and buses to the kernel. The script runs on the laptop's Python, paced to virtual time (T0 timing). Full system (QEMU `raspi4b`) is a stretch goal |
+| Arduino Uno R4, Nano 33 BLE, STM32, nRF52, RISC-V… | **Renode** (child process) | Uno R4 Minima and Nano 33 BLE board files ship with Renode 1.16.1 [O]. `.repl` generated from the netlist. Inject at sync points (`ExecuteInNearestSyncedState`-style). GPIO over its co-sim protocol |
+| Circuit T0 | Triage Rust MNA + logic solver | analog islands, logic nets |
 | Circuit T1 | ngspice shared library | `Init_Sync` external sources, `SetBkpt` lockstep, event nodes |
 | Mechanics | MuJoCo | model built with `mjs_*` from the CAD assembly. Torques via `mjcb_control`/`mjcb_act_*` |
 | Parts | Part SDK (WASM) | behavioral models |
 | Environment | built-in | temperature, light, distance targets, gravity, wind, network |
 | External | FMI 3.0 FMU | third-party models |
+
+[O] observed in the shipped packages, [D] from vendor documentation. Details and
+sources: [simulators.md](research/simulators.md) §7 and
+[ADR 0003](adr/0003-boards-and-windows.md).
 
 **Time and scheduling** (Renode's design, observed):
 - **One virtual clock** in `int64` picoseconds.
@@ -353,8 +425,11 @@ analog islands go to the fast solver (T0) or ngspice (T1).
 spinning shafts, NeoPixels), oscilloscope, logic analyzer with I²C/SPI/UART decode,
 serial terminal, plots, energy and current budget, and an event log.
 
-**Bridges** (Wokwi lesson): a **GDB server** per emulated MCU (DAP in Triad's
+**Bridges** (Wokwi lesson): a **GDB server** per emulated MCU (DAP in Triage's
 debugger) and an **RFC2217 serial port**, so external tools see the simulated board.
+Network-capable boards (ESP32) reach the **virtual network gateway**: DHCP and DNS,
+NAT to the laptop's internet when the user allows it, port forwarding (open the
+board's web page in a browser), and built-in MQTT and HTTP test servers.
 
 **Determinism and replay:** seeded noise, and UI interactions recorded with
 virtual timestamps. Any run replays exactly.
@@ -364,6 +439,7 @@ virtual timestamps. Any run replays exactly.
 ```yaml
 # simulation/scenarios/overheat.yaml
 name: fan reacts to overheating
+scope: whole-device          # or circuit, code, mechanism, or a saved scope
 duration: 12s
 environment: { temperature_C: { ramp: [20, 40], over: 10s } }
 expect:
@@ -378,10 +454,10 @@ expect:
 
 | Surface | Choice |
 |---|---|
-| Workbench | VS Code's own UI framework, plus Triad parts (Engineering layout, project explorer, inspectors) |
+| Workbench | VS Code's own UI framework, plus Triage parts (Engineering layout, project explorer, inspectors) |
 | Schematic and board canvas | WebGL2 (WebGPU when available) renderer drawing **Stream GAL display lists** from the EDA engine: layers, cached groups, instancing |
 | 3D | three.js (WebGPURenderer with a WebGL2 fallback), with **tessellation streamed** from the CAD engine and board models from the EDA engine |
-| Inspectors and dialogs | Triad components generated from the schema (§4.4) |
+| Inspectors and dialogs | Triage components generated from the schema (§4.4) |
 | Plots | uPlot for waveforms; a WebGL logic analyzer |
 
 ### 4.9 Interop and file formats
@@ -400,11 +476,11 @@ expect:
 
 ### 4.10 Extensibility and automation
 
-- **Extensions:** the whole Open VSX ecosystem. Triad exposes a `triad` API to
+- **Extensions:** the whole Open VSX ecosystem. Triage exposes a `triage` API to
   extensions.
-- **Python API** (`import triad`) for project, schematic, board, CAD, sim and test,
+- **Python API** (`import triage`) for project, schematic, board, CAD, sim and test,
   in the spirit of `bpy` and `pcbnew`. It runs out of process.
-- **CLI** `triad`: `build`, `sim run`, `test`, `erc`, `drc`, `export release`, headless for CI.
+- **CLI** `triage`: `build`, `sim run [--scope …]`, `test`, `erc`, `drc`, `export release`, headless for CI.
 - **MCP server:** AI agents (including Claude during development) can query nets,
   run scenarios, read waveforms and take 3D screenshots.
 
@@ -413,48 +489,53 @@ expect:
 | Layer | Choice |
 |---|---|
 | App shell | **VS Code fork** (TypeScript, Electron), Open VSX gallery |
-| Triad UI | TypeScript inside the workbench; WebGL2/WebGPU; three.js |
+| Triage UI | TypeScript inside the workbench; WebGL2/WebGPU; three.js |
 | Model service and sim kernel | **Rust** (napi-rs into Node utility processes; wasm-bindgen for a future web build) |
 | EDA engine | **KiCad fork** (C++17/20, CMake), headless target + Stream GAL + remote tools |
 | CAD engine | **FreeCAD fork** (C++/Python, CMake), App layer + RPC server |
 | Render engine | Blender release build, driven by Python scripts |
-| Simulation | ngspice, MuJoCo, avr8js, rp2040js, Renode, QEMU-ESP32, virtual network gateway |
-| Toolchains | PlatformIO Core, arduino-cli, CMake + Arm GNU, ESP-IDF, Zephyr, MicroPython; clangd |
-| Build | pnpm + Turborepo (TS), Cargo (Rust), CMake + Ninja + ccache (C++), GitHub Actions matrix |
+| Simulation | ngspice, MuJoCo, avr8js, rp2040js, QEMU (Espressif fork) + Triage peripheral models, Renode, Raspberry Pi Python bridge, virtual network gateway |
+| Toolchains | arduino-cli and PlatformIO Core (AVR, Arduino-ESP32, Arduino-Pico), ESP-IDF, Pico SDK, MicroPython, Python 3 (Raspberry Pi), CMake + Arm GNU, Zephyr; clangd |
+| Build | pnpm + Turborepo (TS), Cargo (Rust), CMake + Ninja + ccache (C++; MSVC on Windows), vcpkg (KiCad on Windows), LibPack or conda/pixi (FreeCAD on Windows), MSYS2 (QEMU on Windows), GitHub Actions matrix: **Windows and Linux from P0**, macOS by P8 |
 | Tests | Vitest, Playwright for Electron, cargo test, KiCad/FreeCAD golden files, sim regression scenarios |
 
 ### 4.12 Repository layout
 
 ```
 engineering-solution-/
-  app/                  # the VS Code fork: upstream snapshot + Triad source under src/vs/triad/
+  app/                  # the VS Code fork: upstream snapshot + Triage source under src/vs/triage/
   engines/
-    eda/                # KiCad fork: upstream + patches/ + Triad additions (stream_gal/, remote_tools/, api/)
-    cad/                # FreeCAD fork: upstream + patches/ + Triad RPC module
+    eda/                # KiCad fork: upstream + patches/ + Triage additions (stream_gal/, remote_tools/, api/)
+    cad/                # FreeCAD fork: upstream + patches/ + Triage RPC module
+    qemu-esp32/         # Espressif QEMU fork: upstream + patches/ + Triage peripheral models
     render/             # Blender scripts and RPC
-  crates/               # Rust: triad-model, triad-sim-kernel, triad-mna, triad-ngspice, triad-mujoco, triad-part-sdk
-  sim/                  # Node helper for JS emulators, Renode/QEMU adapters, network gateway
+  crates/               # Rust: triage-model, triage-sim-kernel, triage-mna, triage-ngspice, triage-mujoco, triage-part-sdk
+  sim/                  # Node helper for JS emulators, QEMU and Renode adapters, Pi Python bridge, network gateway
   parts/                # smart part library + per-part scenarios
-  cli/                  # `triad` CLI
+  cli/                  # `triage` CLI
   docs/                 # plan, roadmap, guidelines, status, ADRs, research
   scripts/              # dev environment, builds, research reproduction
 ```
 
 Forks are kept as **upstream snapshot plus a patch queue** (`patches/*.patch`,
-applied by script). Triad-only code lives in separate folders, so upstream merges
+applied by script). Triage-only code lives in separate folders, so upstream merges
 stay mechanical (GUIDELINES §6).
 
 ### 4.13 Packaging
 
-One installer per OS (Windows, macOS, Linux; x64 and arm64) containing the app and
-all engines. Expect a large download (on the order of 1–2 GB with engines and
-libraries). Optional components download on demand (Blender render engine, ESP32
-QEMU, Renode). Auto-update via the VS Code update mechanism pointed at Triad's
-release feed.
+One installer per OS containing the app and all engines. **Windows first** (the
+owner's laptop): a per-user installer built the way VS Code builds its "User
+Setup" (Inno Setup, no admin rights needed), x64 first and arm64 later. Then Linux
+(AppImage, deb) and macOS (dmg). Expect a large download (on the order of 1–2 GB
+with engines and libraries). Optional components download on demand (Blender
+render engine, ESP32 QEMU, Renode, Raspberry Pi Python packages). Auto-update via
+the VS Code update mechanism pointed at Triage's release feed. Unsigned Windows
+installers trigger SmartScreen warnings; signing needs a certificate, an owner
+decision before P8.
 
 ### 4.14 Performance budgets
 
-| Scenario | Budget (mid-range laptop, integrated GPU) |
+| Scenario | Budget (mid-range Windows laptop, integrated GPU) |
 |---|---|
 | Cold start to usable | ≤ 5 s (engines start lazily) |
 | Schematic pan/zoom | 60 fps at 5k items |
@@ -462,6 +543,7 @@ release feed.
 | Interactive routing feedback | ≤ 16 ms per mouse move (router in the EDA engine) |
 | 3D board + enclosure | 60 fps at 2M triangles |
 | T0 sim: Uno-class MCU + ≤ 30 parts + ≤ 20 bodies | ≥ 1× real time on one core |
+| T0 sim: ESP32 + ≤ 20 parts (QEMU) | ≥ 0.5× real time (measure early in P4) |
 | T1 sim: ≤ 200 SPICE nodes | ≥ 0.1× real time |
 | Typical project memory | ≤ 4 GB including engines |
 
@@ -471,9 +553,10 @@ release feed.
 - Engines are separate processes with narrow, schema-validated message contracts.
   The renderer keeps VS Code's sandbox and narrow preload.
 - **Workspace Trust** gates building or running a cloned project's toolchain,
-  scripts and part models.
+  scripts and part models. Raspberry Pi Python scripts run as ordinary processes on
+  the laptop (they are the user's own code), so they are gated the same way.
 - Release builds harden the Electron fuses VS Code leaves open (RunAsNode off,
-  Inspect off) **once** Triad no longer needs `fork` for Node helpers (utility
+  Inspect off) **once** Triage no longer needs `fork` for Node helpers (utility
   processes replace it).
 
 ---
@@ -484,33 +567,43 @@ release feed.
 |---|---|---|
 | D1 | **Host:** standalone app built from VS Code's source ([ADR 0001](adr/0001-standalone-app-on-vscode-codebase.md)) | **confirmed** |
 | D2 | **Team:** the owner + Claude, working in session-sized work packages ([GUIDELINES](GUIDELINES.md)) | **confirmed** |
-| D3 | **Engines:** absorb KiCad, FreeCAD and Blender headless; replace their UIs ([ADR 0002](adr/0002-absorb-engines-headless.md)) | proposed: confirm in session 1 |
-| D4 | **First boards:** Arduino Uno (AVR) + Raspberry Pi Pico (RP2040); then STM32/nRF (Renode); then ESP32 (QEMU + network) | needs you: what do your courses use? |
-| D5 | **Your laptop OS** (first installer we polish): Windows, macOS or Linux | **needs you** |
-| D6 | **Core languages:** TypeScript (UI), Rust (model, kernel, solvers), C++ (forked engines) | proposed |
+| D3 | **Engines:** KiCad, FreeCAD and Blender run hidden as engines behind Triage's tabs; their UIs are replaced ([ADR 0002](adr/0002-absorb-engines-headless.md)) | **confirmed** 2026-11-24 |
+| D4 | **Boards:** Arduino Uno/Nano first (P3); then ESP32/S3/C3 with simulated Wi-Fi, Raspberry Pi Pico and Raspberry Pi 4/5 Python projects (P4); then Arduino Uno R4 and Nano 33 BLE via Renode (P7) ([ADR 0003](adr/0003-boards-and-windows.md)) | **confirmed** 2026-11-24 (owner: ESP32, Arduino, Raspberry Pi) |
+| D5 | **Platform:** Windows first-class from P0 (the owner's laptop); Linux for development and CI; macOS by P8 ([ADR 0003](adr/0003-boards-and-windows.md)) | **confirmed** 2026-11-24 |
+| D6 | **Core languages:** TypeScript (UI), Rust (model, kernel, solvers), C++ (forked engines), C (QEMU peripheral models) | proposed |
 | D7 | **License:** GPL-3.0-or-later for the combined app (compatible with everything reused; no further license work) | default |
-| D8 | **Name:** "Triad" placeholder | needs you |
+| D8 | **Name:** Triage | **confirmed** 2026-11-24 |
+| D9 | **Integration:** everything in one window; stock KiCad/FreeCAD windows only as a temporary fallback (§4.3); simulation scopes for checking together or separately (§4.7) | **confirmed** 2026-11-24 (the owner's requirement) |
+| D10 | **Editing path** for KiCad's interactive tools: remote tools vs direct hosting | open: decided by the P1-6 spike (ADR 0004) |
 
 ## 6. Risks and mitigations
 
 | Risk | Impact | Mitigation |
 |---|---|---|
-| **Scope**: three huge apps plus simulation, built by two | fatal | Vertical slices, companion mode first, absorb one engine at a time, strict out-of-scope list |
-| **KiCad remote tools**: tools are coupled to wx frames and dialogs | high | Early spike (P3). Fallback: keep the KiCad editor window for complex tools while viewing and simple edits move in-app |
-| **Three forks to maintain** (VS Code, KiCad, FreeCAD) | medium | Patch queues, Triad code in separate folders, scheduled upstream merges, REA version diffs to spot API changes |
-| **Native build complexity** (KiCad and FreeCAD dependencies on 3 OSes) | high | Linux first in CI, then Windows and macOS. Pin dependency versions, aggressive ccache, prebuilt dependency bundles |
+| **Scope**: three huge apps plus simulation, built by two | fatal | Vertical slices, absorb one engine at a time, in-app views before full in-app editing, strict out-of-scope list |
+| **KiCad's tools headless**: tools are coupled to wx frames and dialogs | high | Early spike (P1-6) of remote tools vs direct hosting. Fallback: the stock KiCad window for complex tools while viewing and simple edits stay in-app |
+| **Four forks to maintain** (VS Code, KiCad, FreeCAD, Espressif QEMU) | medium | Patch queues, Triage code in separate folders, scheduled upstream merges, REA version diffs to spot API changes |
+| **Native build complexity** (four native engines on Windows and Linux, macOS later) | high | Windows and Linux in CI from P0, macOS by P8. Pin dependency versions, aggressive ccache, prebuilt dependency bundles (vcpkg, LibPack) |
+| **ESP32 peripherals and Wi-Fi**: Espressif's QEMU lacks the GPIO matrix, I²C, SPI, RMT and Wi-Fi [D] | high | Triage writes those models (P4-1); Wi-Fi via a shim over the emulated Ethernet, chosen by a spike (P4-2); measure speed early |
+| **Windows specifics**: paths, file locking, named pipes, antivirus slowdowns, SmartScreen | medium | Windows CI from the first commit; the owner tries nightlies; per-user install; signing decision before P8 |
+| **Raspberry Pi Linux boards are full computers** | medium | The Python bridge covers typical course projects (GPIO, PWM, I²C, SPI, UART); full-system QEMU is a stretch goal (P7) |
 | **Co-sim speed and stability** | high | Netlist partitioning, transaction-level buses, adaptive quanta, tiers, CI benchmarks |
 | **Installer size and RAM use** | medium | Lazy engine start, optional components, per-engine memory budgets |
-| **Running third-party binaries in cloud dev sessions may be blocked by policy** | low | Build engines from source in sessions. The owner tests installers on their laptop |
+| **Running third-party binaries in cloud dev sessions may be blocked by policy**, and sessions run Linux only | low | Build engines from source in sessions. CI runs the Windows builds, and the owner tests nightlies on their laptop |
 
 ## 7. Glossary
 
-- **Code-OSS:** VS Code's open-source codebase (`microsoft/vscode`). Triad forks it.
-- **Engine process:** a headless build of KiCad, FreeCAD or Blender (or Triad's sim kernel) behind Triad's UI.
-- **Stream GAL:** a KiCad graphics backend that records drawing calls into display lists for Triad's canvas.
-- **Remote tools:** KiCad's interactive tool framework driven by input from Triad's canvas.
+- **Code-OSS:** VS Code's open-source codebase (`microsoft/vscode`). Triage forks it.
+- **Engine process:** a headless build of KiCad, FreeCAD or Blender (or Triage's sim kernel) behind Triage's UI.
+- **Stream GAL:** a KiCad graphics backend that records drawing calls into display lists for Triage's canvas.
+- **Remote tools:** KiCad's interactive tool framework driven by input from Triage's canvas.
 - **kiface:** a KiCad editor module (`KIFACE_1` entry point).
-- **Companion mode:** using stock KiCad, FreeCAD or Blender windows and CLIs before the engine is absorbed.
+- **Fallback window:** opening the same files in stock KiCad or FreeCAD for an edit Triage can't do yet. Temporary.
+- **Simulation scope:** which parts of the device a run simulates (whole device, circuit, code, mechanism or custom).
+- **Stub:** what stands in for a part outside the scope: a control, a held value, a recorded trace, an ideal model, or an open connection.
+- **Peripheral models (ESP32):** Triage's C models of ESP32 peripherals that Espressif's QEMU lacks, wired to the sim kernel.
+- **Pin factory:** gpiozero's plug-in point for pin drivers. Triage's routes a Raspberry Pi script's pins into the simulation.
+- **Virtual network gateway:** a user-space network (DHCP, DNS, NAT, test servers) for simulated network boards.
 - **Quantum:** the slice of virtual time units may run ahead before synchronizing.
 - **Smart part:** one component with symbol, footprint, 3D, simulation and mechanical data.
 - **T0/T1/T2:** interactive, accurate and analysis simulation tiers.

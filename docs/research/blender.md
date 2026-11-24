@@ -61,19 +61,19 @@ RNA drives every UI widget, Python property and animation channel. DNA is the
 - `bpy` as a pip module (behaves like background mode with `--factory-startup`).
 - Formats: `.blend`, glTF 2.0, USD, FBX, OBJ, STL, PLY, Alembic.
 
-## 4. What Triad takes from Blender
+## 4. What Triage takes from Blender
 
 1. **UX model for the 3D workspace:** a fast viewport with gizmos, an outliner, a
    properties editor driven by reflection, non-destructive modifier-style stacks,
-   node graphs, and every action as a scriptable operator. Triad's
+   node graphs, and every action as a scriptable operator. Triage's
    schema-driven model (PLAN §4.3) is the "RNA" idea.
 2. **Render and mesh engine process (optional):** photoreal product renders and
    turntables with Cycles, plus mesh, sculpt and organic modeling, exchanged with
-   Triad's model through glTF/USD with stable IDs in custom properties.
+   Triage's model through glTF/USD with stable IDs in custom properties.
 3. **Not the CAD core.** Exact parametric geometry comes from FreeCAD's engine
    ([freecad.md](freecad.md)). Blender meshes can't round-trip to STEP.
 4. **Physics lesson:** Blender uses Bullet (maximal-coordinate rigid bodies).
-   Jointed mechanisms in Triad use MuJoCo's reduced coordinates instead.
+   Jointed mechanisms in Triage use MuJoCo's reduced coordinates instead.
 
 ## 5. Unknowns and limits
 

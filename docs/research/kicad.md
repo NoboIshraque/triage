@@ -81,7 +81,7 @@ layers:     StartDiffLayer EndDiffLayer StartNegativesLayer EndNegativesLayer
 painters (`PCB_PAINTER`, `SCH_PAINTER`), which emit GAL calls.
 
 **Consequence:** a new GAL backend that **records these calls into display lists
-and streams them to Triad's GPU canvas** reproduces KiCad's rendering exactly.
+and streams them to Triage's GPU canvas** reproduces KiCad's rendering exactly.
 It is a bounded job of about 45 methods. KiCad's own painters, VIEW caching and
 layers keep working unchanged.
 
@@ -124,32 +124,33 @@ parts provider: OAuth2, `parts_v1`, `web_ui_v1`), and PCM v1/v2 [O].
 ## 6. File formats
 
 `.kicad_pro` (JSON) and the S-expression `.kicad_sch`, `.kicad_pcb`, `.kicad_sym` and
-`.kicad_mod` are text, documented, and diff-friendly. They are Triad's electronics
+`.kicad_mod` are text, documented, and diff-friendly. They are Triage's electronics
 source of truth. KiCad's own parser (`pcb_io_kicad_sexpr_parser.cpp`, 152 KB) is
 part of the engine we reuse.
 
-## 7. What Triad takes from KiCad (standalone app)
+## 7. What Triage takes from KiCad (standalone app)
 
 1. **Absorb KiCad's engine, replace its UI.** Build a headless **EDA engine
    process** from KiCad's source (board and schematic models, connectivity,
    router, DRC, zone filler, importers and exporters, plotters, simulator glue,
    kicad-cli jobs). That is roughly 45–50% of pcbnew and eeschema code that we
-   don't rewrite. The wx dialogs and frames (~21–26%) are what Triad
+   don't rewrite. The wx dialogs and frames (~21–26%) are what Triage
    reimplements in its own UI.
-2. **Stream GAL:** add a GAL backend that serializes draw calls to Triad's
+2. **Stream GAL:** add a GAL backend that serializes draw calls to Triage's
    canvas. Rendering is pixel-identical to KiCad with ~45 methods of work.
-3. **Remote tools:** feed Triad canvas input into KiCad's tool framework
+3. **Remote tools:** feed Triage canvas input into KiCad's tool framework
    (`common/tool`), so KiCad's interactive tools (selection, edit, drawing,
    **router**) run headlessly against our canvas. Replace their dialogs one by one.
 4. **API:** extend KiCad's protobuf API (same envelope, more commands) as the
-   control channel between Triad's UI and the EDA engine. Mind the UI-thread
+   control channel between Triage's UI and the EDA engine. Mind the UI-thread
    serialization: batch requests.
 5. **Keep KiCad files**, so a project still opens in stock KiCad.
 
 ## 8. Unknowns and limits
 
 - [?] How much of the tool framework depends on wx event types and frames.
-  Prototype the remote-tool bridge early (ROADMAP P3).
+  Prototype it early: ROADMAP P1-6 spikes remote tools against hosting the
+  router directly through `pns_kicad_iface.cpp` (ADR 0004).
 - [?] Runtime behavior. Executing downloaded binaries was blocked by the
   session's safety policy, so all findings are static.
 - The UI-thread serialization is inferred from symbol names.

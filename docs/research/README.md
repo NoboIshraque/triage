@@ -7,12 +7,12 @@ shipped Linux builds with **REA (Reverse Engineer Anything)**. Round 2 used REA'
 
 | Report | What it covers |
 |---|---|
-| [vscode.md](vscode.md) | Code-OSS process model, preload bridge, MessagePort IPC, native modules, fuses, full JS graph of all bundles |
+| [vscode.md](vscode.md) | Code-OSS process model, preload bridge, MessagePort IPC, native modules, fuses, where Triage plugs into the fork, round-2 unbounded runs (§5) |
 | [kicad.md](kicad.md) | **Full debug-symbol breakdown**: ~158k functions placed in source files, engine/UI split, the 68-method GAL boundary, router/DRC/IO sizes, IPC API, kicad-cli |
 | [freecad.md](freecad.md) | FreeCAD 1.1 as the parametric CAD engine: **App (29.3 MB) vs Gui (28.3 MB)** split across 61 libraries |
 | [blender.md](blender.md) | Monolithic binary with embedded CPython, bundled engines, module map from 970 embedded source paths, Python UI layer counts |
-| [simulators.md](simulators.md) | ngspice co-sim API, simavr, avr8js/rp2040js, **Renode complete (1,248 peripheral models, time framework)**, MuJoCo C API, **Wokwi 4.1.0** |
-| [market-and-standards.md](market-and-standards.md) | Competitors, the gap Triad fills, simulator-game lessons, standards, sources |
+| [simulators.md](simulators.md) | ngspice co-sim API, simavr, avr8js/rp2040js, **Renode complete (1,248 peripheral models, time framework)**, MuJoCo C API, **Wokwi 4.1.0**, **board emulation for ESP32, Arduino and Raspberry Pi** (§7) |
+| [market-and-standards.md](market-and-standards.md) | Competitors, the gap Triage fills, simulator-game lessons, standards, sources |
 | [evidence-ledger.md](evidence-ledger.md) | Every REA Evidence ID and artifact SHA-256 for both rounds |
 
 ## Method

@@ -2,7 +2,7 @@
 
 **Target:** VSCodium 1.143.17232 for Linux x64 (`codium_1.143.17232_amd64.deb`), an
 MIT build of **Code-OSS**, the same source Microsoft builds VS Code from. It is
-the code Triad forks ([ADR 0001](../adr/0001-standalone-app-on-vscode-codebase.md)).
+the code Triage forks ([ADR 0001](../adr/0001-standalone-app-on-vscode-codebase.md)).
 
 **Method:** REA static analysis. Round 1 used bounded defaults: 14 entry
 bundles, and the 21 MB workbench bundle timed out at 900 s. Round 2 used
@@ -59,7 +59,7 @@ webUtils: getPathForFile
 ```
 
 **`ipcMessagePort.acquire`** is how the sandboxed renderer gets a direct `MessagePort`
-to a helper process without routing traffic through main [O + D]. Triad's engine
+to a helper process without routing traffic through main [O + D]. Triage's engine
 connections use exactly this.
 
 ## 3. Native modules shipped
@@ -68,28 +68,42 @@ connections use exactly this.
 `native-watchdog`, `kerberos`, policy watcher, OS proxy resolver, `native-is-elevated`,
 `windows-foreground-love`, `deviceid` [O].
 
-## 4. Where Triad plugs into the fork
+## 4. Where Triage plugs into the fork
 
 From the shipped layout above plus Code-OSS's source tree [I/D]. Verify each in
 ROADMAP P0-2/P0-3.
 
-| Need | Where in Code-OSS | Triad change |
+| Need | Where in Code-OSS | Triage change |
 |---|---|---|
-| Name, icons, data folder, gallery | `product.json`, `resources/` | Triad branding; **Open VSX** gallery |
-| Triad UI (editors, views, layout, walkthrough) | workbench contributions under `src/vs/workbench/contrib/` | a new `src/vs/workbench/contrib/triad/` (or `src/vs/triad/`) registered by one import line, as a patch |
-| Native editors (schematic, board, 3D, sim) | `EditorPane` + editor input/serializer registrations | Triad editors with GPU canvases inside the renderer (no webviews) |
-| Engine processes | the utility-process pattern used by the pty host and shared process (main spawns, hands the renderer a `MessagePort`) | `triadModel`, `triadEda`, `triadCad`, `triadSim`, `triadRender` entry points |
-| Bundling new entry points | the build's entry-point list (where `ptyHostMain` and `watcherMain` are declared) | add Triad engine broker entry points |
-| CLI | `cli.js` / `cliProcessMain` | `triad` subcommands, or a separate `cli/` package |
+| Name, icons, data folder, gallery | `product.json`, `resources/` | Triage branding; **Open VSX** gallery |
+| Triage UI (editors, views, layout, walkthrough) | workbench contributions under `src/vs/workbench/contrib/` | a new `src/vs/workbench/contrib/triage/` (or `src/vs/triage/`) registered by one import line, as a patch |
+| Native editors (schematic, board, 3D, sim) | `EditorPane` + editor input/serializer registrations | Triage editors with GPU canvases inside the renderer (no webviews) |
+| Engine processes | the utility-process pattern used by the pty host and shared process (main spawns, hands the renderer a `MessagePort`) | `triageModel`, `triageEda`, `triageCad`, `triageSim`, `triageRender` entry points |
+| Bundling new entry points | the build's entry-point list (where `ptyHostMain` and `watcherMain` are declared) | add Triage engine broker entry points |
+| CLI | `cli.js` / `cliProcessMain` | `triage` subcommands, or a separate `cli/` package |
 
 ## 5. Round 2: unbounded analysis of the whole app
 
-Runs: `out/` (all 39 sources) and `extensions/` (927 sources), with no deadline and no
-size caps. Results are recorded below when the runs complete.
+REA ran with no deadline and no fixed size caps, one heavy run at a time
+(GUIDELINES §10): the two giant bundles each on their own, then the other 37 `out/`
+files, then the built-in `extensions/` (927 sources). Evidence IDs are in
+[evidence-ledger.md](evidence-ledger.md).
 
-- Status (2026-11-24): earlier attempts were stopped by session restarts (heavy
-  parallel runs reached ~10 GB of RAM). The workbench bundle is being re-run alone.
-  Notes follow below.
+| Run | Result | Basis |
+|---|---|---|
+| `vs/workbench/workbench.desktop.main.js` (21.1 MB, the IDE) | **Parsed completely:** 21,103,304 bytes, 5,318,098 syntax-tree nodes, 3,017 findings, 0 parse failures, in 29 min 54 s on one core. The bundle itself has **no `BrowserWindow`, IPC or utility-process sites**: the renderer reaches the main process only through the `window.vscode` preload globals (§2). Also: 6 sender-validation observations, `localStorage` get/set/remove, one module `Worker`, 255 literal asset and route strings, none with an http(s) host. **The semantic relationship graph was not retained:** its projection exhausted the 6 GiB worker heap, chosen to stay under this host's restart threshold | [O] `ev_9b375b8e…` (view `ev_20728c1c…`) |
+| `vs/sessions/sessions.desktop.main.js` (22.3 MB), then the other 37 `out/` files | running (2026-11-24) | – |
+| built-in `extensions/` (927 sources) | queued | – |
+
+**What this means.** REA's fixed time and size caps no longer stop a run; physical
+memory does. A full semantic graph of a 21 MB minified bundle needs more than 6 GiB
+of V8 heap (how much more is unknown), and a bigger worker risks this host's
+restart threshold. The 2,208 "module" nodes REA reports for this bundle are
+unresolved references to minified `require` names, not module paths: REA found no
+bundler module table (`modules: 0`) [O]. For the workbench's internals, the Code-OSS source
+tree imported in P0-2 is the better instrument. REA's lasting value for VS Code is
+the shipped process and IPC surface (§1–§3) and version diffs when the fork is
+updated (GUIDELINES §9).
 
 ## 6. Unknowns and limits
 

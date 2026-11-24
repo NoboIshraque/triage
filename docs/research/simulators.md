@@ -1,6 +1,6 @@
 # Teardown: simulation engines
 
-Targets are the engines Triad can embed or learn from, analyzed with REA in
+Targets are the engines Triage can embed or learn from, analyzed with REA in
 **unbounded mode**, plus Wokwi, the leading MCU simulator for VS Code. Paid
 simulator games (BeamNG.drive, Kerbal Space Program) could not be acquired in this
 environment. Their lessons come from public docs ([market-and-standards.md](market-and-standards.md)).
@@ -21,10 +21,10 @@ ngSpice_CurPlot     ngSpice_AllPlots    ngSpice_AllVecs    ngGet_Vec_Info
 ngSpice_AllEvtNodes ngGet_Evt_NodeInfo  ngSpice_LockRealloc ngSpice_UnlockRealloc
 ```
 
-| Hook | Use in Triad |
+| Hook | Use in Triage |
 |---|---|
 | `ngSpice_Init` (output, status, data, background-thread callbacks) | run transient sims on a background thread and stream vectors live |
-| **`ngSpice_Init_Sync`** (`GetVSRCData`, `GetISRCData`, `GetSyncData`) | **external sources whose values Triad supplies per step**, so MCU pins drive the analog circuit |
+| **`ngSpice_Init_Sync`** (`GetVSRCData`, `GetISRCData`, `GetSyncData`) | **external sources whose values Triage supplies per step**, so MCU pins drive the analog circuit |
 | **`ngSpice_SetBkpt(t)`** | stop at time *t*, giving **lockstep** with MCU emulators |
 | `ngSpice_Init_Evt`, `ngGet_Evt_NodeInfo`, `ngSpice_AllEvtNodes` | read XSPICE digital event nodes |
 | `ngSpice_Circ(char**)` | load the netlist generated from the schematic |
@@ -90,9 +90,9 @@ its 64 MiB budget): **6,794 types, 45,476 methods, 64,866 fields, 205,442 call e
   `gpioPortA: 5 -> externalLed@0` [O].
 - Docs: quantum-based virtual time, paced to real time by default [D].
 
-**For Triad:** generate `.repl` from the schematic netlist. Inject circuit and
+**For Triage:** generate `.repl` from the schematic netlist. Inject circuit and
 physics results with `ExecuteInNearestSyncedState`-style hooks at quantum
-boundaries. Copy the small message vocabulary for Triad's own unit protocol.
+boundaries. Copy the small message vocabulary for Triage's own unit protocol.
 
 ## 5. MuJoCo: multibody physics
 
@@ -103,7 +103,7 @@ rollouts)**, `mjp_*` 19 (plugins/providers), **`mjcb_*` 8 (control, sensor,
 act_dyn/gain/bias, passive, contactfilter, time)**, `mjc_*` 36 (collision incl. IPC
 flex contacts). Plugins: actuator, sensor, SDF [O].
 
-**For Triad:** build models from the CAD assembly with `mjs_*` (no XML). Inject
+**For Triage:** build models from the CAD assembly with `mjs_*` (no XML). Inject
 motor torque through `mjcb_control`/`mjcb_act_*`. Read IMU, rangefinder and
 contact sensors. Reduced coordinates keep jointed mechanisms stable.
 
@@ -119,7 +119,7 @@ contact sensors. Reduced coordinates keep jointed mechanisms stable.
 | Local services the extension provides: firmware loading (`.bin`, `.elf`), `wokwi.toml`/`diagram.json` config, a **GDB server bridge** (`gdbServerPort`), an **RFC2217 serial-over-TCP bridge**, and **ESP32-family ROM images** (ESP32, S2, S3, C2, C3, C5, C6, C61, H2, P4, S31) with symbols | [O] files + strings |
 | `diagram.json`: `parts[] {id, type, left, top, rotate, attrs, hide}`, `connections[]`, `serialMonitor`. Custom chip JSON: `pins`, **`controls`** (UI sliders: id, label, type, min, max, step), **`display`** (framebuffer) | [O] schemas |
 
-**Lessons for Triad:**
+**Lessons for Triage:**
 1. Run emulation **client-side** for zero-latency interaction (Wokwi's runs in
    the webview).
 2. IoT boards need a **virtual network gateway**: a user-space TCP/IP stack with
@@ -127,13 +127,40 @@ contact sensors. Reduced coordinates keep jointed mechanisms stable.
 3. **Bridges matter:** a GDB server (debuggers) and RFC2217 serial (external
    terminals and tools) make the simulator part of the normal toolchain.
 4. Part models declare **pins + UI controls + display** in one small manifest.
-   Triad's smart parts follow that shape (PLAN §4.6).
+   Triage's smart parts follow that shape (PLAN §4.6).
 
-## 7. Others (from docs)
+## 7. Board emulation for the owner's boards (ESP32, Arduino, Raspberry Pi)
 
-| Engine | Role for Triad |
+Added 2026-11-24 after the owner named the boards ([ADR 0003](../adr/0003-boards-and-windows.md)).
+Package facts come from the packages analyzed above; the rest is vendor documentation.
+
+| Board family | Emulator | What it covers | What Triage adds | Basis |
+|---|---|---|---|---|
+| Arduino Uno, Nano (ATmega328P), Mega 2560 | avr8js 0.21.1 | AVR core with 22-bit program counter support (`pc22Bits`, `eind` in `cpu/cpu.js`, needed for the Mega's flash); peripherals as in §3 | parts, circuit coupling | [O] package |
+| Raspberry Pi Pico (RP2040), Nano RP2040 Connect | rp2040js 1.4.2 | `dist/esm/peripherals/`: adc, busctrl, clocks, dma, i2c, io, pads, pio, pll, ppb, psm, pwm, reset, rtc, spi, ssi, syscfg, sysinfo, tbman, timer, uart, usb, watchdog, xosc. The README shows MicroPython running (a CI workflow and a REPL demo) | no RP2350 (Pico 2): no matches in the package; no Pico W radio model | [O] package |
+| ESP32, ESP32-S3, ESP32-C3 | Espressif's QEMU fork (`esp-develop` branch) | CPU (dual-core on ESP32/S3), UART, interrupt matrix, GPIO strapping, NOR flash (SPI, MMU, encryption), PSRAM, eFuse, RNG, AES/SHA/RSA, HMAC and digital signature (S3/C3), GDMA (S3/C3), SysTimer (S3/C3), timer groups, TWAI/CAN, SD/MMC (ESP32), LEDC (ESP32 only), virtual OpenCores Ethernet, virtual RGB framebuffer | **not emulated:** Wi-Fi, Bluetooth, USB, RMT, general-purpose SPI, I²C, I²S, ULP, GPIO matrix/IOMUX, LEDC on S3/C3; ADC isn't listed | [D] [feature table](https://github.com/espressif/esp-toolchain-docs/blob/main/qemu/README.md) |
+| Arduino Uno R4 Minima (RA4M1), Nano 33 BLE (nRF52840) | Renode 1.16.1 | `platforms/boards/arduino_uno_r4_minima.repl` and `arduino_nano_33_ble.repl`; CPUs `renesas-r7fa4m1a.repl` and `nrf52840.repl`; scripts `single-node/arduino_uno_r4_minima.resc` and `complex/arduino_nano/nrf52840_arduinoIDE_integration.resc` | check peripheral coverage per sketch | [O] package listing |
+| Raspberry Pi 4/5, Python projects | none (the script runs natively) | gpiozero pin factories: the `GPIOZERO_PIN_FACTORY` variable selects one; the built-in `MockFactory` makes fake pins (PWM through `MockPWMPin`); custom factories subclass `Factory` | a Triage pin factory, plus `RPi.GPIO`, `smbus2`, `spidev`, `pyserial` shims | [D] [gpiozero: API - Pins](https://gpiozero.readthedocs.io/en/stable/api_pins.html) |
+| Raspberry Pi full system | QEMU `raspi3b`, `raspi4b` | `raspi4b`: BCM2838 SoC with a GPIO controller (58 lines, based on the BCM2835 model), Genet Ethernet, PCIe, RNG200, thermal sensor. Merged in the target-arm queue in February 2024; present in v9.1 and later | GPIO bridge to the kernel; Raspberry Pi OS boot flow | [D] [`hw/arm/raspi4b.c`](https://qemu.googlesource.com/qemu/+/refs/heads/master/hw/arm/raspi4b.c), [patch series](https://patchew.org/QEMU/20240219011739.2316619-1-sergey.kambalin@auriga.com) |
+
+Renode 1.16.1 ships no RP2040, ESP32 or BCM283x platform files [O].
+
+**ESP32 networking in Espressif's QEMU** [D]: an ESP-IDF app enables
+`CONFIG_ETH_USE_OPENETH` and creates the MAC with `esp_eth_mac_new_openeth`, and
+QEMU runs with `-nic user,model=open_eth` (NAT, TCP/UDP only), plus `hostfwd=` for
+servers. Wi-Fi APIs don't work: "The Ethernet controller can be used for networking
+instead". So an unchanged Arduino sketch calling `WiFi.begin()` needs Triage's
+Wi-Fi shim ([ESP32 QEMU guide](https://github.com/espressif/esp-toolchain-docs/blob/main/qemu/esp32/README.md)).
+
+**Maintenance** [D]: Espressif says `esp-develop` "will often be rebased on top of
+the upstream master branch and force-pushed", and that it does not provide support
+for QEMU. Triage pins a commit.
+
+## 8. Others (from docs)
+
+| Engine | Role for Triage |
 |---|---|
-| QEMU (Espressif fork) | ESP32 targets as a separate process with gdbstub, plus a virtual network gateway for Wi-Fi |
+| QEMU (Espressif fork) | ESP32 family as a separate process with a gdbstub (§7), plus the virtual network gateway |
 | SimulIDE | real-time MCU and circuit sim built on simavr and gpsim; its "not very accurate" models are the reason for fidelity tiers |
 | Falstad CircuitJS | best-known real-time MNA visual simulator; inspiration for the fast tier |
 | Xyce, Qucs-S | alternative SPICE back ends |
@@ -141,9 +168,11 @@ contact sensors. Reduced coordinates keep jointed mechanisms stable.
 | CalculiX, Elmer, OpenFOAM (via FreeCAD FEM) | stress, thermal and CFD in later phases |
 | FMI 3.0 / SSP | third-party model plug-ins |
 
-## 8. Unknowns and limits
+## 9. Unknowns and limits
 
 - [?] Wokwi's MCU emulator internals: they are delivered from its web service at
   runtime and are not in the package.
 - [?] ngspice WASM co-sim hooks and MuJoCo WASM status.
+- [?] How Wokwi emulates ESP32 Wi-Fi, and whether its RP2350 emulator is open.
+- [?] Espressif QEMU speed on Windows with virtual-time sync. Measure early in P4.
 - Hook semantics for ngspice and MuJoCo come from docs. REA observed names, not behavior.

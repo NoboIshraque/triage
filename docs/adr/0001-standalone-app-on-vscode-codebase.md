@@ -15,7 +15,7 @@ telemetry and Marketplace configuration added.
 
 ## Decision
 
-**Triad is a standalone desktop app built from VS Code's source (a fork of
+**Triage is a standalone desktop app built from VS Code's source (a fork of
 `microsoft/vscode`).** It has its own name, icon, installer and update channel, and
 its new parts are compiled into the workbench rather than shipped as add-ons:
 
@@ -24,8 +24,8 @@ its new parts are compiled into the workbench rather than shipped as add-ons:
 - **New engine processes** launched like VS Code's own helpers (`utilityProcess`
   plus `MessagePort`, the `ipcMessagePort.acquire` pattern found in the teardown):
   model, EDA, CAD, sim and render engines.
-- **A Triad workbench layout** ("Engineering" layout with Code, Circuit, Board,
-  3D and Sim side by side), a unified project explorer, Triad onboarding and branding.
+- **A Triage workbench layout** ("Engineering" layout with Code, Circuit, Board,
+  3D and Sim side by side), a unified project explorer, Triage onboarding and branding.
 - **Extensions keep working.** Use **Open VSX** as the gallery (Microsoft's
   Marketplace is for Microsoft's products). Students keep their themes, keymaps and
   language extensions.
@@ -35,13 +35,14 @@ its new parts are compiled into the workbench rather than shipped as add-ons:
 Good:
 - Full control of layout, editors, processes and performance. No webview overhead
   for the heavy views.
-- Students get the VS Code they already know, with Triad built in.
+- Students get the VS Code they already know, with Triage built in.
 
 Costs:
-- **Fork maintenance:** keep Triad's changes isolated (new folders plus a small
+- **Fork maintenance:** keep Triage's changes isolated (new folders plus a small
   patch set on upstream files) and merge upstream releases on a schedule
   (GUIDELINES §6). REA's `compare-application-versions` helps check what changed.
 - **Build infrastructure:** VS Code builds need Node, Python and native toolchains
-  per OS. CI produces Windows, macOS and Linux installers.
+  per OS. CI produces Windows, macOS and Linux installers, Windows first
+  ([ADR 0003](0003-boards-and-windows.md)).
 - Microsoft-only extensions (for example the C/C++ and Pylance extensions) are not
   available. Use open equivalents (clangd, basedpyright).
