@@ -48,6 +48,7 @@ import {
 } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
+import { rebrandPackagedApp } from '../scripts/branding/rebrand.mjs';
 import { fetchUpstream } from '../scripts/forks/fetch.mjs';
 import {
   ForkError,
@@ -319,7 +320,7 @@ export function packagedApp(arch = process.arch) {
 }
 
 function packageApp({ arch, min, sourcemaps }) {
-  const { platform, executable } = packagedApp(arch);
+  const { platform, folder, executable } = packagedApp(arch);
   if (platform !== 'linux' && platform !== 'win32') {
     throw new ForkError(`packaging on ${platform} is not set up yet (macOS joins in P8)`);
   }
@@ -330,6 +331,10 @@ function packageApp({ arch, min, sourcemaps }) {
   if (!existsSync(executable)) {
     throw new ForkError(`packaging finished but ${executable} is missing`);
   }
+  // ROADMAP P0-9: Microsoft's trademarks don't name Triage in its interface text.
+  const { nameShort } = JSON.parse(readFileSync(path.join(appDir, 'product.json'), 'utf8'));
+  const rebranded = rebrandPackagedApp(path.join(folder, 'resources', 'app'), nameShort);
+  console.log(`Rebranded ${rebranded.strings} interface strings in ${rebranded.files} files`);
   console.log(`Built ${path.relative(process.cwd(), executable)}`);
 }
 

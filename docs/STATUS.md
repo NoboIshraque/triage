@@ -5,7 +5,7 @@
 **Last updated:** 2026-11-24 · **Phase P0 Foundations: P0-1 … P0-7 done** (the owner ran
 the Windows build on 2026-11-24). **Next:** **P0-8, Triage's own GitHub sign-in**
 (added at the owner's request; the app is registered and patched in, the
-owner's sign-in test is next, steps below), then **P1 Electronics engine + views** in a new session (P1-1, KiCad
+owner's sign-in test is next, steps below) and **P0-9, the branding sweep**, then **P1 Electronics engine + views** in a new session (P1-1, KiCad
 fork builds).
 
 ### P0 in one paragraph
@@ -95,12 +95,13 @@ The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt
 | — | VS Code's built-in **Copilot chat is hidden** by default | `app/src/vs/triage/browser/triage.contribution.ts`, [choices](DEVIATIONS.md#choices-the-plan-left-open) |
 | — | P0 **merged into the default branch** (PR #1); nightlies run from it | `.github/workflows/nightly.yml` |
 | — | Triage gets **its own GitHub sign-in** (OAuth app) now, before P1 | ROADMAP P0-8, [DV-15](DEVIATIONS.md) |
+| — | **No VS Code name or logo** in Triage now (P0-9), and a **public release checklist** before builds are shared (P8-7) | ROADMAP P0-9, P8-7, [DV-16](DEVIATIONS.md) |
 | — | GitHub Actions **minutes are no concern** (the owner's GitHub student account): the App workflow runs on every push except documentation-only ones | [DV-08](DEVIATIONS.md) |
 
 ## Deviations from the plan
 
 Every place the build differs from the plan is logged in
-[DEVIATIONS.md](DEVIATIONS.md) (15 entries, DV-01 … DV-15, plus choices the plan left open), so the
+[DEVIATIONS.md](DEVIATIONS.md) (16 entries, DV-01 … DV-16, plus choices the plan left open), so the
 owner can compare the final build with the plan.
 
 ## Open questions
@@ -120,7 +121,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Phase | WP | Status |
 |---|---|---|
-| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in | P0-1 … P0-7 **done**; **P0-8 in progress** (app registered, patch 0004 in; the owner's sign-in test next) |
+| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | P0-1 … P0-7 **done**; **P0-8 in progress** (app registered, patch 0004 in; the owner's sign-in test next); **P0-9 in progress** |
 | P1 Electronics engine + views (M1) | P1-1 … P1-7 | not started |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
@@ -244,6 +245,12 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   - GitHub called the app "Visual Studio Code" at sign-in: Triage uses VS
     Code's GitHub registration from the open-source code. The owner chose to
     give Triage **its own GitHub sign-in before P1**: new WP **P0-8** (DV-15).
+  - The owner asked what else could get Triage flagged once shared. Six items
+    became the **public release checklist (P8-7)**; the owner asked for the
+    trademark item now: **P0-9, branding sweep** (DV-16). It found VS Code's
+    logo (`vscode-icon.svg`, the Agents window), Code-OSS's icon and watermark,
+    331 of 32,964 workbench strings and 104 strings in 27 built-in extensions
+    naming VS Code (observed in the packaged Linux build).
   - The "workflow run failed" notifications the owner saw come from App runs
     2, 8, 9 and 10 and CI run 7, the failures this session fixed (DV-11, DV-13,
     the swap-file disk issue).

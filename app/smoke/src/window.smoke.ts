@@ -1,4 +1,12 @@
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -13,6 +21,22 @@ const shot = (name: string) => path.join(outputDir, `${name}-${process.platform}
 /** GitHub OAuth apps: Triage's own and VS Code's (app/patches/0004-github-sign-in-as-triage.patch). */
 const TRIAGE_GITHUB_CLIENT_ID = 'Ov23liajKvj7l41nmMfw';
 const VSCODE_GITHUB_CLIENT_ID = '01ab8ac9400c4e429b23';
+
+/** Microsoft products named as such; scripts/branding/rebrand.mjs keeps them (KEEP). */
+const MICROSOFT_PRODUCTS = [
+  'VS Code Speech',
+  'VS Code for the Web',
+  'Insiders VS Code',
+  'Insiders version of VS Code',
+];
+const VSCODE_NAME = /Visual Studio Code|VS Code/;
+
+/** Texts that still name VS Code once Microsoft's product names are taken out. */
+function namingVSCode(texts: readonly string[]): string[] {
+  return texts.filter((text) =>
+    VSCODE_NAME.test(MICROSOFT_PRODUCTS.reduce((rest, name) => rest.split(name).join(''), text)),
+  );
+}
 
 /** The tabs of the Engineering layout (app/src/vs/triage/common/triage.ts). */
 const ENGINEERING_TABS = ['code', 'schematic', 'board', '3d', 'sim'];
@@ -84,6 +108,31 @@ describe('packaged Triage app', () => {
     );
     expect(signIn).toContain(TRIAGE_GITHUB_CLIENT_ID);
     expect(signIn).not.toContain(VSCODE_GITHUB_CLIENT_ID);
+  });
+
+  // ROADMAP P0-9: no VS Code name or logo in Triage's interface.
+  it("doesn't name VS Code in its interface text or logos", () => {
+    const appRoot = path.dirname(app.productJson);
+    const messages = JSON.parse(
+      readFileSync(path.join(appRoot, 'out', 'nls.messages.json'), 'utf8'),
+    ) as unknown[];
+    expect(namingVSCode(messages.filter((m): m is string => typeof m === 'string'))).toEqual([]);
+    const extensions = path.join(appRoot, 'extensions');
+    for (const name of readdirSync(extensions)) {
+      const nls = path.join(extensions, name, 'package.nls.json');
+      if (!existsSync(nls)) continue;
+      const strings = Object.values(
+        JSON.parse(readFileSync(nls, 'utf8')) as Record<string, unknown>,
+      ).map((value) => JSON.stringify(value));
+      expect({ extension: name, naming: namingVSCode(strings) }).toEqual({
+        extension: name,
+        naming: [],
+      });
+    }
+    // Triage's teal replaces VS Code's logo and Code-OSS's icon.
+    for (const logo of ['code-icon.svg', 'vscode-icon.svg']) {
+      expect(readFileSync(path.join(appRoot, 'out', 'media', logo), 'utf8')).toContain('#0f766e');
+    }
   });
 
   it('opens a window showing the workbench', async () => {
@@ -189,6 +238,9 @@ describe('packaged Triage app', () => {
     await window
       .locator('.gettingStartedContainer', { hasText: 'Get Started with Triage' })
       .waitFor({ state: 'visible', timeout: 30_000 });
+    // ROADMAP P0-9: the Welcome page names Triage, not VS Code.
+    const welcome = await window.locator('.gettingStartedContainer').innerText();
+    expect(namingVSCode([welcome])).toEqual([]);
     await window.screenshot({ path: shot('walkthrough') });
   });
   // The owner's request (2026-11-24): VS Code's built-in Copilot chat stays hidden.
