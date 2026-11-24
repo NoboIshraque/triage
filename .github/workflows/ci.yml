@@ -135,10 +135,58 @@ jobs:
           if-no-files-found: ignore
           retention-days: 30
 
+  # ROADMAP P0-6: a fresh machine builds everything following only the setup scripts.
+  setup-linux:
+    name: Setup script (fresh ubuntu:24.04 container)
+    runs-on: ubuntu-24.04
+    container: ubuntu:24.04
+    defaults:
+      run:
+        shell: bash
+    env:
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: scripts/dev/setup.sh
+        run: scripts/dev/setup.sh
+      - name: Build and test everything
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm check
+          cargo test --workspace --locked
+          cmake --workflow --preset ci
+          node crates/triage-model-node/build.mjs
+          TRIAGE_REQUIRE_ADDON=1 pnpm --filter @triage/model-node test
+          TRIAGE_REQUIRE_ENGINE=1 pnpm --filter @triage/engine-tests test
+
+  setup-windows:
+    name: Setup script (fresh Windows runner)
+    runs-on: windows-2022
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: scripts/dev/setup.ps1 -DevShell
+        run: ./scripts/dev/setup.ps1 -DevShell
+      - name: Build and test everything
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          pnpm install --frozen-lockfile
+          pnpm check
+          cargo test --workspace --locked
+          cmake --workflow --preset ci
+          node crates/triage-model-node/build.mjs
+          $env:TRIAGE_REQUIRE_ADDON = '1'
+          pnpm --filter @triage/model-node test
+          $env:TRIAGE_REQUIRE_ENGINE = '1'
+          pnpm --filter @triage/engine-tests test
+
   ci-ok:
     name: CI result
     if: always()
-    needs: [format, typescript, rust, native]
+    needs: [format, typescript, rust, native, setup-linux, setup-windows]
     runs-on: ubuntu-24.04
     steps:
       - name: Every job passed on Windows and Linux

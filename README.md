@@ -36,10 +36,16 @@ Arduino and Raspberry Pi**. Everything runs locally on a laptop, **Windows first
 
 ## Build from source
 
-You need Node 22.12 or newer; CI uses 24.22.1, VS Code's pinned version (pnpm comes through `corepack enable`), rustup (it
-installs the pinned Rust 1.97.0 on first use), CMake 3.25+ with Ninja, and a C++20
-compiler: GCC on Linux, MSVC on Windows (run the native build from a Visual Studio
-developer shell). P0-6 replaces this list with setup scripts for both systems.
+The setup scripts install or check everything (Node at the version in `.nvmrc`,
+pnpm, Rust, CMake, Ninja, a C++ compiler; MSVC on Windows). CI builds from a
+fresh machine with them:
+
+```sh
+scripts/dev/setup.sh            # Linux (Debian/Ubuntu); --check only reports, --app adds the VS Code fork's libraries
+scripts\dev\setup.ps1 -DevShell  # Windows; -Check only reports, -App adds Spectre-mitigated libraries
+```
+
+Then:
 
 ```sh
 pnpm install
