@@ -21,8 +21,14 @@ $REA inspect-electron-fuses $A/../../codium --json
 
 - VS Code ships an **unpacked** `resources/app` (no `app.asar`), so the desktop
   inventory reports no Electron candidate. Analyze the directory directly.
-- The two 21–22 MB renderer bundles dominate run time (well over 15 minutes each on 4
-  cores). Bounded mode times them out at 300 s by default.
+- The two 21–22 MB renderer bundles dominate run time. Bounded mode times them out at
+  300 s by default. Measured (2026-11-24): `workbench.desktop.main.js` alone, selected
+  with `--source-path`, parsed completely in 29 min 54 s on one core (5.3M AST nodes),
+  but its **semantic projection exhausted a 6144 MiB worker heap**, so relations were
+  not retained. Give the semantic graph more heap on a bigger host, or accept
+  parse-level facts and read the open source instead.
+- In a flat minified ESM bundle, REA's `javascript-module` nodes are unresolved
+  `require` references (`modules: 0`), not module paths.
 - Read results: extract the analysis record from the bundle, then query views:
 
 ```bash
@@ -94,7 +100,7 @@ Bounded mode refuses this assembly at the 64 MiB metadata budget, even with
 
 | Run | Worker heap | Parent heap | Observed peak |
 |---|---|---|---|
-| VS Code `out/` (two 21–22 MB bundles) | 8192 MiB | 4096 MiB | ~3–4 GB per process while parsing |
+| VS Code workbench bundle alone (21 MB) | 6144 MiB | 5120 MiB | ~4 GB while parsing; projection needed > 6 GiB |
 | VS Code `extensions/` (927 sources) | 3072 MiB | 2048 MiB | ~2–3 GB |
 | Native exports / objdump symbols | – | default | under 1 GB |
 
