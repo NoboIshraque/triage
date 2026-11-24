@@ -71,10 +71,20 @@ before continuing.
 ## 6. Forks: VS Code, KiCad, FreeCAD, Espressif QEMU
 
 All four follow the same rules:
-- `upstream/`: a pinned upstream release, imported untouched.
+- `upstream.json` pins an upstream release (tag **and** commit).
+  `scripts/forks/fetch.mjs` checks out exactly that commit into `upstream/`,
+  untouched and **not committed** (git-ignored), and refuses a tag that moved.
+  The trees are large (VS Code 1.147.0: 411 MB, 21,462 files), so this repository
+  holds only the pin and Triage's changes.
 - `patches/`: numbered `*.patch` files with **small** changes to upstream
-  files, such as registration hooks or new backends. Apply and refresh them with
-  `scripts/forks/apply.sh` and `scripts/forks/refresh.sh` (created in P0-3).
+  files, such as registration hooks or new backends. The fork's build applies
+  them; P0-3 adds cross-platform (Node) scripts in `scripts/forks/` to apply and
+  refresh them.
+- Overlay folders: files that replace upstream files or add new ones at the
+  same path. For the app: `app/src/` (Triage's code under `src/vs/triage/`) and
+  `app/resources/` (branding). Its `product.json` keys merge over upstream's.
+- Never edit `upstream/` by hand: the build resets it to the pinned commit
+  (`app/build.mjs prepare` refuses to discard edits it didn't make).
 - **Triage-only code lives in its own folders** (`app/src/vs/triage/`,
   `engines/eda/triage/`, `engines/cad/triage/`, `engines/qemu-esp32/triage/`), so
   upstream merges stay mechanical.

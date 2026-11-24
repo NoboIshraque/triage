@@ -16,12 +16,24 @@
 | D8 | Name: **Triage** | PLAN §5 |
 | D9 | **Everything in one window**, and simulation of **everything together or any part separately** | PLAN §1, §4.3, §4.7 |
 
+## Decisions made in build sessions (the owner can override)
+
+| Decision | Why | Where |
+|---|---|---|
+| Forks are **not committed**: `upstream.json` pins tag + commit, the build checks it out into `upstream/` (git-ignored) and applies patches and overlays | VS Code 1.147.0 alone is 411 MB / 21,462 files; KiCad and FreeCAD are larger. This is VSCodium's proven model, and it is what "re-applies cleanly onto a fresh upstream checkout" (P0-3) needs | GUIDELINES §6, PLAN §4.12, [app/README.md](../app/README.md) |
+| VS Code pinned at **1.147.0** (tagged 2026-11-17) | latest release when P0-2 started; the research teardown used 1.143 (VSCodium) | `app/upstream.json` |
+| Fork scripts are **Node** (`scripts/forks/*.mjs`, `app/build.mjs`); `build.sh` and `build.ps1` only start them | one implementation for Windows and Linux (GUIDELINES §8) | `scripts/forks/`, `app/` |
+| Open VSX gallery keys as VSCodium uses them, and Triage's own Windows app IDs | Triage installs beside VS Code without clashing | `app/product.json` |
+
 ## Open questions
 
 Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Topic | Default | Needed by |
 |---|---|---|
+| **May Claude run Electron in its cloud sessions?** Building VS Code downloads Electron and other prebuilt helpers, and CLAUDE.md says not to run downloaded third-party binaries without the owner's OK | no: the app is built and smoke-tested only in CI (GitHub's machines). Saying yes makes P0-3's UI work faster, because Claude could open the app and take screenshots locally | P0-3 |
+| GitHub Copilot ships **built in** to VS Code 1.147 (`extensions/copilot`). Keep, hide or remove it in Triage? (VSCodium removes it) | keep upstream's for now | P0-7 |
+| GitHub Actions minutes: the repository is private, so runners have 2 cores and Windows minutes count double. The app build runs only when `app/` changes | that trigger rule, plus a nightly from P0-7 | P0-7 |
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
 | Windows code-signing certificate (avoids SmartScreen warnings) | unsigned nightlies; decide before P8-2 | P8 |

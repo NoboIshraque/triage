@@ -503,7 +503,7 @@ expect:
 
 ```
 engineering-solution-/
-  app/                  # the VS Code fork: upstream snapshot + Triage source under src/vs/triage/
+  app/                  # the VS Code fork: upstream.json pin + Triage overlays (src/vs/triage/, resources/), product.json, patches/
   engines/
     eda/                # KiCad fork: upstream + patches/ + Triage additions (stream_gal/, remote_tools/, api/)
     cad/                # FreeCAD fork: upstream + patches/ + Triage RPC module
@@ -517,9 +517,11 @@ engineering-solution-/
   scripts/              # dev environment, builds, research reproduction
 ```
 
-Forks are kept as **upstream snapshot plus a patch queue** (`patches/*.patch`,
-applied by script). Triage-only code lives in separate folders, so upstream merges
-stay mechanical (GUIDELINES §6).
+Forks are kept as a **pinned upstream checkout plus a patch queue**: `upstream.json`
+names the release tag and commit, the build checks it out into `upstream/`
+(git-ignored), then applies `patches/*.patch` and Triage's overlay folders.
+Triage-only code lives in separate folders, so upstream merges stay mechanical
+(GUIDELINES §6).
 
 ### 4.13 Packaging
 
