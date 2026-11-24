@@ -41,11 +41,22 @@ function namingVSCode(texts: readonly string[]): string[] {
 /** The tabs of the Engineering layout (app/src/vs/triage/common/triage.ts). */
 const ENGINEERING_TABS = ['code', 'schematic', 'board', '3d', 'sim'];
 
-/** Runs a command through the command palette, as upstream's smoke tests do. */
+/**
+ * Runs a command through the command palette, as upstream's smoke tests do. Like
+ * their openQuickAccessWithRetry (test/automation/src/quickaccess.ts), it retries
+ * opening the palette: "Other parts of code might steal focus away from quickinput".
+ */
 async function runCommand(window: Page, title: string): Promise<void> {
-  await window.keyboard.press('F1');
   const input = window.locator('.quick-input-widget .quick-input-box input');
-  await input.waitFor({ state: 'visible', timeout: 30_000 });
+  for (let attempt = 1; ; attempt++) {
+    await window.keyboard.press('F1');
+    try {
+      await input.waitFor({ state: 'visible', timeout: 10_000 });
+      break;
+    } catch (error) {
+      if (attempt === 5) throw error;
+    }
+  }
   await input.fill(`>${title}`);
   await window
     .locator('.quick-input-widget .monaco-list-row', { hasText: title })
@@ -238,6 +249,11 @@ describe('packaged Triage app', () => {
     await window
       .locator('.gettingStartedContainer', { hasText: 'Get Started with Triage' })
       .waitFor({ state: 'visible', timeout: 30_000 });
+    // The Welcome page moves focus to its first step about 300 ms after it opens
+    // (observed); that focus move closes a command palette a later test opened.
+    await window
+      .locator('.getting-started-step.expanded:focus')
+      .waitFor({ state: 'visible', timeout: 10_000 });
     // ROADMAP P0-9: the Welcome page names Triage, not VS Code.
     const welcome = await window.locator('.gettingStartedContainer').innerText();
     expect(namingVSCode([welcome])).toEqual([]);
