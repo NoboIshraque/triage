@@ -73,6 +73,7 @@ extra emulator work (Espressif's QEMU has no GPIO matrix, I²C, SPI or Wi-Fi mod
 | **P0-5** Project format v0 | `triage.toml` JSON Schema; `crates/triage-model` (load/validate), napi binding; project explorer (Code / Electronics / Mechanical / Simulation) | Opening `examples/smart-fan` shows the four domains; Rust and TS unit tests |
 | **P0-6** Dev environment | `scripts/dev/setup.sh` (Linux) and `scripts/dev/setup.ps1` (Windows: Node, Python, Visual Studio Build Tools, Rust MSVC, CMake, Ninja), used by CI too | A fresh container and a fresh Windows CI runner both build following only the scripts |
 | **P0-7** Windows nightlies | CI uploads Windows builds every night (portable zip first, then the per-user installer from VS Code's own Inno Setup build) and a Linux build | **Owner check:** the owner downloads the nightly and launches it on their Windows laptop |
+| **P0-8** Triage's own GitHub sign-in *(added 2026-11-24 at the owner's request, DV-15)* | A GitHub OAuth app named **Triage**, registered by the owner (device flow on, no client secret); a patch puts its client ID into VS Code's GitHub sign-in (`extensions/github-authentication`); a test of whether GitHub Copilot accepts it | Signing in from the Windows build shows **Triage** on GitHub's page; whether Copilot works with it is recorded in STATUS, and if it doesn't, the owner has picked the fallback |
 
 ## P1 · Electronics engine and in-app views → **M1**
 

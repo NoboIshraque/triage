@@ -2,9 +2,11 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-24 · **Phase P0 Foundations: done** (the owner ran
-the Windows build on 2026-11-24). **Next:** start **P1 Electronics engine + views** in a new session
-(P1-1, KiCad fork builds).
+**Last updated:** 2026-11-24 · **Phase P0 Foundations: P0-1 … P0-7 done** (the owner ran
+the Windows build on 2026-11-24). **Next:** **P0-8, Triage's own GitHub sign-in**
+(added at the owner's request; waiting on the owner's registration, steps
+below), then **P1 Electronics engine + views** in a new session (P1-1, KiCad
+fork builds).
 
 ### P0 in one paragraph
 
@@ -15,6 +17,30 @@ and Sim tabs (placeholders until P1–P3 fill them); any of them can be dragged 
 popped out into a separate window. A native "hello engine" runs
 behind a utility-process broker, survives being killed, and streams 114 MB/s
 (Windows CI) to 237 MB/s (Linux CI) into the window. CI builds the Windows per-user installer and a portable zip.
+
+### P0-8: register Triage on GitHub (the owner's step)
+
+Triage signs in to GitHub, and so to Copilot, with VS Code's own registration,
+inherited from the open-source code; GitHub then says "Visual Studio Code".
+Triage's build has no GitHub client secret (Microsoft adds VS Code's when it
+publishes VS Code), so its sign-in uses GitHub's **device flow**: a code typed
+on github.com (observed in `extensions/github-authentication/src/flows.ts`).
+Triage's own registration therefore needs the device flow and no secret:
+
+1. Signed in to GitHub, open <https://github.com/settings/applications/new>
+   (Settings → Developer settings → OAuth Apps → New OAuth App).
+2. **Application name:** `Triage`. **Homepage URL:** the repository's URL.
+   **Authorization callback URL:** `http://127.0.0.1/callback` (the form needs
+   one; the device flow doesn't use it).
+3. Tick **Enable Device Flow**, then **Register application**. Don't generate
+   a client secret.
+4. Give Claude the **Client ID** (it usually starts with `Ov23`). It isn't
+   secret: GitHub shows it to everyone who signs in.
+
+Claude then patches it into the build. **Unknown:** whether GitHub Copilot
+accepts a sign-in from an app other than VS Code. Other unofficial Copilot
+clients reuse official GitHub app IDs rather than their own, which hints it may
+not (inferred). The P0-8 test settles it.
 
 ### Try it on Windows (the P0-7 owner check)
 
@@ -52,12 +78,13 @@ The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt
 | — | Claude's sessions **may run Electron** (build and open the app, not only in CI) | CLAUDE.md, GUIDELINES §10, [DV-07](DEVIATIONS.md) |
 | — | VS Code's built-in **Copilot chat is hidden** by default | `app/src/vs/triage/browser/triage.contribution.ts`, [choices](DEVIATIONS.md#choices-the-plan-left-open) |
 | — | P0 **merged into the default branch** (PR #1); nightlies run from it | `.github/workflows/nightly.yml` |
+| — | Triage gets **its own GitHub sign-in** (OAuth app) now, before P1 | ROADMAP P0-8, [DV-15](DEVIATIONS.md) |
 | — | GitHub Actions **minutes are no concern** (the owner's GitHub student account): the App workflow runs on every push except documentation-only ones | [DV-08](DEVIATIONS.md) |
 
 ## Deviations from the plan
 
 Every place the build differs from the plan is logged in
-[DEVIATIONS.md](DEVIATIONS.md) (14 entries, DV-01 … DV-14, plus choices the plan left open), so the
+[DEVIATIONS.md](DEVIATIONS.md) (15 entries, DV-01 … DV-15, plus choices the plan left open), so the
 owner can compare the final build with the plan.
 
 ## Open questions
@@ -66,7 +93,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Topic | Default | Needed by |
 |---|---|---|
-| **Triage signs in to GitHub as "Visual Studio Code"**: VS Code's open-source sign-in code carries VS Code's own GitHub OAuth app (`extensions/github-authentication/src/config.ts`). Copilot uses the user's GitHub account, so no API key is needed. Before builds go to other people: register Triage's own GitHub OAuth app? Whether Copilot accepts another app is **unknown** | keep VS Code's for the owner's own testing | P8 (before sharing builds) |
+| If GitHub Copilot **doesn't accept Triage's own sign-in** (P0-8): use AI models with your own API key in the chat (no GitHub needed), keep VS Code's sign-in for the owner's personal builds only, or drop Copilot? | decided after the P0-8 test | P0-8 |
 | Remove the hidden Copilot extension from builds entirely? It is 56 MB of the app; hidden and disabled, it does nothing | kept (one setting turns VS Code's AI features back on) | P8 (installer size) |
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
@@ -77,7 +104,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Phase | WP | Status |
 |---|---|---|
-| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies | **done** (P0-7: owner check pending) |
+| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in | P0-1 … P0-7 **done**; **P0-8 in progress** (waiting on the owner's GitHub registration) |
 | P1 Electronics engine + views (M1) | P1-1 … P1-7 | not started |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
@@ -198,6 +225,9 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
     documentation-only ones.
   - The owner ran the **Windows build** (P0-7 done), turned the AI features
     back on, signed in with GitHub and ran a Copilot agent prompt: it works.
+  - GitHub called the app "Visual Studio Code" at sign-in: Triage uses VS
+    Code's GitHub registration from the open-source code. The owner chose to
+    give Triage **its own GitHub sign-in before P1**: new WP **P0-8** (DV-15).
   - The "workflow run failed" notifications the owner saw come from App runs
     2, 8, 9 and 10 and CI run 7, the failures this session fixed (DV-11, DV-13,
     the swap-file disk issue).
