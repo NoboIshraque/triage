@@ -104,6 +104,24 @@ jobs:
           ninja --version
       - name: Configure, build and test (CMake workflow preset "ci")
         run: cmake --workflow --preset ci
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @triage/engine-tests
+      - name: Engine connection tests and benchmark (ROADMAP P0-4)
+        run: pnpm --filter @triage/engine-tests test
+        env:
+          TRIAGE_REQUIRE_ENGINE: '1'
+      - name: Upload the benchmark
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: benchmark-${{ runner.os }}
+          path: build/benchmarks/
+          if-no-files-found: ignore
+          retention-days: 30
 
   ci-ok:
     name: CI result

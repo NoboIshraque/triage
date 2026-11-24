@@ -69,8 +69,8 @@ std::wstring widen(const std::string &text) {
   if (text.empty()) {
     return {};
   }
-  const int size = MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()),
-                                       nullptr, 0);
+  const int size =
+      MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0);
   std::wstring wide(static_cast<std::size_t>(size), L'\0');
   MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), wide.data(), size);
   return wide;
@@ -131,8 +131,8 @@ std::unique_ptr<Connection> connect_to(const std::string &endpoint, int timeout_
   for (;;) {
 #ifdef _WIN32
     const std::wstring name = widen(endpoint);
-    HANDLE pipe = CreateFileW(name.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr,
-                              OPEN_EXISTING, 0, nullptr);
+    HANDLE pipe = CreateFileW(name.c_str(), GENERIC_READ | GENERIC_WRITE, 0, nullptr, OPEN_EXISTING,
+                              0, nullptr);
     if (pipe != INVALID_HANDLE_VALUE) {
       return std::make_unique<PipeConnection>(pipe);
     }

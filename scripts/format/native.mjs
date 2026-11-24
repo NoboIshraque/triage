@@ -43,13 +43,22 @@ if (major !== REQUIRED_MAJOR) {
   process.exit(2);
 }
 
-const listed = run('git', ['ls-files', '-z', '--', ...EXTENSIONS.map((e) => `*.${e}`)]);
+// Tracked files plus new ones not yet added (but not ignored ones), so files
+// are formatted before their first commit.
+const listed = run('git', [
+  'ls-files',
+  '-z',
+  '--cached',
+  '--others',
+  '--exclude-standard',
+  '--',
+  ...EXTENSIONS.map((e) => `*.${e}`),
+]);
 if (listed.status !== 0) {
   console.error(listed.stderr);
   process.exit(2);
 }
-const files = listed.stdout
-  .split('\0')
+const files = [...new Set(listed.stdout.split('\0'))]
   .filter(Boolean)
   .filter((file) => !SKIP.some((pattern) => pattern.test(file)));
 

@@ -20,9 +20,11 @@ on:
 permissions:
   contents: read
 
+# A newer push waits for the running build instead of cancelling it (a build
+# is long); only the newest waiting run is kept.
 concurrency:
   group: app-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'

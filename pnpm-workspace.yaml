@@ -3,6 +3,7 @@
 packages:
   - cli
   - app/smoke
+  - app/engine-tests
 
 # Shared versions for workspace packages (`"typescript": "catalog:"`).
 # typescript-eslint supports TypeScript < 6.1, so TypeScript stays on 6.0.

@@ -1,5 +1,6 @@
-#include "triage/hello/hello.hpp"
 #include "triage/hello/protocol.hpp"
+
+#include "triage/hello/hello.hpp"
 
 namespace triage::hello {
 

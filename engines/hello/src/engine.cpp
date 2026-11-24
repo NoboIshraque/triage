@@ -1,4 +1,5 @@
 #include "triage/hello/engine.hpp"
+
 #include "triage/hello/protocol.hpp"
 
 #include <array>
@@ -24,7 +25,8 @@ bool send_text(Connection &connection, FrameType type, std::string_view text) {
 /// payload go out in one write per frame.
 bool stream(Connection &connection, std::uint32_t count, std::uint32_t size) {
   std::vector<std::byte> frame(kFrameHeader + size);
-  encode_header(FrameType::Data, size, std::span<std::byte, kFrameHeader>{frame.data(), kFrameHeader});
+  encode_header(FrameType::Data, size,
+                std::span<std::byte, kFrameHeader>{frame.data(), kFrameHeader});
   for (std::size_t i = 0; i < size; ++i) {
     frame[kFrameHeader + i] = static_cast<std::byte>(i & 0xffu);
   }
