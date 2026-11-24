@@ -7,7 +7,7 @@ import { Codicon } from '../../base/common/codicons.js';
 import { localize2 } from '../../nls.js';
 import { Action2 } from '../../platform/actions/common/actions.js';
 import { ServicesAccessor } from '../../platform/instantiation/common/instantiation.js';
-import { EditorGroupLayout, GroupOrientation, GroupsOrder, IEditorGroupsService } from '../../workbench/services/editor/common/editorGroupsService.js';
+import { EditorGroupLayout, GroupOrientation, GroupsArrangement, GroupsOrder, IEditorGroupsService } from '../../workbench/services/editor/common/editorGroupsService.js';
 import { IEditorService } from '../../workbench/services/editor/common/editorService.js';
 import { ENGINEERING_LAYOUT_COMMAND_ID, ENGINEERING_VIEWS, TRIAGE_CATEGORY, TriageViewKind } from '../common/triage.js';
 import { TriageViewInput } from './triageViewEditor.js';
@@ -58,5 +58,8 @@ export class OpenEngineeringLayoutAction extends Action2 {
 			const group = groups[Math.min(GROUP_INDEX[view.kind], groups.length - 1)];
 			return editorService.openEditor(new TriageViewInput(view), { pinned: true, preserveFocus: true }, group);
 		}));
+		// The sizes above didn't survive opening the tabs (the top row came out
+		// squeezed in CI screenshots), so even them out once everything is open.
+		editorGroupsService.arrangeGroups(GroupsArrangement.EVEN);
 	}
 }
