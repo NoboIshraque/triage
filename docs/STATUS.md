@@ -138,7 +138,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   | P0-1 | CI green on Windows and Linux | CI run 1: all 8 jobs green |
   | P0-2 | Running builds on Linux and Windows; a Playwright smoke test opens a window on both | App runs 10–11: build, package, engines, smoke test 10/10 with screenshots on **Windows and Linux** (Linux: the whole job in 10 minutes) |
   | P0-3 | Triage sidebar and layout visible; the patch queue re-applies onto a fresh upstream checkout | smoke checks (sidebar, five tabs in five groups, walkthrough); `check-patches` step on every App run; 6 patch-queue tests |
-  | P0-4 | ≥ 100 MB/s of binary frames on Windows and Linux; a killed engine shows "reconnecting" and recovers | engine → broker: 543–612 MB/s (Windows CI), 1.2–1.7 GB/s (Linux); into the window: 114–115 MB/s (Windows), 237 MB/s (Linux) in the smoke test. Kill → reconnecting → recovered in the engine tests (both OSes) and the smoke test |
+  | P0-4 | ≥ 100 MB/s of binary frames on Windows and Linux; a killed engine shows "reconnecting" and recovers | engine → broker: 543–612 MB/s (Windows CI), 1.2–1.7 GB/s (Linux); into the window: 114–115 MB/s (Windows), 131–237 MB/s (Linux) across smoke runs. Kill → reconnecting → recovered in the engine tests (both OSes) and the smoke test |
   | P0-5 | `examples/smart-fan` shows the four domains; Rust and TS unit tests | smoke check and screenshot; 12 Rust tests; addon and JSON Schema tests on both OSes |
   | P0-6 | A fresh container and a fresh Windows runner build following only the scripts | CI jobs `setup-linux` (fresh `ubuntu:24.04` container) and `setup-windows` green in run 14 |
   | P0-7 | The owner downloads the nightly and launches it on Windows | Windows installer and zip built and uploaded (run 10); **waiting for the owner** |
@@ -159,6 +159,10 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   - The installer shows VS Code's wizard images and MIT license page (P8-2).
   - Builds have no source maps (DV-13); stack traces point into bundles.
   - Copilot ships 51 MB of extension in the app; removing it shrinks builds.
+
+  - Layout sizes passed to `applyLayout` were lost when the tabs opened (the
+    top row came out squeezed three times); the command now evens the groups
+    out afterwards, and the smoke test checks the row heights.
 
   **Corrections:** an early commit said the first App run "sat in apt-get for
   over ten minutes"; it had been about two minutes (misread timestamps). The
