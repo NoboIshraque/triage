@@ -140,6 +140,11 @@ For source trees we have (the forks), read the source. REA is for shipped artifa
 - **REA's limits are gone, but memory isn't.** The 21 MB VS Code workbench bundle
   parsed fully in 30 minutes, but its semantic graph needed more than the 6 GiB
   worker heap. For open-source trees, read the source instead.
+- **Cloud sessions set `NODE_OPTIONS=--use-openssl-ca --max-old-space-size=8192`.**
+  V8 uses the last heap flag it sees, so a script that sets its own heap size must
+  append the flag to `NODE_OPTIONS`, not put it first. Putting it first silently
+  overrode REA's parent heap in the planning runs. Check this before sizing Node
+  builds (VS Code's build in P0-2) or analyses.
 
 ## 11. When Claude stops and asks
 

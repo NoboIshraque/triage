@@ -61,12 +61,13 @@ Useful `javascript-facts` property keys: `api_key`, `members`, `world` (contextB
   JavaScript worker exhausted` (worker heap). Semantic nodes per file: count
   `"module_path"` values between `"nodes":[` and `"relations":[` inside the
   bundle's `"semantic_graph":{"application_graph_id"` object (1 node = placeholder only).
-- **Per-file transfer ceiling** = min(2 GiB, max(512 MiB, parent result budget / 8)).
-  The budget measured about 1.28 × the parent heap (4.11 GB at
-  `REA_PARENT_HEAP_MB=3072`), so the ceiling passes 512 MiB only above about
-  3.2 GiB of parent heap and reaches 1 GiB at about 6.3 GiB. Over 512 MiB:
-  `agentHostMain.js` (3.0 MB), `extensionHostProcess.js` (2.3 MB), `typescript.js`
-  (9.1 MB). How far over is unknown.
+- **Per-file transfer ceiling** = min(2 GiB, max(512 MiB, offered budget / 8)).
+  The offered budget is about (parent V8 heap limit − heap in use − 192 MiB) / 2
+  (`JavaScriptAnalysisWorker.ts`). So the ceiling passes 512 MiB only with a parent
+  heap limit above about 8.2 GiB plus what is in use, and reaches 1 GiB at about
+  16.4 GiB. At an 8 GiB parent it stayed 512 MiB [O]. Over it: `agentHostMain.js`
+  (3.0 MB), `extensionHostProcess.js` (2.3 MB), `extensionHostWorkerMain.js` (2.0 MB,
+  when run alone), `typescript.js` (9.1 MB). How far over is unknown.
 - **Pathological code shapes.** GWT-compiled JavaScript (elkjs, inlined by
   Mermaid) stalls the alias fixpoint in `indexJavaScriptAmbientWritesSteps`.
   After 1 h 55 min, 5,551 of 12,098 items were still queued, the queue did not
@@ -135,13 +136,16 @@ Bounded mode refuses this assembly at the 64 MiB metadata budget, even with
 
 ## 6. Memory planning (4 cores, 15 GB host)
 
-| Run | Worker heap | Parent heap | Observed peak |
+| Run | Worker heap | Parent heap limit¹ | Observed peak |
 |---|---|---|---|
-| VS Code workbench bundle alone (21 MB) | 6144 MiB | 5120 MiB | ~4 GB while parsing; projection needed > 6 GiB |
-| VS Code `extensions/` (927 sources) | 3072 MiB | 2048 MiB | ~2–3 GB |
-| VS Code `extensions/` batches (2–115 selected files) | 4096–6144 MiB | 3072 MiB | 3–4.5 GB; semantic graphs only for the first files of each batch |
-| One 1.7 MB generated parser (`zenuml-definition-*.js`) | 6144 MiB | 3072 MiB | ~7.4 GB host use; worker heap exhausted after 2 min |
+| VS Code workbench bundle alone (21 MB) | 6144 MiB | 8 GiB | ~4 GB while parsing; projection needed > 6 GiB |
+| VS Code `extensions/` (927 sources) | 3072 MiB | 8 GiB | ~2–3 GB |
+| VS Code `extensions/` batches (2–115 selected files) | 4096–6144 MiB | 8 GiB | 3–4.5 GB; semantic graphs only for the first files of each batch |
+| One 1.7 MB generated parser (`zenuml-definition-*.js`) | 6144 MiB | 8 GiB | ~7.4 GB host use; worker heap exhausted after 2 min |
 | Native exports / objdump symbols | – | default | under 1 GB |
+
+¹ Effective limits. These runs asked for 2–5 GiB through `REA_PARENT_HEAP_MB`, but the
+host's `NODE_OPTIONS` already held `--max-old-space-size=8192` and overrode it (see §7).
 
 Keep the sum of worker heaps under host RAM, and run small native jobs alongside.
 
@@ -158,6 +162,12 @@ Keep the sum of worker heaps under host RAM, and run small native jobs alongside
   split long work into runs that finish within the restart window.
 - Executing downloaded apps can be blocked by the session's safety policy.
   Static evidence first, then ask the user.
+- **Check `NODE_OPTIONS` before sizing the parent.** V8 uses the last
+  `--max-old-space-size` it sees. Claude's cloud sessions set
+  `NODE_OPTIONS=--use-openssl-ca --max-old-space-size=8192`, and the launcher used
+  to put `REA_PARENT_HEAP_MB` first, so every parent ran at 8 GiB whatever was
+  asked. `NoboIshraque/rea@84e2b99` appends the flag so it wins. Confirm with
+  `tr '\0' '\n' < /proc/<pid>/environ | grep NODE_OPTIONS`.
 - Stopping a run: the parent can outlive its killed worker. Stop both
   (`pkill -f javascriptAnalysisWorkerProcess; pkill -f analyze-javascript-application`),
   and don't delete a summary file while its run still writes to it.

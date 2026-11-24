@@ -17,7 +17,7 @@ here.
 ## 1. Get the unbounded REA build
 
 Unbounded mode lives in the owner's REA fork: `NoboIshraque/rea`, branch
-`claude/unified-engineering-platform-jn5rmk` (commit `6697bfd` or later). See
+`claude/unified-engineering-platform-jn5rmk` (commit `84e2b99` or later). See
 its `docs/unbounded-mode.md`. The npm package does **not** contain it.
 
 ```bash
@@ -52,7 +52,9 @@ $REA --version
 4. **Parallelize by memory.** REA processes the sources of one run one after
    another. Split independent subtrees (for example `out/` vs `extensions/`)
    into separate runs. Give each run an explicit `--max-heap-mb` and
-   `REA_PARENT_HEAP_MB` so their sum fits host RAM.
+   `REA_PARENT_HEAP_MB` so their sum fits host RAM. Use the launcher from
+   `NoboIshraque/rea@84e2b99` or later: earlier ones let an inherited
+   `NODE_OPTIONS=--max-old-space-size=…` silently override `REA_PARENT_HEAP_MB`.
 5. **When something still fails, keep going.** An out-of-memory or engine
    limit (V8 string length, disk) is not the end: reuse the returned
    `partial_observation`, split the input further, raise heap, or move to a
