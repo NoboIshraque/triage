@@ -1,0 +1,23 @@
+[package]
+name = "triage-model-node"
+description = "Node binding (napi) of triage-model, loaded by the app's model service (ROADMAP P0-5)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+triage-model = { path = "../triage-model" }
+napi = { version = "3", default-features = false, features = ["napi4"] }
+napi-derive = "3"
+
+[build-dependencies]
+napi-build = "2"
+
+[lints]
+workspace = true

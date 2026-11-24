@@ -1,12 +1,16 @@
 [package]
 name = "triage-model"
-description = "Triage's project model: triage.toml, the link graph and code generation (filled in by ROADMAP P0-5)."
+description = "Triage's project model: triage.toml (format v0), validation and the domain summary."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 license.workspace = true
 repository.workspace = true
 publish.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+toml = "1"
 
 [lints]
 workspace = true
