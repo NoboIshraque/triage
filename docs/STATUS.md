@@ -2,8 +2,8 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-24 · **Phase P0 Foundations: done** (one owner check
-left, below). **Next:** start **P1 Electronics engine + views** in a new session
+**Last updated:** 2026-11-24 · **Phase P0 Foundations: done** (the owner ran
+the Windows build on 2026-11-24). **Next:** start **P1 Electronics engine + views** in a new session
 (P1-1, KiCad fork builds).
 
 ### P0 in one paragraph
@@ -34,9 +34,10 @@ behind a utility-process broker, survives being killed, and streams 114 MB/s
 5. Copilot is hidden, not removed. To use it: **File → Preferences → Settings**,
    search **Disable AI Features**, untick it; the Sign In button and Copilot
    icon return, and **Ctrl+Alt+I** opens the chat (checked on a local build;
-   signing in to a Copilot account isn't tested yet).
+   the owner signed in with GitHub and ran an agent prompt on Windows,
+   2026-11-24).
 
-Tell Claude what felt wrong. P0-7 is done when you have launched it.
+The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt wrong.
 
 ## Decisions confirmed by the owner (2026-11-24)
 
@@ -65,6 +66,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Topic | Default | Needed by |
 |---|---|---|
+| **Triage signs in to GitHub as "Visual Studio Code"**: VS Code's open-source sign-in code carries VS Code's own GitHub OAuth app (`extensions/github-authentication/src/config.ts`). Copilot uses the user's GitHub account, so no API key is needed. Before builds go to other people: register Triage's own GitHub OAuth app? Whether Copilot accepts another app is **unknown** | keep VS Code's for the owner's own testing | P8 (before sharing builds) |
 | Remove the hidden Copilot extension from builds entirely? It is 56 MB of the app; hidden and disabled, it does nothing | kept (one setting turns VS Code's AI features back on) | P8 (installer size) |
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
@@ -194,6 +196,8 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
     timed out" error no longer shows; the smoke test checks the chat stays hidden.
   - **Minutes no concern:** the App workflow now runs on every push except
     documentation-only ones.
+  - The owner ran the **Windows build** (P0-7 done), turned the AI features
+    back on, signed in with GitHub and ran a Copilot agent prompt: it works.
   - The "workflow run failed" notifications the owner saw come from App runs
     2, 8, 9 and 10 and CI run 7, the failures this session fixed (DV-11, DV-13,
     the swap-file disk issue).
