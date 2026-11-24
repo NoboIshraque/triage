@@ -4,8 +4,9 @@
 
 **Last updated:** 2026-11-24 · **Phase P0 Foundations: P0-1 … P0-7 done** (the owner ran
 the Windows build on 2026-11-24). **Next:** **P0-8, Triage's own GitHub sign-in**
-(added at the owner's request; the app is registered and patched in, the
-owner's sign-in test is next, steps below) and **P0-9, the branding sweep**, then **P1 Electronics engine + views** in a new session (P1-1, KiCad
+(added at the owner's request; Copilot refused Triage's sign-in at first,
+patches 0005 and 0006 are the fix being tested, steps below); **P0-9, the
+branding sweep and Triage's logo, is done**, then **P1 Electronics engine + views** in a new session (P1-1, KiCad
 fork builds).
 
 ### P0 in one paragraph
@@ -159,7 +160,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Phase | WP | Status |
 |---|---|---|
-| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | P0-1 … P0-7 **done**; **P0-8 in progress** (app registered, patch 0004 in; the owner's sign-in test next); **P0-9 in progress** |
+| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | P0-1 … P0-7 **done**; **P0-8 in progress** (sign-in as Triage works; Copilot fix in patches 0005/0006 awaits the owner's test); **P0-9 done** (merged in #3) |
 | P1 Electronics engine + views (M1) | P1-1 … P1-7 | not started |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
