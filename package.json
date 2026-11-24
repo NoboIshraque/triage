@@ -14,7 +14,7 @@
     "typecheck": "turbo run typecheck",
     "lint": "turbo run lint",
     "test": "turbo run test",
-    "check": "turbo run build typecheck lint test lint:root",
+    "check": "turbo run build typecheck lint test lint:root test:root",
     "format": "prettier --write . && node scripts/format/native.mjs --write",
     "format:check": "prettier --check .",
     "format:native": "node scripts/format/native.mjs --write",
@@ -23,7 +23,8 @@
     "native:ci": "cmake --workflow --preset ci",
     "lint:root": "eslint scripts app/build.mjs eslint.config.mjs",
     "app:build": "node app/build.mjs",
-    "app:smoke": "pnpm --filter @triage/app-smoke smoke"
+    "app:smoke": "pnpm --filter @triage/app-smoke smoke",
+    "test:root": "node --test \"scripts/**/*.test.mjs\""
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

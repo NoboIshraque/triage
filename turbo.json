@@ -18,6 +18,9 @@
     },
     "//#lint:root": {
       "inputs": ["scripts/**", "app/build.mjs", "eslint.config.mjs"]
+    },
+    "//#test:root": {
+      "inputs": ["scripts/**", "app/build.mjs"]
     }
   }
 }
