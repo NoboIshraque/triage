@@ -11,7 +11,8 @@ left, below). **Next:** start **P1 Electronics engine + views** in a new session
 Triage now builds as its own desktop app from VS Code 1.147.0, on Windows and
 Linux, in CI. Opening a folder with a `triage.toml` shows the project's four
 domains in the Triage sidebar. One command lays out Code, Schematic, Board, 3D
-and Sim tabs (placeholders until P1–P3 fill them). A native "hello engine" runs
+and Sim tabs (placeholders until P1–P3 fill them); any of them can be dragged or
+popped out into a separate window. A native "hello engine" runs
 behind a utility-process broker, survives being killed, and streams 114 MB/s
 (Windows CI) to 237 MB/s (Linux CI) into the window. CI builds the Windows per-user installer and a portable zip.
 
@@ -27,6 +28,9 @@ behind a utility-process broker, survives being killed, and streams 114 MB/s
 3. Open a folder with a `triage.toml` (for example `examples/smart-fan` from a
    clone), click the Triage icon at the top of the activity bar, then **Open
    Engineering Layout** and **Benchmark Hello Engine**.
+4. Try the separate windows: drag a tab (say **Schematic**) out of the window,
+   click the window button at the right of the tab bar, or click **Open in
+   Separate Windows** in the Triage sidebar.
 
 Tell Claude what felt wrong. P0-7 is done when you have launched it.
 
@@ -39,11 +43,12 @@ Tell Claude what felt wrong. P0-7 is done when you have launched it.
 | D5 | The owner's laptop runs **Windows**, so Windows is first-class from P0 | [ADR 0003](adr/0003-boards-and-windows.md), GUIDELINES §8 |
 | D8 | Name: **Triage** | PLAN §5 |
 | D9 | **Everything in one window**, and simulation of **everything together or any part separately** | PLAN §1, §4.3, §4.7 |
+| D9 (added) | Any tab can be **dragged or popped out into a separate Triage window**; one window stays the default | PLAN §1, [DV-14](DEVIATIONS.md) |
 
 ## Deviations from the plan
 
 Every place the build differs from the plan is logged in
-[DEVIATIONS.md](DEVIATIONS.md) (13 entries, DV-01 … DV-13, plus choices the plan left open), so the
+[DEVIATIONS.md](DEVIATIONS.md) (14 entries, DV-01 … DV-14, plus choices the plan left open), so the
 owner can compare the final build with the plan.
 
 ## Open questions
@@ -170,3 +175,8 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   libraries by inference (DV-12), not from the log. The first Linux hangs were
   blamed on memory and that held (measured, DV-13), but runs 9–10 then died on
   a full disk caused by the swap file added as a memory fix.
+- **2026-11-24 (separate windows, the owner's request):** Triage's tabs can
+  leave the main window: drag a tab out, click **Open in a Separate Window** on
+  the tab bar, or run **Triage: Open Engineering Views in Separate Windows**
+  (Code stays, the other four move). Views that are already open move rather
+  than being copied. The smoke test checks it; PLAN §1 and D9 now say so (DV-14).

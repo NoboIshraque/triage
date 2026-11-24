@@ -12,6 +12,13 @@ export const TRIAGE_CATEGORY = localize2('triage.category', "Triage");
 export const TRIAGE_VIEW_CONTAINER_ID = 'workbench.view.triage';
 export const TRIAGE_OVERVIEW_VIEW_ID = 'workbench.triage.overview';
 export const ENGINEERING_LAYOUT_COMMAND_ID = 'triage.layout.engineering';
+export const ENGINEERING_WINDOWS_COMMAND_ID = 'triage.layout.engineeringWindows';
+export const POP_OUT_VIEW_COMMAND_ID = 'triage.view.popOut';
+/**
+ * VS Code's "Move Editor into New Window" (editorCommands.ts). Named here rather than
+ * imported: editorCommands.js pulls most of the editor into Triage's typecheck.
+ */
+export const MOVE_EDITOR_INTO_NEW_WINDOW_COMMAND_ID = 'workbench.action.moveEditorToNewWindow';
 export const TRIAGE_WALKTHROUGH_ID = 'triage.gettingStarted';
 export const TRIAGE_VIEW_SCHEME = 'triage-view';
 

@@ -17,7 +17,7 @@ import { registerWorkbenchContribution2, WorkbenchPhase } from '../../workbench/
 import { EditorExtensions, IEditorFactoryRegistry } from '../../workbench/common/editor.js';
 import { Extensions as ViewExtensions, IViewContainersRegistry, IViewsRegistry, ViewContainerLocation } from '../../workbench/common/views.js';
 import { TRIAGE_CATEGORY, TRIAGE_OVERVIEW_VIEW_ID, TRIAGE_VIEW_CONTAINER_ID } from '../common/triage.js';
-import { OpenEngineeringLayoutAction } from './engineeringLayout.js';
+import { OpenEngineeringLayoutAction, OpenEngineeringWindowsAction, PopOutViewAction } from './engineeringLayout.js';
 import { TriageOverviewView } from './triageOverviewView.js';
 import { TriageViewEditor, TriageViewInput, TriageViewInputSerializer } from './triageViewEditor.js';
 import { TriageWalkthroughContribution } from './triageWalkthrough.js';
@@ -53,6 +53,8 @@ Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane
 Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEditorSerializer(TriageViewInput.ID, TriageViewInputSerializer);
 
 registerAction2(OpenEngineeringLayoutAction);
+registerAction2(OpenEngineeringWindowsAction);
+registerAction2(PopOutViewAction);
 
 // --- Welcome page ---
 

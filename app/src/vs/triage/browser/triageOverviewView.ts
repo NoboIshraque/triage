@@ -21,7 +21,7 @@ import { IViewPaneOptions, ViewPane } from '../../workbench/browser/parts/views/
 import { IViewDescriptorService } from '../../workbench/common/views.js';
 import { describeEngineState, HELLO_ENGINE_COMMANDS, IHelloEngineBenchmark, ITriageHelloEngineService } from '../common/helloEngine.js';
 import { ITriageDomain, ITriageProjectService, TriageProjectState } from '../common/projectModel.js';
-import { ENGINEERING_LAYOUT_COMMAND_ID, TRIAGE_WALKTHROUGH_ID } from '../common/triage.js';
+import { ENGINEERING_LAYOUT_COMMAND_ID, ENGINEERING_WINDOWS_COMMAND_ID, TRIAGE_WALKTHROUGH_ID } from '../common/triage.js';
 import { URI } from '../../base/common/uri.js';
 import { joinPath } from '../../base/common/resources.js';
 
@@ -68,6 +68,10 @@ export class TriageOverviewView extends ViewPane {
 		const layout = this._register(new Button(root, { ...defaultButtonStyles, title: true }));
 		layout.label = localize('triage.overview.layout', "Open Engineering Layout");
 		this._register(layout.onDidClick(() => this.commandService.executeCommand(ENGINEERING_LAYOUT_COMMAND_ID)));
+
+		const windows = this._register(new Button(root, { ...defaultButtonStyles, secondary: true, title: true }));
+		windows.label = localize('triage.overview.windows', "Open in Separate Windows");
+		this._register(windows.onDidClick(() => this.commandService.executeCommand(ENGINEERING_WINDOWS_COMMAND_ID)));
 
 		const walkthrough = this._register(new Button(root, { ...defaultButtonStyles, secondary: true, title: true }));
 		walkthrough.label = localize('triage.overview.walkthrough', "Get Started with Triage");

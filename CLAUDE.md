@@ -24,7 +24,8 @@ and Claude**.
   hidden **engine processes** behind Triage's own tabs (ADR 0002, accepted: Stream
   GAL, headless tools, CAD RPC). Don't reimplement an engine algorithm that the
   engine already has.
-- **One window:** everything the user does happens in Triage's tabs. The stock
+- **One window:** everything the user does happens in Triage's tabs (any tab can
+  also be popped out into a separate Triage window, DV-14). The stock
   KiCad or FreeCAD window is only a temporary fallback where the ROADMAP lists it.
   Simulation must work for the whole device and for any part alone (PLAN §4.7).
 - **Windows is first-class:** CI stays green on Windows and Linux. No Linux-only

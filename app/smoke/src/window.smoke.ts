@@ -176,4 +176,29 @@ describe('packaged Triage app', () => {
       .waitFor({ state: 'visible', timeout: 30_000 });
     await window.screenshot({ path: shot('walkthrough') });
   });
+  // The owner's request (2026-11-24): views can also live in windows of their own.
+  it('opens Schematic, Board, 3D and Sim in separate windows', async () => {
+    const app = electronApp;
+    if (!app) throw new Error('app not started');
+    const before = app.windows().length;
+    await runCommand(window, 'Triage: Open Engineering Views in Separate Windows');
+    await expect
+      .poll(() => app.windows().length, { timeout: 60_000 })
+      .toBeGreaterThanOrEqual(before + 4);
+    const kinds: string[] = [];
+    for (const page of app.windows().slice(before)) {
+      const view = page.locator('.triage-view-editor');
+      await view.waitFor({ state: 'visible', timeout: 30_000 });
+      kinds.push((await view.getAttribute('data-triage-view')) ?? '');
+    }
+    expect(kinds.sort()).toEqual(['3d', 'board', 'schematic', 'sim']);
+    // They moved rather than being copied: the main window keeps only Code.
+    await expect
+      .poll(() => window.locator('.triage-view-editor:visible').getAttribute('data-triage-view'), {
+        timeout: 30_000,
+      })
+      .toBe('code');
+    await app.windows()[before]?.screenshot({ path: shot('separate-window') });
+    await window.screenshot({ path: shot('main-window-after-pop-out') });
+  });
 });
