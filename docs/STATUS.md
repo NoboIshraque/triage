@@ -53,6 +53,17 @@ GitHub's sign-in endpoints (observed 2026-11-24).
 2. Sign in again (the **Sign In** button). GitHub's page should name **Triage**.
 3. Send a Copilot prompt, and tell Claude whether it answers or the error.
 
+**First result (2026-11-24, the owner, Windows build from App run 22):** in the
+Agents window a prompt with the **Auto** model failed: "Auto couldn't pick a
+model: the routing service is unavailable (a server error after 2 attempts)".
+The message comes from GitHub's Copilot runtime (`runtime.node` in
+`@github/copilot-sdk`), which asks Copilot's servers for a model
+(`/models/session`); GitHub's status page showed Copilot operational at the
+time (observed). The same Agents prompt worked earlier with VS Code's sign-in,
+so Triage's own app is the likely cause (**inferred**). Still to check: a
+specific model instead of Auto, the chat panel (Ctrl+Alt+I), and whether
+GitHub's sign-in page named Triage.
+
 **Unknown:** whether GitHub Copilot
 accepts a sign-in from an app other than VS Code. Other unofficial Copilot
 clients reuse official GitHub app IDs rather than their own, which hints it may
