@@ -28,3 +28,9 @@ npm-debug.log*
 pnpm-debug.log*
 /.env
 /.env.*
+
+# Forks: pinned upstream checkouts and their build outputs (GUIDELINES §6)
+/app/upstream/
+/app/VSCode-*/
+/app/.smoke/
+/engines/*/upstream/

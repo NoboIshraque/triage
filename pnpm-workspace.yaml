@@ -1,7 +1,8 @@
-# Triage's own TypeScript packages. The VS Code fork in app/ keeps its own npm
-# build (P0-2) and is not part of this workspace.
+# Triage's own TypeScript packages. The VS Code checkout in app/upstream/ has
+# its own pnpm workspace and lockfile and is not part of this one.
 packages:
   - cli
+  - app/smoke
 
 # Shared versions for workspace packages (`"typescript": "catalog:"`).
 # typescript-eslint supports TypeScript < 6.1, so TypeScript stays on 6.0.

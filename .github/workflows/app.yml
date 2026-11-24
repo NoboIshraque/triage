@@ -1,0 +1,114 @@
+# Builds the Triage desktop app from the pinned VS Code release on Windows and
+# Linux, then opens it with Playwright (ROADMAP P0-2). A build takes long, and the
+# repository is private (2-core runners, Windows minutes count double), so this
+# runs only when the app's inputs change, or by hand. P0-7 adds the nightly.
+name: App
+
+on:
+  push:
+    paths:
+      - app/**
+      - scripts/forks/**
+      - .github/workflows/app.yml
+  pull_request:
+    paths:
+      - app/**
+      - scripts/forks/**
+      - .github/workflows/app.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: '0'
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  build:
+    name: Build and smoke test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch the pinned VS Code release
+        run: node scripts/forks/fetch.mjs app
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: app/upstream/.nvmrc
+
+      - name: Enable corepack (each package.json pins its pnpm)
+        run: corepack enable
+
+      - name: Linux build and display packages
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pkg-config xvfb libgtk-3-0 libxkbfile-dev libkrb5-dev libgbm1
+
+      - name: Locate the pnpm store
+        id: pnpm-store
+        shell: bash
+        working-directory: app/upstream
+        run: echo "path=$(corepack pnpm store path --silent)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache the pnpm store
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ steps.pnpm-store.outputs.path }}
+          key: pnpm-app-${{ runner.os }}-${{ hashFiles('app/upstream/pnpm-lock.yaml', 'pnpm-lock.yaml') }}
+          restore-keys: pnpm-app-${{ runner.os }}-
+
+      - name: Prepare (product.json, branding, patches)
+        run: node app/build.mjs prepare
+
+      - name: Install VS Code's dependencies
+        run: node app/build.mjs install
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Package the app
+        run: node app/build.mjs package
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install the smoke test
+        run: corepack pnpm install --frozen-lockfile --filter @triage/app-smoke
+
+      - name: Smoke test (Linux, virtual display)
+        if: runner.os == 'Linux'
+        run: |
+          # Ubuntu 24.04 blocks the unprivileged user namespaces Chromium's sandbox uses.
+          sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+          xvfb-run -a corepack pnpm --filter @triage/app-smoke smoke
+
+      - name: Smoke test (Windows)
+        if: runner.os == 'Windows'
+        run: corepack pnpm --filter @triage/app-smoke smoke
+
+      - name: Upload screenshots and logs
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smoke-${{ runner.os }}
+          path: app/.smoke/
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: Upload the Windows build (try it on a Windows laptop)
+        if: runner.os == 'Windows' && success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: triage-win32-x64
+          path: app/VSCode-win32-x64/
+          retention-days: 3

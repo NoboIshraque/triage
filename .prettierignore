@@ -1,5 +1,7 @@
 # Forked upstream trees keep their own formatting.
-/app/
+/app/upstream/
+/app/VSCode-*/
+/app/.smoke/
 /engines/**/upstream/
 /engines/**/patches/
 

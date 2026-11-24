@@ -15,6 +15,9 @@
     },
     "test": {
       "dependsOn": ["build"]
+    },
+    "//#lint:root": {
+      "inputs": ["scripts/**", "app/build.mjs", "eslint.config.mjs"]
     }
   }
 }

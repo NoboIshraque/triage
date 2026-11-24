@@ -1,0 +1,6 @@
+{
+  "$comment": "Pinned upstream for the VS Code fork (GUIDELINES §6). scripts/forks/fetch.mjs checks out exactly this commit into app/upstream/ and refuses a tag that points elsewhere. Update it in its own work package.",
+  "repository": "https://github.com/microsoft/vscode",
+  "tag": "1.147.0",
+  "commit": "8a14f0cc1b08d531eb83255ea3764ae22aa932b5"
+}

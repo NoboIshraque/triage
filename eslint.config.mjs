@@ -1,5 +1,5 @@
-// ESLint flat config for Triage's own TypeScript packages (not the VS Code fork
-// in app/, which keeps upstream's lint setup).
+// ESLint flat config for Triage's own code. The VS Code checkout (app/upstream)
+// keeps upstream's lint setup.
 import js from '@eslint/js';
 import { defineConfig } from 'eslint/config';
 import globals from 'globals';
@@ -12,7 +12,9 @@ export default defineConfig(
       '**/build/**',
       '**/target/**',
       '**/coverage/**',
-      'app/**',
+      'app/upstream/**',
+      'app/VSCode-*/**',
+      'app/.smoke/**',
       'engines/**',
     ],
   },
