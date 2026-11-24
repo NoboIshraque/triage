@@ -151,6 +151,15 @@ describe('packaged Triage app', () => {
     await window.screenshot({ path: shot('window') });
   });
 
+  // ROADMAP P0-9, the owner's option C: dark themes (the default) show the
+  // reversed logo, since K3 Slate disappears on a dark title bar.
+  it('shows the reversed logo in the dark title bar', async () => {
+    const image = await window.evaluate(
+      "getComputedStyle(document.querySelector('.part.titlebar .window-appicon')).backgroundImage",
+    );
+    expect(String(image)).toContain('triage-logo-dark');
+  });
+
   it('titles the window with the product name', async () => {
     await expect.poll(() => window.title(), { timeout: 30_000 }).toContain(product.nameLong);
   });

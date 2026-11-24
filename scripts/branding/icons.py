@@ -18,7 +18,9 @@ Writes (app/build.mjs copies app/resources/ and app/src/ over the checkout):
     app/src/vs/sessions/browser/media/vscode-icon.svg      Agents window
     app/src/vs/workbench/browser/parts/editor/media/letterpress-*.svg  watermark
     app/src/vs/sessions/contrib/aquarium/browser/vscodeLogoPath.ts     silhouette
+    app/src/vs/triage/browser/media/triage-logo-dark.svg   reversed, for dark themes
     docs/brand/triage-logo.svg, triage-logo-1024.png      the logo itself
+    docs/brand/triage-logo-reversed.svg                    on dark backgrounds
 
 Units: x = the height of the left arm. Origin: the top of the bar at the stem's
 left edge; y grows downwards.
@@ -33,6 +35,8 @@ BRAND = ROOT / "docs" / "brand"
 
 COLOUR = "#1e293b"  # K3 Slate, the owner's choice
 WHITE = "#ffffff"
+# The reversed logo for dark backgrounds (the owner's option C): light T, slate traces.
+REVERSED_FILL, REVERSED_LINES = "#f1f5f9", COLOUR
 
 # --- The T ---
 X = 1.0  # left arm height
@@ -239,7 +243,10 @@ def main() -> None:
     write(letterpress / "letterpress-dark.svg", letterpress_svg('opacity="0.3"'))
     write(letterpress / "letterpress-hcLight.svg", letterpress_svg('fill="none"', 'fill="#D9D9D9" '))
     write(letterpress / "letterpress-hcDark.svg", letterpress_svg('fill="none"', 'fill="#3C3C3C" '))
+    reversed_svg = logo_svg(REVERSED_FILL, REVERSED_LINES)
+    write(SRC / "triage" / "browser" / "media" / "triage-logo-dark.svg", reversed_svg)
     write(BRAND / "triage-logo.svg", svg)
+    write(BRAND / "triage-logo-reversed.svg", reversed_svg)
 
     linux = RESOURCES / "linux" / "code.png"
     write(linux, lambda: raster(1024).save(linux, optimize=True))
