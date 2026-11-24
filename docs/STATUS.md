@@ -69,6 +69,27 @@ the chat panel, Ctrl+Alt+I, not yet tried). The Copilot SDK's README documents
 `gitHubToken` and BYOK providers (OpenAI, Azure, Anthropic, Google, Ollama) but
 not which GitHub token types Copilot accepts (unknown).
 
+**Why, and the fix being tried (2026-11-24):** GitHub documents the route
+Triage needs: "You create a GitHub OAuth App (or GitHub App), users authorize
+it, and you pass their access token to the SDK. Copilot requests are made on
+behalf of each authenticated user, using their Copilot subscription"
+([Copilot SDK, GitHub OAuth](https://docs.github.com/en/copilot/how-tos/copilot-sdk/setup/github-oauth);
+token types `gho_`, `ghu_`, `github_pat_` in
+[Authenticate the Copilot SDK](https://docs.github.com/en/copilot/how-tos/copilot-sdk/authenticate-copilot-sdk/authenticate-copilot-sdk)).
+But VS Code's agent host labels its traffic as VS Code's integration
+(`GITHUB_COPILOT_INTEGRATION_ID=code-oss`, and `Copilot-Integration-Id:
+code-oss` on its own Copilot API calls). Triage's token under VS Code's label
+is the likely cause (**inferred**). Patches 0005 and 0006 drop the label, so
+the runtime identifies as an SDK host and Copilot authorizes against the
+user's own entitlement. The owner's Windows test decides.
+
+If that still fails, documented routes remain: a **GitHub App** instead of the
+OAuth App (GitHub calls it "recommended for new projects"); a **fine-grained
+personal access token** with the "Copilot Requests" permission, which the
+Copilot runtime's own messages name as supported (observed in
+`runtime.node`); reusing an existing **GitHub CLI / Copilot CLI** login (the
+runtime supports it); or AI models with the user's **own API key**.
+
 **Unknown:** whether GitHub Copilot
 accepts a sign-in from an app other than VS Code. Other unofficial Copilot
 clients reuse official GitHub app IDs rather than their own, which hints it may

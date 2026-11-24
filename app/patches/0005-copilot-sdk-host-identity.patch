@@ -1,0 +1,34 @@
+Copilot's agent runtime identifies as an SDK host, not VS Code (ROADMAP P0-8).
+
+VS Code's agent host sets GITHUB_COPILOT_INTEGRATION_ID=code-oss ("Identify
+VS Code's agent host traffic in CAPI"). With Triage's own GitHub OAuth app
+(patch 0004) that combination failed: the owner's Agents prompt got "Auto
+couldn't pick a model: the routing service is unavailable" and no model list,
+while the same prompt worked with VS Code's OAuth app. GitHub documents the
+other combination for apps that embed the Copilot SDK: "You create a GitHub
+OAuth App (or GitHub App), users authorize it, and you pass their access token
+to the SDK. Copilot requests are made on behalf of each authenticated user,
+using their Copilot subscription."
+(docs.github.com/en/copilot/how-tos/copilot-sdk/setup/github-oauth)
+So Triage no longer sets the integration id and the runtime keeps its own.
+
+diff --git a/src/vs/platform/agentHost/node/copilot/copilotAgent.ts b/src/vs/platform/agentHost/node/copilot/copilotAgent.ts
+index e50dd43013bf15b901447c74d76ef88c544f4a54..6f368aab07cf542bd561dfde794fe23cdecfc942 100644
+--- a/src/vs/platform/agentHost/node/copilot/copilotAgent.ts
++++ b/src/vs/platform/agentHost/node/copilot/copilotAgent.ts
+@@ -5121,9 +5121,12 @@ export class CopilotAgent extends Disposable implements IAgent {
+ 				env['COPILOT_CLI_POLICY_HELPER'] = startupConfig.policyHelper;
+ 			}
+ 
+-			// Identify VS Code's agent host traffic in CAPI
+-			env['GITHUB_COPILOT_INTEGRATION_ID'] = COPILOT_INTEGRATION_ID;
+-			this._logService.info(`[Copilot] Set CLI env: GITHUB_COPILOT_INTEGRATION_ID=${COPILOT_INTEGRATION_ID}`);
++			// Triage (ROADMAP P0-8): Triage is not VS Code. Its users sign in with
++			// Triage's own GitHub OAuth app, which GitHub documents for apps that
++			// embed the Copilot SDK; labelling the traffic as VS Code's integration
++			// ('code-oss') with that token made Copilot refuse. Leave the runtime's
++			// own SDK integration in place instead.
++			void COPILOT_INTEGRATION_ID;
+ 
+ 			// Point the Copilot CLI at a configured GitHub Enterprise host for its
+ 			// authentication and CAPI endpoint discovery. `COPILOT_GH_HOST` is
