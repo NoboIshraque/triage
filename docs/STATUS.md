@@ -51,7 +51,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Blender 5.3 | static complete. Runtime API dump not permitted in session | [blender.md](research/blender.md) |
 | Wokwi 4.1.0 | complete for the shipped package | [simulators.md](research/simulators.md) |
 | Board emulators (ESP32, Arduino, Raspberry Pi) | package checks + vendor docs | [simulators.md](research/simulators.md) §7, [ADR 0003](adr/0003-boards-and-windows.md) |
-| VS Code 1.143 | `out/` **parsed completely** (unbounded): 3 preloads, 4 bridge APIs, 34 members, 18 literal IPC channels. `extensions/`: 299 of 300 unique files parsed; none has Electron or IPC sites. Memory-bound: semantic graphs for the two 21–22 MB bundles, 15 of 28 `out/` entry files and most extension files. The ELK layout library (3 extension files) stalls REA's alias analysis. A single-file pass is running | [vscode.md](research/vscode.md) §2, §5 |
+| VS Code 1.143 | **complete** (unbounded, rounds 2–3): every `out/` JS file parsed, and all 28 entry files have static facts and semantic graphs. 3 preloads, 4 bridge APIs, 34 members, 18 literal IPC channels. `extensions/`: 298 of 300 unique files have static facts and semantic graphs; none has Electron or IPC sites. Unknown: semantic graphs of the two 21–22 MB bundles (over 6 GiB of worker heap), `typescript.js` (facts over the ~1 GiB transfer ceiling), a generated zenuml parser (over 6 GiB), and the 3 ELK layout files (stall REA's alias analysis) | [vscode.md](research/vscode.md) §2, §5 |
 
 ## Session log
 
@@ -68,3 +68,12 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   Checked board emulators: Espressif's QEMU lacks the GPIO matrix, I²C, SPI, RMT and
   Wi-Fi; Renode ships Uno R4 Minima and Nano 33 BLE boards. VS Code workbench
   bundle analyzed (29 min 54 s).
+- **2026-11-24 (VS Code breakdown finished):** The built-in extensions ran in six
+  batches. Then every file whose semantic graph a shared budget had dropped was
+  re-run on its own (round 3, 272 runs in 1 h 27 min). Found and fixed two errors:
+  - the `out/` semantic-graph count was 13 of 28 after round 2, not 22;
+  - an inherited `NODE_OPTIONS` overrode the heap flag in REA's launcher
+    (fixed in `NoboIshraque/rea@84e2b99`).
+
+  The ELK layout library stalls REA's alias analysis, so it is recorded as unknown.
+  Per-file results: `docs/research/data/vscode-round3.tsv`.

@@ -7,7 +7,8 @@ shipped Linux builds with **REA (Reverse Engineer Anything)**. Round 2 used REA'
 
 | Report | What it covers |
 |---|---|
-| [vscode.md](vscode.md) | Code-OSS process model, preload bridge, MessagePort IPC, native modules, fuses, where Triage plugs into the fork, round-2 unbounded runs (§5) |
+| [vscode.md](vscode.md) | Code-OSS process model, preload bridge, MessagePort IPC, native modules, fuses, where Triage plugs into the fork, unbounded rounds 2 and 3 (§5) |
+| [data/vscode-round3.tsv](data/vscode-round3.tsv) | Round 3, one REA run per VS Code file: status, semantic node count and Evidence IDs per file |
 | [kicad.md](kicad.md) | **Full debug-symbol breakdown**: ~158k functions placed in source files, engine/UI split, the 68-method GAL boundary, router/DRC/IO sizes, IPC API, kicad-cli |
 | [freecad.md](freecad.md) | FreeCAD 1.1 as the parametric CAD engine: **App (29.3 MB) vs Gui (28.3 MB)** split across 61 libraries |
 | [blender.md](blender.md) | Monolithic binary with embedded CPython, bundled engines, module map from 970 embedded source paths, Python UI layer counts |

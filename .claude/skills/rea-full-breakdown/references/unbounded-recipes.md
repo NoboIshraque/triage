@@ -52,7 +52,11 @@ Useful `javascript-facts` property keys: `api_key`, `members`, `world` (contextB
   13 of VS Code's 28 `out/` entry files, and 45 of 300 extension files across six
   batches. For a semantic graph of every file, run **one file per invocation**
   (a single `--source-path`), sequentially, and delete each bundle after
-  extracting what you need (each bundle repeats the whole inventory, 30–300 MB).
+  extracting what you need (each bundle repeats the whole inventory, 30–400 MB).
+  Measured: 272 single-file runs in 1 h 27 min with two runners in parallel
+  (about 9 s per small file), recovering all 268 graphs that shared budgets had dropped.
+  Make the runner resumable (skip files already in its results file) and give
+  each file a `mkdir` lock when two runners share one list.
 - **Don't count from the summary view.** It lists only the first 30 unknowns
   ("N additional unknowns omitted"). Count from the parent bundle, by file:
   `Semantic graph for X exceeds` (graph over budget), `semantic analysis of X was
@@ -142,6 +146,8 @@ Bounded mode refuses this assembly at the 64 MiB metadata budget, even with
 | VS Code `extensions/` (927 sources) | 3072 MiB | 8 GiB | ~2–3 GB |
 | VS Code `extensions/` batches (2–115 selected files) | 4096–6144 MiB | 8 GiB | 3–4.5 GB; semantic graphs only for the first files of each batch |
 | One 1.7 MB generated parser (`zenuml-definition-*.js`) | 6144 MiB | 8 GiB | ~7.4 GB host use; worker heap exhausted after 2 min |
+| One file per run, typical extension file | 4096 MiB | 8 GiB | 1–2 GB per run; two runs in parallel |
+| `agentHostMain.js` (3 MB) alone | 3072 MiB | 16 GiB | under 9 GiB for all REA processes (guard never fired); 4 min |
 | Native exports / objdump symbols | – | default | under 1 GB |
 
 ¹ Effective limits. These runs asked for 2–5 GiB through `REA_PARENT_HEAP_MB`, but the
