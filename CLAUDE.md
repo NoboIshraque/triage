@@ -45,7 +45,8 @@ and Claude**.
   compares the final build with the plan from that list.
 - **Commit and push often:** cloud sessions can restart. Keep background jobs
   under ~6–8 GB RAM combined and launch long jobs detached.
-- **Never execute downloaded third-party binaries without the owner's OK**, and
+- **Never execute downloaded third-party binaries without the owner's OK** (the owner
+  OK'd Electron, which VS Code's build downloads, on 2026-11-24), and
   never bypass a refused action. Build from source instead.
 - **Evidence discipline** for claims about other tools: observed / inferred /
   unknown, with sources or REA Evidence IDs.

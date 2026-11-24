@@ -180,12 +180,14 @@ For source trees we have (the forks), read the source. REA is for shipped artifa
 - **Windows images differ:** `windows-2025` offers Visual Studio 2026, where VS
   Code's native modules failed (Spectre libraries, inferred); the app builds on
   `windows-2022` (DV-12). Windows runners also carry Strawberry Perl's `ccache`.
-- **App builds take about 30-45 minutes per OS**, so the App workflow queues
-  instead of cancelling, and runs only when the app's inputs change.
+- **App builds take about 25 minutes per OS in CI**, so the App workflow queues
+  instead of cancelling. It skips documentation-only pushes.
 - **New files must be formatted before their first commit:** the native
   formatter lists files with `git ls-files`, so it now includes untracked ones.
-- **Electron is never run in Claude's sessions** (owner's OK pending): the app
-  is verified by the smoke test in CI, with screenshots in the artifacts.
+- **Claude's sessions may build and run the app** (the owner OK'd Electron on
+  2026-11-24): `node app/build.mjs package && node app/build.mjs engines`, then
+  `xvfb-run -a pnpm --filter @triage/app-smoke smoke` on Linux. CI stays the
+  check of record on both systems.
 
 ## 11. When Claude stops and asks
 

@@ -1,26 +1,20 @@
 # Builds the Triage desktop app from the pinned VS Code release on Windows and
-# Linux, then opens it with Playwright (ROADMAP P0-2). A build takes long, and the
-# repository is private (2-core runners, Windows minutes count double), so this
-# runs only when the app's inputs change, or by hand. P0-7 adds the nightly.
+# Linux, then opens it with Playwright (ROADMAP P0-2). Runs on every push except
+# documentation-only ones (the owner: Actions minutes are no concern, DV-08), and
+# from the nightly workflow (P0-7).
 name: App
 
 on:
   push:
-    paths:
-      - app/**
-      - scripts/forks/**
-      - .github/workflows/app.yml
-      - engines/hello/**
-      - crates/**
-      - examples/**
+    # '*.md' matches only top-level files (README.md, CLAUDE.md): Markdown inside
+    # app/ ships in the app (the walkthrough).
+    paths-ignore:
+      - docs/**
+      - '*.md'
   pull_request:
-    paths:
-      - app/**
-      - scripts/forks/**
-      - .github/workflows/app.yml
-      - engines/hello/**
-      - crates/**
-      - examples/**
+    paths-ignore:
+      - docs/**
+      - '*.md'
   workflow_dispatch:
     inputs:
       nightly:

@@ -19,9 +19,9 @@ behind a utility-process broker, survives being killed, and streams 114 MB/s
 ### Try it on Windows (the P0-7 owner check)
 
 1. Open the repository's **Actions** tab → workflow **App** → the newest green
-   run on branch `claude/intelligent-allen-bqg63r` → artifact **triage-Windows**
-   (kept 1 day; nightlies, kept 3 days, start once this branch is merged into
-   the default branch).
+   run → artifact **triage-Windows** (kept 1 day). The **Nightly** workflow
+   builds from the default branch at 03:17 UTC after any commits that day;
+   its artifact is **triage-Windows-nightly** (kept 3 days).
 2. Unzip it. Either run `TriageUserSetup-x64-….exe` (per-user, no admin) or
    unzip `Triage-win32-x64-….zip` and start `Triage\Triage.exe`. Windows
    SmartScreen will warn: the build is unsigned (decision due before P8).
@@ -44,6 +44,10 @@ Tell Claude what felt wrong. P0-7 is done when you have launched it.
 | D8 | Name: **Triage** | PLAN §5 |
 | D9 | **Everything in one window**, and simulation of **everything together or any part separately** | PLAN §1, §4.3, §4.7 |
 | D9 (added) | Any tab can be **dragged or popped out into a separate Triage window**; one window stays the default | PLAN §1, [DV-14](DEVIATIONS.md) |
+| — | Claude's sessions **may run Electron** (build and open the app, not only in CI) | CLAUDE.md, GUIDELINES §10, [DV-07](DEVIATIONS.md) |
+| — | VS Code's built-in **Copilot chat is hidden** by default | `app/src/vs/triage/browser/triage.contribution.ts`, [choices](DEVIATIONS.md#choices-the-plan-left-open) |
+| — | P0 **merged into the default branch** (PR #1); nightlies run from it | `.github/workflows/nightly.yml` |
+| — | GitHub Actions **minutes are no concern** (the owner's GitHub student account): the App workflow runs on every push except documentation-only ones | [DV-08](DEVIATIONS.md) |
 
 ## Deviations from the plan
 
@@ -57,10 +61,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Topic | Default | Needed by |
 |---|---|---|
-| **May Claude run Electron in its cloud sessions?** Building VS Code downloads Electron and other prebuilt helpers, and CLAUDE.md says not to run downloaded third-party binaries without the owner's OK | no: the app is built and smoke-tested only in CI, with screenshots in the artifacts (that worked for all of P0, at about 25 minutes per round trip). Saying yes would speed up UI work in P1-4 | P1-4 |
-| **GitHub Copilot and agents are built into VS Code 1.147**: the screenshots show its chat panel open on the right, a Copilot sign-in prompt, and a startup error ("agentHostManagement timed out"). Keep, hide or remove? | recommendation: hide by default in P1 (product defaults) and remove later if you prefer; kept as upstream ships it so far | P1 |
-| **Merge this branch into the default branch?** Scheduled nightlies run only from the default branch | Claude opens a pull request when you ask | before nightlies |
-| GitHub Actions minutes and storage: private repository, 2-core runners, Windows minutes count double. An App build takes about 25 minutes per OS (Windows ~25, the installer adds ~7); the Windows artifacts are about 660 MB | App builds only when the app's inputs change, nightlies only after commits, 1–3 days retention | now |
+| Remove the hidden Copilot extension from builds entirely? It is 56 MB of the app; hidden and disabled, it does nothing | kept (one setting turns VS Code's AI features back on) | P8 (installer size) |
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
 | Windows code-signing certificate (avoids SmartScreen warnings) | unsigned nightlies; decide before P8-2 | P8 |

@@ -8,6 +8,8 @@ import './media/triage.css';
 import { Codicon } from '../../base/common/codicons.js';
 import { localize, localize2 } from '../../nls.js';
 import { registerAction2 } from '../../platform/actions/common/actions.js';
+import { ChatAIDisabledSettingId } from '../../platform/chat/common/chatSettings.js';
+import { Extensions as ConfigurationExtensions, IConfigurationRegistry } from '../../platform/configuration/common/configurationRegistry.js';
 import { SyncDescriptor } from '../../platform/instantiation/common/descriptors.js';
 import { Registry } from '../../platform/registry/common/platform.js';
 import { registerIcon } from '../../platform/theme/common/iconRegistry.js';
@@ -21,6 +23,16 @@ import { OpenEngineeringLayoutAction, OpenEngineeringWindowsAction, PopOutViewAc
 import { TriageOverviewView } from './triageOverviewView.js';
 import { TriageViewEditor, TriageViewInput, TriageViewInputSerializer } from './triageViewEditor.js';
 import { TriageWalkthroughContribution } from './triageWalkthrough.js';
+
+// --- VS Code's built-in AI features ---
+
+// Hidden by default, at the owner's request (2026-11-24): the Copilot chat panel,
+// its Sign In button, status bar item and setup prompts. VS Code's own setting does
+// the hiding, so a user can turn them back on in Settings (chat.disableAIFeatures).
+Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration).registerDefaultConfigurations([{
+	overrides: { [ChatAIDisabledSettingId]: true },
+	preventExperimentOverride: true,
+}]);
 
 // --- Sidebar ---
 
