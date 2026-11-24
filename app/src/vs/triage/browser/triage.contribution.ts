@@ -29,8 +29,12 @@ import { TriageWalkthroughContribution } from './triageWalkthrough.js';
 // Hidden by default, at the owner's request (2026-11-24): the Copilot chat panel,
 // its Sign In button, status bar item and setup prompts. VS Code's own setting does
 // the hiding, so a user can turn them back on in Settings (chat.disableAIFeatures).
+// The secondary side bar held only the chat, so it starts closed.
 Registry.as<IConfigurationRegistry>(ConfigurationExtensions.Configuration).registerDefaultConfigurations([{
-	overrides: { [ChatAIDisabledSettingId]: true },
+	overrides: {
+		[ChatAIDisabledSettingId]: true,
+		'workbench.secondarySideBar.defaultVisibility': 'hidden',
+	},
 	preventExperimentOverride: true,
 }]);
 

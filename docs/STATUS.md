@@ -181,3 +181,15 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   the tab bar, or run **Triage: Open Engineering Views in Separate Windows**
   (Code stays, the other four move). Views that are already open move rather
   than being copied. The smoke test checks it; PLAN §1 and D9 now say so (DV-14).
+- **2026-11-24 (the owner's answers):**
+  - **Merged** P0 into the default branch (PR #1), so nightlies run.
+  - **Electron OK'd** in Claude's sessions. The first local build packaged in
+    4.5 minutes and the app ran under Xvfb.
+  - **Copilot chat hidden** by default (`chat.disableAIFeatures`, and the
+    secondary side bar it lived in starts closed). The "agentHostManagement
+    timed out" error no longer shows; the smoke test checks the chat stays hidden.
+  - **Minutes no concern:** the App workflow now runs on every push except
+    documentation-only ones.
+  - The "workflow run failed" notifications the owner saw come from App runs
+    2, 8, 9 and 10 and CI run 7, the failures this session fixed (DV-11, DV-13,
+    the swap-file disk issue).
