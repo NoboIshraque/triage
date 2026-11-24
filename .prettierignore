@@ -1,0 +1,17 @@
+# Forked upstream trees keep their own formatting.
+/app/
+/engines/**/upstream/
+/engines/**/patches/
+
+# Hand-written prose (tables are kept as written) and generated files.
+*.md
+pnpm-lock.yaml
+/docs/research/data/
+/.claude/
+
+# Build outputs
+/build/
+/target/
+dist/
+.turbo/
+coverage/

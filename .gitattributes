@@ -1,0 +1,31 @@
+# Line endings: LF everywhere in the repository, on Windows too. Editors and
+# tools on Windows handle LF; mixed endings break patches and golden files.
+* text=auto eol=lf
+
+# Windows command scripts need CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Patch files must stay byte-exact (upstream files may contain CRs).
+*.patch -text diff
+
+# Binary formats.
+*.png binary
+*.jpg binary
+*.ico binary
+*.icns binary
+*.gif binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.zip binary
+*.FCStd binary
+*.FCBak binary
+*.stl binary
+*.step text eol=lf
+*.glb binary
+*.wasm binary
+*.elf binary
+*.hex text eol=lf
+*.uf2 binary
+*.bin binary
