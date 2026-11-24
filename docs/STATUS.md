@@ -60,9 +60,14 @@ The message comes from GitHub's Copilot runtime (`runtime.node` in
 `@github/copilot-sdk`), which asks Copilot's servers for a model
 (`/models/session`); GitHub's status page showed Copilot operational at the
 time (observed). The same Agents prompt worked earlier with VS Code's sign-in,
-so Triage's own app is the likely cause (**inferred**). Still to check: a
-specific model instead of Auto, the chat panel (Ctrl+Alt+I), and whether
-GitHub's sign-in page named Triage.
+so Triage's own app is the likely cause (**inferred**). **Second result:**
+after signing out and in again, the same error; the model picker offers only
+"Copilot Fusion" (the automatic choice), so Copilot's servers sent no model
+list either (observed by the owner). With VS Code's sign-in the same prompt
+worked: **Copilot doesn't accept Triage's own sign-in** (strongly indicated;
+the chat panel, Ctrl+Alt+I, not yet tried). The Copilot SDK's README documents
+`gitHubToken` and BYOK providers (OpenAI, Azure, Anthropic, Google, Ollama) but
+not which GitHub token types Copilot accepts (unknown).
 
 **Unknown:** whether GitHub Copilot
 accepts a sign-in from an app other than VS Code. Other unofficial Copilot
@@ -122,7 +127,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Topic | Default | Needed by |
 |---|---|---|
-| If GitHub Copilot **doesn't accept Triage's own sign-in** (P0-8): use AI models with your own API key in the chat (no GitHub needed), keep VS Code's sign-in for the owner's personal builds only, or drop Copilot? | decided after the P0-8 test | P0-8 |
+| GitHub Copilot **doesn't accept Triage's own sign-in** (P0-8). Choose: **(A)** AI models with the user's own API key (Anthropic, OpenAI, Google, or a local model through Ollama) in the same chat panel, no GitHub needed; **(B)** the owner's personal builds sign in as VS Code, so Copilot works for the owner, while shared builds stay Triage; **(C)** both (Claude's recommendation); **(D)** drop Copilot | Triage's own sign-in, Copilot unavailable, until the owner decides | P0-8 |
 | Remove the hidden Copilot extension from builds entirely? It is 56 MB of the app; hidden and disabled, it does nothing | kept (one setting turns VS Code's AI features back on) | P8 (installer size) |
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
