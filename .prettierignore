@@ -1,5 +1,7 @@
 # Forked upstream trees keep their own formatting.
 /app/upstream/
+# Triage's VS Code code follows upstream's style (tabs), not Prettier's.
+/app/src/
 /app/VSCode-*/
 /app/.smoke/
 /engines/**/upstream/

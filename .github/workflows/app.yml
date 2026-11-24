@@ -50,6 +50,16 @@ jobs:
       - name: Enable corepack (each package.json pins its pnpm)
         run: corepack enable
 
+      - name: More swap (Linux)
+        if: runner.os == 'Linux'
+        # The 2-core runners have 8 GB of memory; VS Code's bundling can need more.
+        run: |
+          sudo fallocate -l 8G /mnt/triage.swap
+          sudo chmod 600 /mnt/triage.swap
+          sudo mkswap /mnt/triage.swap
+          sudo swapon /mnt/triage.swap
+          free -h
+
       - name: Linux build and display packages
         if: runner.os == 'Linux'
         timeout-minutes: 15
@@ -70,13 +80,19 @@ jobs:
           key: pnpm-app-${{ runner.os }}-${{ hashFiles('app/upstream/pnpm-lock.yaml', 'pnpm-lock.yaml') }}
           restore-keys: pnpm-app-${{ runner.os }}-
 
-      - name: Prepare (product.json, branding, patches)
+      - name: Patches apply onto a fresh checkout
+        run: node app/build.mjs check-patches
+
+      - name: Prepare (product.json, branding, overlays, patches)
         run: node app/build.mjs prepare
 
       - name: Install VS Code's dependencies
         run: node app/build.mjs install
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Type-check Triage's workbench code
+        run: node app/build.mjs typecheck
 
       - name: Package the app
         run: node app/build.mjs package

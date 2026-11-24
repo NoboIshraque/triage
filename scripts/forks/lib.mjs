@@ -13,7 +13,12 @@ export class ForkError extends Error {}
 export function run(command, args, options = {}) {
   const { cwd, env, allowFailure = false, capture = false } = options;
   // Windows can only start .cmd shims (corepack, pnpm) through a shell.
-  const shell = isWindows && !command.endsWith('.exe') && command !== 'git' && command !== 'node';
+  const shell =
+    isWindows &&
+    !command.endsWith('.exe') &&
+    command !== 'git' &&
+    command !== 'node' &&
+    command !== process.execPath;
   const result = spawnSync(command, args, {
     cwd,
     env: { ...process.env, ...env },
@@ -32,9 +37,11 @@ export function run(command, args, options = {}) {
   return result;
 }
 
-/** Runs git and returns trimmed stdout. */
+/** Runs git and returns its stdout, trimmed unless `trim: false`. */
 export function git(cwd, args, options = {}) {
-  return run('git', args, { cwd, capture: true, ...options }).stdout.trim();
+  const { trim = true, ...rest } = options;
+  const stdout = run('git', args, { cwd, capture: true, ...rest }).stdout;
+  return trim ? stdout.trim() : stdout;
 }
 
 /** Retries `fn` on failure with exponential backoff (network operations). */

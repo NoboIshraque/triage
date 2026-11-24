@@ -1,0 +1,34 @@
+Load Triage's workbench code in the desktop workbench (ROADMAP P0-3).
+
+- workbench.desktop.main.ts imports vs/triage/browser/triage.contribution,
+  which app/build.mjs copies from app/src/vs/triage.
+- build/next/resources.ts ships the walkthrough pages, since the build
+  copies only listed resources.
+
+diff --git a/build/next/resources.ts b/build/next/resources.ts
+index e76a1e3557ef41237acfc26fb88a158c3e467f8a..06cdceb51b97da1267166a24f341edcb8ee89348 100644
+--- a/build/next/resources.ts
++++ b/build/next/resources.ts
+@@ -69,6 +69,8 @@ const desktopResourcePatterns = [
+ 	'vs/workbench/contrib/welcomeGettingStarted/common/media/**/*.svg',
+ 	'vs/workbench/contrib/welcomeGettingStarted/common/media/**/*.png',
+ 	'vs/workbench/contrib/welcomeOnboarding/browser/media/*.svg',
++	// Triage: walkthrough pages (app/src/vs/triage)
++	'vs/triage/browser/media/walkthrough/*.md',
+ 	'vs/workbench/contrib/extensions/browser/media/{theme-icon.png,language-icon.svg}',
+ 	'vs/workbench/services/extensionManagement/common/media/*.svg',
+ 	'vs/workbench/services/extensionManagement/common/media/*.png',
+diff --git a/src/vs/workbench/workbench.desktop.main.ts b/src/vs/workbench/workbench.desktop.main.ts
+index 213bf58a577237118e4d07aebdac2c0c751f0cd9..67cc5af07ac3d9984ac235ec72b910de6ffd7c03 100644
+--- a/src/vs/workbench/workbench.desktop.main.ts
++++ b/src/vs/workbench/workbench.desktop.main.ts
+@@ -226,6 +226,9 @@ import './contrib/keybindingsExport/electron-browser/keybindingsExport.contribut
+ // System-wide (OS global) Keybindings
+ import './contrib/keybindings/electron-browser/systemWideKeybindings.contribution.js';
+ 
++// Triage (app/src/vs/triage, ROADMAP P0-3)
++import '../triage/browser/triage.contribution.js';
++
+ //#endregion
+ 
+ 

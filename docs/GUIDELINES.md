@@ -87,9 +87,10 @@ All four follow the same rules:
   The trees are large (VS Code 1.147.0: 411 MB, 21,462 files), so this repository
   holds only the pin and Triage's changes.
 - `patches/`: numbered `*.patch` files with **small** changes to upstream
-  files, such as registration hooks or new backends. The fork's build applies
-  them; P0-3 adds cross-platform (Node) scripts in `scripts/forks/` to apply and
-  refresh them.
+  files, such as registration hooks or new backends. `scripts/forks/patches.mjs`
+  applies them in order, refreshes them from edits in the checkout (each upstream
+  file belongs to one patch), and checks that they apply onto a fresh checkout.
+  For the app: `node app/build.mjs refresh-patches | check-patches`.
 - Overlay folders: files that replace upstream files or add new ones at the
   same path. For the app: `app/src/` (Triage's code under `src/vs/triage/`) and
   `app/resources/` (branding). Its `product.json` keys merge over upstream's.

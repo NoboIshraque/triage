@@ -1,0 +1,48 @@
+/*---------------------------------------------------------------------------------------------
+ *  Triage. Licensed under GPL-3.0-or-later (see docs/PLAN.md §5).
+ *--------------------------------------------------------------------------------------------*/
+
+.triage-overview {
+	padding: 0 20px 12px 20px;
+	line-height: 1.5;
+}
+
+.triage-overview .triage-domains {
+	padding-left: 18px;
+	margin: 4px 0 8px 0;
+}
+
+.triage-overview .triage-note {
+	color: var(--vscode-descriptionForeground);
+}
+
+.triage-overview .monaco-button {
+	margin-top: 8px;
+}
+
+.triage-view-editor {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	overflow: auto;
+}
+
+.triage-view-editor .triage-view-card {
+	max-width: 420px;
+	padding: 24px;
+	text-align: center;
+}
+
+.triage-view-editor .triage-view-icon {
+	font-size: 48px;
+	color: var(--vscode-textLink-foreground);
+}
+
+.triage-view-editor h2 {
+	margin: 12px 0 8px 0;
+	font-weight: 600;
+}
+
+.triage-view-editor .triage-view-arrives {
+	color: var(--vscode-descriptionForeground);
+}

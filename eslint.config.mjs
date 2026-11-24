@@ -13,6 +13,7 @@ export default defineConfig(
       '**/target/**',
       '**/coverage/**',
       'app/upstream/**',
+      'app/src/**',
       'app/VSCode-*/**',
       'app/.smoke/**',
       'engines/**',
