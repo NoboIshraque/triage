@@ -1,5 +1,6 @@
 // Dependency-free unit test for the hello engine (no test framework to fetch).
 #include "triage/hello/hello.hpp"
+#include "triage/hello/protocol.hpp"
 
 #include <array>
 #include <cstdio>
@@ -37,6 +38,27 @@ int main() {
 
   const auto none = run({});
   check(none.exit_code == 0 && none.out.starts_with("usage:"), "no arguments prints usage");
+
+  // Frame header: u32 LE length of (type + payload), then the type byte.
+  std::array<std::byte, kFrameHeader> header{};
+  encode_header(FrameType::Data, 0x01020304u, header);
+  check(header[0] == std::byte{0x05} && header[1] == std::byte{0x03} &&
+            header[2] == std::byte{0x02} && header[3] == std::byte{0x01} &&
+            header[4] == std::byte{0x11},
+        "header layout");
+  FrameType type{};
+  encode_header(FrameType::Pong, 7, header);
+  check(decode_header(header, type) == 7u && type == FrameType::Pong, "header round trip");
+  const std::array<std::byte, kFrameHeader> empty{};
+  check(!decode_header(empty, type).has_value(), "zero-length frame rejected");
+  encode_header(FrameType::Data, kMaxFrameBody, header);
+  check(!decode_header(header, type).has_value(), "oversized frame rejected");
+
+  std::vector<std::byte> bytes;
+  put_u32(bytes, 0xdeadbeefu);
+  check(get_u32(bytes, 0) == 0xdeadbeefu && !get_u32(bytes, 1).has_value(), "u32 codec");
+  check(hello_payload(42) == std::string{engine_name()} + ' ' + std::string{version()} + " 42",
+        "hello payload");
 
   if (failures == 0) {
     std::puts("hello engine: all checks passed");

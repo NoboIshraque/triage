@@ -34,7 +34,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2025]
+        # windows-2022: VS Code's native modules ask for Spectre-mitigated
+        # libraries, which the Visual Studio 2026 on windows-2025 lacked (DV-12).
+        os: [ubuntu-24.04, windows-2022]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 150
     steps:

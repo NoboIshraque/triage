@@ -1,7 +1,7 @@
 # "Hello engine": the smallest Triage engine process. ROADMAP P0-4 grows it into
 # the engine connection pattern (broker, MessagePort, restart handling).
 
-add_library(triage_hello_core STATIC src/hello.cpp)
+add_library(triage_hello_core STATIC src/hello.cpp src/protocol.cpp src/engine.cpp src/transport.cpp)
 add_library(triage::hello_core ALIAS triage_hello_core)
 target_include_directories(triage_hello_core PUBLIC include)
 target_compile_definitions(triage_hello_core PRIVATE TRIAGE_VERSION="${PROJECT_VERSION}")

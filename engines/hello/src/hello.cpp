@@ -24,7 +24,7 @@ std::string version_line() {
 
 Invocation run(std::span<const std::string_view> args) {
   if (args.empty()) {
-    return {0, "usage: triage-hello-engine --version\n", {}};
+    return {0, "usage: triage-hello-engine --version | --connect <endpoint>\n", {}};
   }
   if (args.size() == 1 && (args[0] == "--version" || args[0] == "-v")) {
     return {0, version_line(), {}};
