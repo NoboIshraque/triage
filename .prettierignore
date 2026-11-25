@@ -7,6 +7,7 @@
 /app/.dist/
 /engines/**/upstream/
 /engines/**/patches/
+/engines/*/build/
 
 # Hand-written prose (tables are kept as written) and generated files.
 *.md

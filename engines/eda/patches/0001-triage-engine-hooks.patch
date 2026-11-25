@@ -1,0 +1,97 @@
+Hooks for Triage's EDA engine (ROADMAP P1-2, GUIDELINES §6).
+
+- CMakeLists.txt builds engines/eda/triage/ when KICAD_TRIAGE_DIR is set.
+- kiface_ids.h adds KIFACE_TRIAGE_ENGINE; with KICAD_TRIAGE defined, the
+  pcbnew and eeschema kifaces return their Triage engine face for it (the code
+  lives in engines/eda/triage/, compiled into the kifaces).
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 420f18bcb45530722c9c9385d357fa1fd85bbb0c..7ed178304d9627d0a4ef903a56fdc27e9ed31383 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1244,6 +1244,13 @@ add_subdirectory( kicad )               # should follow pcbnew, eeschema, api
+ add_subdirectory( tools )
+ add_subdirectory( utils )
+ 
++# Triage: the EDA engine host and the code it adds to the kifaces
++# (engines/eda/triage/ in the Triage repository, GUIDELINES §6).
++set( KICAD_TRIAGE_DIR "" CACHE PATH "Triage's engine sources (engines/eda/triage)" )
++if( KICAD_TRIAGE_DIR )
++    add_subdirectory( ${KICAD_TRIAGE_DIR} triage )
++endif()
++
+ if( KICAD_BUILD_QA_TESTS )
+     add_subdirectory( qa )
+ endif()
+diff --git a/eeschema/eeschema.cpp b/eeschema/eeschema.cpp
+index a27aba555cb9bef17f139f4d6ec666b580e402c9..f6b061e97ef5139a03d2bf28ac1055c1988670d3 100644
+--- a/eeschema/eeschema.cpp
++++ b/eeschema/eeschema.cpp
+@@ -80,6 +80,11 @@
+ 
+ #include <wx/crt.h>
+ 
++#ifdef KICAD_TRIAGE
++// Triage: the engine face this kiface offers to triage-eda-engine (engines/eda/triage/).
++void* TriageSchEngineFace();
++#endif
++
+ // The main sheet of the project
+ SCH_SHEET*  g_RootSheet = nullptr;
+ 
+@@ -400,6 +405,11 @@ static struct IFACE : public KIFACE_BASE, public UNITS_PROVIDER
+         {
+             case KIFACE_NETLIST_SCHEMATIC:
+                 return (void*) generateSchematicNetlist;
++
++#ifdef KICAD_TRIAGE
++            case KIFACE_TRIAGE_ENGINE:
++                return TriageSchEngineFace();
++#endif
+         }
+ 
+         return nullptr;
+diff --git a/include/kiface_ids.h b/include/kiface_ids.h
+index ffe237fcd850207cfb3197cbd7940554805353e6..9edfbaa41de412b09f62de89e2c377eba5c6585e 100644
+--- a/include/kiface_ids.h
++++ b/include/kiface_ids.h
+@@ -46,7 +46,10 @@ enum KIFACE_ADDR_ID : int
+     KIFACE_TEST_FOOTPRINT_LINK,
+     KIFACE_TEST_FOOTPRINT_LINK_NO_LIBRARY,
+     KIFACE_TEST_FOOTPRINT_LINK_LIBRARY_NOT_ENABLED,
+-    KIFACE_TEST_FOOTPRINT_LINK_NO_FOOTPRINT
++    KIFACE_TEST_FOOTPRINT_LINK_NO_FOOTPRINT,
++
++    /// Triage: the kiface's engine face (TRIAGE::ENGINE_FACE*), when built with KICAD_TRIAGE
++    KIFACE_TRIAGE_ENGINE = 0x7472
+ };
+ 
+ #endif // KIFACE_IDS
+diff --git a/pcbnew/pcbnew.cpp b/pcbnew/pcbnew.cpp
+index 81ad2eec3af145de2bab904ed6790b3a80bd8802..3df5f95eb7f33fe5f10dbc63e358a793594c89c3 100644
+--- a/pcbnew/pcbnew.cpp
++++ b/pcbnew/pcbnew.cpp
+@@ -86,6 +86,11 @@
+ 
+ #include <wx/crt.h>
+ 
++#ifdef KICAD_TRIAGE
++// Triage: the engine face this kiface offers to triage-eda-engine (engines/eda/triage/).
++void* TriagePcbEngineFace();
++#endif
++
+ /* init functions defined by swig */
+ 
+ extern "C" PyObject* PyInit__pcbnew( void );
+@@ -538,6 +543,11 @@ static struct IFACE : public KIFACE_BASE, public UNITS_PROVIDER
+             return PROJECT_PCB::FootprintLibAdapter( project );
+         }
+ 
++#ifdef KICAD_TRIAGE
++        case KIFACE_TRIAGE_ENGINE:
++            return TriagePcbEngineFace();
++#endif
++
+         case KIFACE_FILTER_FOOTPRINTS:
+         {
+             // Return function pointer for filtering footprints

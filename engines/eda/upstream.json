@@ -1,0 +1,6 @@
+{
+  "$comment": "Pinned upstream for the KiCad fork (GUIDELINES §6). scripts/forks/fetch.mjs checks out exactly this commit into engines/eda/upstream/ and refuses a tag that points elsewhere. Update it in its own work package.",
+  "repository": "https://gitlab.com/kicad/code/kicad.git",
+  "tag": "10.0.8",
+  "commit": "e432beac2668303194ba2040274f9e5efe773fc0"
+}

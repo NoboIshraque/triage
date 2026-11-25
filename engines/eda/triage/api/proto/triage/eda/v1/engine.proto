@@ -1,0 +1,303 @@
+// Triage EDA engine API (ROADMAP P1-2, PLAN §4.2), version 1.
+//
+// The broker and triage-eda-engine exchange these messages in the frames of
+// the P0-4 engine connection (u32 length, u8 type, payload): a Request frame
+// (0x20) carries one Request, the engine answers with one Response frame
+// (0x21) with the same id. Display lists travel in their own binary frames
+// (0x22) before the Response that completes them (engines/eda/triage/README.md).
+// Units: KiCad internal units (nanometres on boards, 100 nm on schematics).
+syntax = "proto3";
+
+package triage.eda.v1;
+
+message Request {
+  uint64 id = 1;
+  oneof command {
+    GetVersion get_version = 10;
+    OpenDocument open_document = 11;
+    CloseDocument close_document = 12;
+    GetDisplayList get_display_list = 13;
+    HitTest hit_test = 14;
+    SetSelection set_selection = 15;
+    GetNetlist get_netlist = 16;
+    Edit edit = 17;
+    Undo undo = 18;
+    Redo redo = 19;
+    Save save = 20;
+    Reload reload = 21;
+    GetItems get_items = 22;
+    Highlight highlight = 23;
+  }
+}
+
+message Response {
+  uint64 id = 1;
+  bool ok = 2;
+  string error = 3;
+  oneof result {
+    Version version = 10;
+    DocumentInfo document = 11;
+    DisplayListInfo display_list = 12;
+    HitTestResult hit_test = 13;
+    Netlist netlist = 14;
+    EditResult edit = 15;
+    Items items = 16;
+  }
+}
+
+enum DocumentKind {
+  DOCUMENT_KIND_UNKNOWN = 0;
+  DOCUMENT_KIND_BOARD = 1;
+  DOCUMENT_KIND_SCHEMATIC = 2;
+}
+
+message GetVersion {}
+
+message Version {
+  string engine = 1;         // "triage-eda-engine <version>"
+  string kicad = 2;          // KiCad's full version string
+  repeated string faces = 3; // "pcb", "sch": kifaces the engine loaded
+}
+
+message OpenDocument {
+  string path = 1; // a .kicad_pcb or .kicad_sch file (absolute)
+}
+
+message CloseDocument {
+  uint32 document = 1;
+}
+
+message Box {
+  double x0 = 1;
+  double y0 = 2;
+  double x1 = 3;
+  double y1 = 4;
+}
+
+message Layer {
+  int32 id = 1;     // KiCad layer id (PCB_LAYER_ID, GAL_LAYER_ID or SCH_LAYER_ID)
+  string name = 2;
+  uint32 color = 3; // 0xRRGGBBAA from the colour theme
+  int32 order = 4;  // drawing order: higher draws later (on top)
+  bool visible = 5;
+  bool user = 6;    // a layer the user toggles (copper, silkscreen, ...), not a GAL helper
+  int32 required = 7; // shown only while this layer is shown (itself for independent layers)
+}
+
+message Sheet {
+  string path = 1; // KIID path, "/" for the root sheet
+  string name = 2;
+  string page = 3;
+  string file = 4;
+}
+
+message DocumentInfo {
+  uint32 document = 1;
+  DocumentKind kind = 2;
+  string path = 3;
+  Box bbox = 4;              // the drawing sheet, or the board's bounding box
+  repeated Layer layers = 5;
+  repeated Sheet sheets = 6; // schematics: every sheet, root first
+  uint32 background = 7;     // 0xRRGGBBAA
+  double iu_per_mm = 8;
+  bool modified = 9;
+  // LOD: a group is visible while its lod < VIEW scale, and
+  // VIEW scale = (screen pixels per world unit) / pixels_per_iu_at_scale_1.
+  double pixels_per_iu_at_scale_1 = 10;
+}
+
+message GetDisplayList {
+  uint32 document = 1;
+  string sheet = 2; // schematics: KIID path of the sheet to draw ("" = root)
+}
+
+message DisplayListInfo {
+  uint32 document = 1;
+  uint32 chunks = 2;
+  uint64 bytes = 3;
+  uint32 groups = 4;
+  uint32 items = 5;
+  double milliseconds = 6;
+}
+
+message HitTest {
+  uint32 document = 1;
+  double x = 2;
+  double y = 3;
+  double tolerance = 4;  // world units
+  repeated int32 layers = 5; // empty: every visible layer
+}
+
+message Item {
+  string uuid = 1;
+  string type = 2;        // KiCad's class name, e.g. "FOOTPRINT", "PCB_TRACK", "SCH_SYMBOL"
+  string description = 3; // KiCad's item description ("Footprint R1 on F.Cu")
+  Box bbox = 4;
+  string reference = 5;   // footprints and symbols
+  string value = 6;
+  string net = 7;         // connected items
+  int32 layer = 8;
+  double x = 9;
+  double y = 10;
+  double angle = 11;      // degrees
+  string sheet = 12;      // schematics: KIID path of the item's sheet
+}
+
+message HitTestResult {
+  repeated Item items = 1; // best match first
+}
+
+message SetSelection {
+  uint32 document = 1;
+  repeated string uuids = 2;
+}
+
+message Highlight {
+  uint32 document = 1;
+  string net = 2; // "" clears
+}
+
+message GetItems {
+  uint32 document = 1;
+  repeated string uuids = 2;
+  repeated string references = 3;
+}
+
+message Items {
+  repeated Item items = 1;
+}
+
+message GetNetlist {
+  uint32 document = 1; // a schematic or a board
+}
+
+message Pin {
+  string number = 1;
+  string name = 2;     // symbol pin name, or the pad's pin function
+  string net = 3;
+  string type = 4;     // electrical type ("input", "power_in", ...), schematics
+  string uuid = 5;     // the pad (boards)
+}
+
+message Component {
+  string reference = 1;
+  string value = 2;
+  string footprint = 3;
+  string uuid = 4;     // symbol or footprint UUID
+  string lib_id = 5;
+  repeated Pin pins = 6;
+  string sheet = 7;
+}
+
+message Net {
+  string name = 1;
+  int32 code = 2;
+  uint32 pins = 3;
+}
+
+message Netlist {
+  repeated Component components = 1;
+  repeated Net nets = 2;
+}
+
+message Edit {
+  uint32 document = 1;
+  oneof action {
+    MoveItems move = 10;
+    RotateItems rotate = 11;
+    DeleteItems delete = 12;
+    SetField set_field = 13;
+    PlaceFootprint place_footprint = 14;
+    PlaceSymbol place_symbol = 15;
+    AddWire add_wire = 16;
+    AddTrack add_track = 17;
+    RenameNet rename_net = 18;
+  }
+}
+
+message MoveItems {
+  repeated string uuids = 1;
+  double dx = 2;
+  double dy = 3;
+}
+
+message RotateItems {
+  repeated string uuids = 1;
+  double degrees = 2; // counter-clockwise, about the items' centre
+}
+
+message DeleteItems {
+  repeated string uuids = 1;
+}
+
+message SetField {
+  string uuid = 1;  // footprint or symbol
+  string field = 2; // "Reference", "Value" or another field name
+  string text = 3;
+}
+
+message PlaceFootprint {
+  string lib_id = 1;  // "Library:Footprint"
+  double x = 2;
+  double y = 3;
+  string reference = 4;
+  string value = 5;
+  bool back = 6;
+}
+
+message PlaceSymbol {
+  string lib_id = 1;  // "Library:Symbol"
+  double x = 2;
+  double y = 3;
+  string reference = 4;
+  string value = 5;
+  string sheet = 6;
+}
+
+message AddWire {
+  repeated double points = 1; // x0, y0, x1, y1, ...
+  string sheet = 2;
+}
+
+message AddTrack {
+  repeated double points = 1; // x0, y0, x1, y1, ...
+  double width = 2;           // 0: the net class width
+  int32 layer = 3;
+  string net = 4;             // "" = no net
+}
+
+message RenameNet {
+  string from = 1;
+  string to = 2;
+}
+
+message Undo {
+  uint32 document = 1;
+}
+
+message Redo {
+  uint32 document = 1;
+}
+
+message Save {
+  uint32 document = 1;
+  string path = 2; // "" = the document's own file
+}
+
+message Reload {
+  uint32 document = 1;
+}
+
+message EditResult {
+  repeated string changed = 1; // UUIDs added, changed or removed
+  bool modified = 2;
+  uint32 undo_depth = 3;
+  uint32 redo_depth = 4;
+}
+
+// Engine -> broker, unsolicited (frame type 0x23).
+message Event {
+  oneof event {
+    string log = 1;
+  }
+}

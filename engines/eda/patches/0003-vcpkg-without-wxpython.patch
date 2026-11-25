@@ -1,0 +1,29 @@
+Windows dependencies without wxPython (ROADMAP P1-1).
+
+Triage builds KiCad with KICAD_SCRIPTING_WXPYTHON=OFF: the engine has no wx
+windows for Python plugins to draw into. Dropping wxpython-33 from the vcpkg
+manifest saves its build on every Windows CI cache miss.
+
+diff --git a/vcpkg.json b/vcpkg.json
+index d07d5464fdee7ba193f1bf036ccb8499994b57dd..3b765456ae9039146b8bdb3427517a429e6164d3 100644
+--- a/vcpkg.json
++++ b/vcpkg.json
+@@ -44,7 +44,6 @@
+     },
+     "icu",
+     "ngspice",
+-    "wxpython-33",
+     {
+       "name": "libgit2",
+       "features": [ "ssh", "winhttp" ]
+@@ -67,10 +66,6 @@
+       "name": "wxwidgets-33",
+       "version": "3.3.3#2"
+     },
+-    {
+-      "name": "wxpython-33",
+-      "version": "4.3.1#0"
+-    },
+     {
+       "name": "ngspice",
+       "version": "46#0"

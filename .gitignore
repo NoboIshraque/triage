@@ -36,3 +36,4 @@ pnpm-debug.log*
 /app/.dist/
 /app/Triage/
 /engines/*/upstream/
+/engines/*/build/

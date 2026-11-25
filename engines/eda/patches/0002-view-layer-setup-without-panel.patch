@@ -1,0 +1,332 @@
+Board and schematic view layer setup without a wx panel (ROADMAP P1-3).
+
+PCB_DRAW_PANEL_GAL and SCH_DRAW_PANEL keep their views' layer order, targets
+and dependencies in member functions. This moves the bodies into free
+functions taking a KIGFX::VIEW (the members now call them), so Triage's
+headless engine sets up its views exactly as KiCad's editors do.
+
+diff --git a/eeschema/sch_draw_panel.cpp b/eeschema/sch_draw_panel.cpp
+index dad46f9ed7fa0f3152e7d49f7b72ce571c22dd27..51215e9968324498d0b695dd17326b9d4e230637 100644
+--- a/eeschema/sch_draw_panel.cpp
++++ b/eeschema/sch_draw_panel.cpp
+@@ -121,18 +121,24 @@ void SCH_DRAW_PANEL::DisplaySheet( SCH_SCREEN *aScreen )
+ }
+ 
+ 
+-void SCH_DRAW_PANEL::setDefaultLayerOrder()
++void SchSetDefaultLayerOrder( KIGFX::VIEW* aView )
+ {
+     for( int i = 0; (unsigned) i < sizeof( SCH_LAYER_ORDER ) / sizeof( int ); ++i )
+     {
+         int layer = SCH_LAYER_ORDER[i];
+         wxASSERT( layer < KIGFX::VIEW::VIEW_MAX_LAYERS );
+ 
+-        m_view->SetLayerOrder( layer, i );
++        aView->SetLayerOrder( layer, i );
+     }
+ }
+ 
+ 
++void SCH_DRAW_PANEL::setDefaultLayerOrder()
++{
++    SchSetDefaultLayerOrder( m_view );
++}
++
++
+ bool SCH_DRAW_PANEL::SwitchBackend( GAL_TYPE aGalType )
+ {
+     bool rv = EDA_DRAW_PANEL_GAL::SwitchBackend( aGalType );
+@@ -145,40 +151,46 @@ bool SCH_DRAW_PANEL::SwitchBackend( GAL_TYPE aGalType )
+ }
+ 
+ 
+-void SCH_DRAW_PANEL::setDefaultLayerDeps()
++void SchSetDefaultLayerDeps( KIGFX::VIEW* aView, bool aCached )
+ {
+     // caching makes no sense for Cairo and other software renderers
+-    auto target = m_backend == GAL_TYPE_OPENGL ? KIGFX::TARGET_CACHED : KIGFX::TARGET_NONCACHED;
++    auto target = aCached ? KIGFX::TARGET_CACHED : KIGFX::TARGET_NONCACHED;
+ 
+     for( int i = 0; i < KIGFX::VIEW::VIEW_MAX_LAYERS; i++ )
+-        m_view->SetLayerTarget( i, target );
++        aView->SetLayerTarget( i, target );
+ 
+-    m_view->SetLayerTarget( LAYER_SCHEMATIC_ANCHOR, KIGFX::TARGET_NONCACHED );
+-    m_view->SetLayerDisplayOnly( LAYER_SCHEMATIC_ANCHOR );
++    aView->SetLayerTarget( LAYER_SCHEMATIC_ANCHOR, KIGFX::TARGET_NONCACHED );
++    aView->SetLayerDisplayOnly( LAYER_SCHEMATIC_ANCHOR );
+ 
+     // Bitmaps are draw on a non cached GAL layer:
+-    m_view->SetLayerTarget( LAYER_DRAW_BITMAPS, KIGFX::TARGET_NONCACHED );
++    aView->SetLayerTarget( LAYER_DRAW_BITMAPS, KIGFX::TARGET_NONCACHED );
+ 
+     // Some draw layers need specific settings
+-    m_view->SetLayerTarget( LAYER_GP_OVERLAY, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerDisplayOnly( LAYER_GP_OVERLAY ) ;
++    aView->SetLayerTarget( LAYER_GP_OVERLAY, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerDisplayOnly( LAYER_GP_OVERLAY ) ;
++
++    aView->SetLayerTarget( LAYER_SELECT_OVERLAY, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerDisplayOnly( LAYER_SELECT_OVERLAY ) ;
++
++    aView->SetLayerTarget( LAYER_DRAWINGSHEET, KIGFX::TARGET_NONCACHED );
++    aView->SetLayerDisplayOnly( LAYER_DRAWINGSHEET ) ;
+ 
+-    m_view->SetLayerTarget( LAYER_SELECT_OVERLAY, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerDisplayOnly( LAYER_SELECT_OVERLAY ) ;
++    aView->SetLayerTarget( LAYER_OP_VOLTAGES, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerDisplayOnly( LAYER_OP_VOLTAGES );
++    aView->SetLayerTarget( LAYER_OP_CURRENTS, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerDisplayOnly( LAYER_OP_CURRENTS );
+ 
+-    m_view->SetLayerTarget( LAYER_DRAWINGSHEET, KIGFX::TARGET_NONCACHED );
+-    m_view->SetLayerDisplayOnly( LAYER_DRAWINGSHEET ) ;
++    aView->SetLayerTarget( LAYER_SELECTION_SHADOWS, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerDisplayOnly( LAYER_SELECTION_SHADOWS ) ;
+ 
+-    m_view->SetLayerTarget( LAYER_OP_VOLTAGES, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerDisplayOnly( LAYER_OP_VOLTAGES );
+-    m_view->SetLayerTarget( LAYER_OP_CURRENTS, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerDisplayOnly( LAYER_OP_CURRENTS );
++    aView->SetLayerDisplayOnly( LAYER_NET_COLOR_HIGHLIGHT );
++    aView->SetLayerDisplayOnly( LAYER_DANGLING );
++}
+ 
+-    m_view->SetLayerTarget( LAYER_SELECTION_SHADOWS, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerDisplayOnly( LAYER_SELECTION_SHADOWS ) ;
+ 
+-    m_view->SetLayerDisplayOnly( LAYER_NET_COLOR_HIGHLIGHT );
+-    m_view->SetLayerDisplayOnly( LAYER_DANGLING );
++void SCH_DRAW_PANEL::setDefaultLayerDeps()
++{
++    SchSetDefaultLayerDeps( m_view, m_backend == GAL_TYPE_OPENGL );
+ }
+ 
+ 
+diff --git a/eeschema/sch_draw_panel.h b/eeschema/sch_draw_panel.h
+index dcc051849351bb32925fa45834e83f045f05dea3..25c49ee8537e35af74616fa9825ce907a3257b91 100644
+--- a/eeschema/sch_draw_panel.h
++++ b/eeschema/sch_draw_panel.h
+@@ -57,4 +57,11 @@ protected:
+     void setDefaultLayerDeps();     ///< Set rendering targets & dependencies for layers.
+ };
+ 
++/**
++ * Triage: the schematic view's layer order and dependencies, for a #KIGFX::VIEW without a
++ * panel (Triage's headless engine). #SCH_DRAW_PANEL uses the same functions.
++ */
++void SchSetDefaultLayerOrder( KIGFX::VIEW* aView );
++void SchSetDefaultLayerDeps( KIGFX::VIEW* aView, bool aCached );
++
+ #endif // __SCH_DRAW_PANEL_H
+diff --git a/pcbnew/pcb_draw_panel_gal.cpp b/pcbnew/pcb_draw_panel_gal.cpp
+index 3dd06fb181c06072f3d1fe4eb515ad917bc0bdd7..a01f689c6dcbcecc7243157d5d0c379c2785fd01 100644
+--- a/pcbnew/pcb_draw_panel_gal.cpp
++++ b/pcbnew/pcb_draw_panel_gal.cpp
+@@ -784,7 +784,7 @@ void PCB_DRAW_PANEL_GAL::OnShow()
+ }
+ 
+ 
+-void PCB_DRAW_PANEL_GAL::setDefaultLayerOrder()
++void PcbSetDefaultLayerOrder( KIGFX::VIEW* aView )
+ {
+     for( int i = 0; (unsigned) i < sizeof( GAL_LAYER_ORDER ) / sizeof( int ); ++i )
+     {
+@@ -794,12 +794,18 @@ void PCB_DRAW_PANEL_GAL::setDefaultLayerOrder()
+         // MW: Gross hack to make SetTopLayer bring the correct bitmap layer to
+         // the top of the other bitmaps, but still below all the other layers
+         if( layer >= LAYER_BITMAP_START && layer < LAYER_BITMAP_END )
+-            m_view->SetLayerOrder( layer, i - KIGFX::VIEW::TOP_LAYER_MODIFIER, false );
++            aView->SetLayerOrder( layer, i - KIGFX::VIEW::TOP_LAYER_MODIFIER, false );
+         else
+-            m_view->SetLayerOrder( layer, i, false );
++            aView->SetLayerOrder( layer, i, false );
+     }
+ 
+-    m_view->SortOrderedLayers();
++    aView->SortOrderedLayers();
++}
++
++
++void PCB_DRAW_PANEL_GAL::setDefaultLayerOrder()
++{
++    PcbSetDefaultLayerOrder( m_view );
+ }
+ 
+ 
+@@ -828,13 +834,13 @@ BOX2I PCB_DRAW_PANEL_GAL::GetDefaultViewBBox() const
+ }
+ 
+ 
+-void PCB_DRAW_PANEL_GAL::setDefaultLayerDeps()
++void PcbSetDefaultLayerDeps( KIGFX::VIEW* aView, bool aCached )
+ {
+     // caching makes no sense for Cairo and other software renderers
+-    auto target = m_backend == GAL_TYPE_OPENGL ? KIGFX::TARGET_CACHED : KIGFX::TARGET_NONCACHED;
++    auto target = aCached ? KIGFX::TARGET_CACHED : KIGFX::TARGET_NONCACHED;
+ 
+     for( int i = 0; i < KIGFX::VIEW::VIEW_MAX_LAYERS; i++ )
+-        m_view->SetLayerTarget( i, target );
++        aView->SetLayerTarget( i, target );
+ 
+     for( int i = 0; (unsigned) i < sizeof( GAL_LAYER_ORDER ) / sizeof( int ); ++i )
+     {
+@@ -844,84 +850,90 @@ void PCB_DRAW_PANEL_GAL::setDefaultLayerDeps()
+         // Set layer display dependencies & targets
+         if( IsCopperLayer( layer ) )
+         {
+-            m_view->SetRequired( ZONE_LAYER_FOR( layer ), layer );
+-            m_view->SetRequired( PAD_COPPER_LAYER_FOR( layer ), layer );
+-            m_view->SetRequired( VIA_COPPER_LAYER_FOR( layer ), layer );
+-            m_view->SetRequired( CLEARANCE_LAYER_FOR( layer ), layer );
+-            m_view->SetRequired( POINT_LAYER_FOR( layer ), layer );
+-
+-            m_view->SetRequired( BITMAP_LAYER_FOR( layer ), layer );
+-            m_view->SetLayerTarget( BITMAP_LAYER_FOR( layer ), KIGFX::TARGET_NONCACHED );
+-            m_view->SetRequired( GetNetnameLayer( layer ), layer );
++            aView->SetRequired( ZONE_LAYER_FOR( layer ), layer );
++            aView->SetRequired( PAD_COPPER_LAYER_FOR( layer ), layer );
++            aView->SetRequired( VIA_COPPER_LAYER_FOR( layer ), layer );
++            aView->SetRequired( CLEARANCE_LAYER_FOR( layer ), layer );
++            aView->SetRequired( POINT_LAYER_FOR( layer ), layer );
++
++            aView->SetRequired( BITMAP_LAYER_FOR( layer ), layer );
++            aView->SetLayerTarget( BITMAP_LAYER_FOR( layer ), KIGFX::TARGET_NONCACHED );
++            aView->SetRequired( GetNetnameLayer( layer ), layer );
+         }
+         else if( IsNonCopperLayer( layer ) )
+         {
+-            m_view->SetRequired( POINT_LAYER_FOR( layer ), layer );
+-            m_view->SetRequired( ZONE_LAYER_FOR( layer ), layer );
+-            m_view->SetLayerTarget( BITMAP_LAYER_FOR( layer ), KIGFX::TARGET_NONCACHED );
+-            m_view->SetRequired( BITMAP_LAYER_FOR( layer ), layer );
++            aView->SetRequired( POINT_LAYER_FOR( layer ), layer );
++            aView->SetRequired( ZONE_LAYER_FOR( layer ), layer );
++            aView->SetLayerTarget( BITMAP_LAYER_FOR( layer ), KIGFX::TARGET_NONCACHED );
++            aView->SetRequired( BITMAP_LAYER_FOR( layer ), layer );
+         }
+         else if( IsNetnameLayer( layer ) )
+         {
+-            m_view->SetLayerDisplayOnly( layer );
++            aView->SetLayerDisplayOnly( layer );
+         }
+     }
+ 
+-    m_view->SetLayerTarget( LAYER_ANCHOR, KIGFX::TARGET_NONCACHED );
+-    m_view->SetLayerDisplayOnly( LAYER_ANCHOR );
++    aView->SetLayerTarget( LAYER_ANCHOR, KIGFX::TARGET_NONCACHED );
++    aView->SetLayerDisplayOnly( LAYER_ANCHOR );
+ 
+     // Use TARGET_OVERLAY for LAYER_CONFLICTS_SHADOW, it is for items
+     // that may change while the view stays the same.
+-    m_view->SetLayerTarget( LAYER_CONFLICTS_SHADOW, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerTarget( LAYER_CONFLICTS_SHADOW, KIGFX::TARGET_OVERLAY );
+ 
+-    m_view->SetLayerDisplayOnly( LAYER_LOCKED_ITEM_SHADOW );
+-    m_view->SetLayerDisplayOnly( LAYER_CONFLICTS_SHADOW );
+-    m_view->SetLayerDisplayOnly( LAYER_BOARD_OUTLINE_AREA );
++    aView->SetLayerDisplayOnly( LAYER_LOCKED_ITEM_SHADOW );
++    aView->SetLayerDisplayOnly( LAYER_CONFLICTS_SHADOW );
++    aView->SetLayerDisplayOnly( LAYER_BOARD_OUTLINE_AREA );
+ 
+     // Some more required layers settings
+-    m_view->SetRequired( LAYER_PAD_NETNAMES, LAYER_PADS );
++    aView->SetRequired( LAYER_PAD_NETNAMES, LAYER_PADS );
+ 
+     // Holes can be independent of their host objects (cf: printing drill marks)
+-    m_view->SetRequired( LAYER_VIA_HOLES, LAYER_VIAS );
+-    m_view->SetRequired( LAYER_VIA_HOLEWALLS, LAYER_VIAS );
+-    m_view->SetRequired( LAYER_PAD_PLATEDHOLES, LAYER_PADS );
+-    m_view->SetRequired( LAYER_PAD_HOLEWALLS, LAYER_PADS );
+-    m_view->SetRequired( LAYER_NON_PLATEDHOLES, LAYER_PADS );
++    aView->SetRequired( LAYER_VIA_HOLES, LAYER_VIAS );
++    aView->SetRequired( LAYER_VIA_HOLEWALLS, LAYER_VIAS );
++    aView->SetRequired( LAYER_PAD_PLATEDHOLES, LAYER_PADS );
++    aView->SetRequired( LAYER_PAD_HOLEWALLS, LAYER_PADS );
++    aView->SetRequired( LAYER_NON_PLATEDHOLES, LAYER_PADS );
+ 
+     // Via visibility
+-    m_view->SetRequired( LAYER_VIA_MICROVIA, LAYER_VIAS );
+-    m_view->SetRequired( LAYER_VIA_BLIND, LAYER_VIAS );
+-    m_view->SetRequired( LAYER_VIA_BURIED, LAYER_VIAS );
+-    m_view->SetRequired( LAYER_VIA_THROUGH, LAYER_VIAS );
+-    m_view->SetRequired( LAYER_VIA_NETNAMES, LAYER_VIAS );
+-
+-    m_view->SetLayerTarget( LAYER_SELECT_OVERLAY, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerDisplayOnly( LAYER_SELECT_OVERLAY ) ;
+-    m_view->SetLayerTarget( LAYER_GP_OVERLAY, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerDisplayOnly( LAYER_GP_OVERLAY ) ;
+-    m_view->SetLayerTarget( LAYER_RATSNEST, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerDisplayOnly( LAYER_RATSNEST );
+-
+-    m_view->SetLayerTarget( LAYER_DRC_ERROR, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerTarget( LAYER_DRC_WARNING, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerTarget( LAYER_DRC_EXCLUSION, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerTarget( LAYER_MARKER_SHADOWS, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerDisplayOnly( LAYER_MARKER_SHADOWS );
+-    m_view->SetLayerTarget( LAYER_DRC_SHAPES, KIGFX::TARGET_OVERLAY );
+-    m_view->SetLayerDisplayOnly( LAYER_DRC_SHAPES );    // markers can't be selected through shapes
+-
+-    m_view->SetLayerTarget( LAYER_DRAWINGSHEET, KIGFX::TARGET_NONCACHED );
+-    m_view->SetLayerDisplayOnly( LAYER_DRAWINGSHEET ) ; // drawing sheet can't be selected
+-    m_view->SetLayerDisplayOnly( LAYER_GRID );          // grid can't be selected
++    aView->SetRequired( LAYER_VIA_MICROVIA, LAYER_VIAS );
++    aView->SetRequired( LAYER_VIA_BLIND, LAYER_VIAS );
++    aView->SetRequired( LAYER_VIA_BURIED, LAYER_VIAS );
++    aView->SetRequired( LAYER_VIA_THROUGH, LAYER_VIAS );
++    aView->SetRequired( LAYER_VIA_NETNAMES, LAYER_VIAS );
++
++    aView->SetLayerTarget( LAYER_SELECT_OVERLAY, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerDisplayOnly( LAYER_SELECT_OVERLAY ) ;
++    aView->SetLayerTarget( LAYER_GP_OVERLAY, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerDisplayOnly( LAYER_GP_OVERLAY ) ;
++    aView->SetLayerTarget( LAYER_RATSNEST, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerDisplayOnly( LAYER_RATSNEST );
++
++    aView->SetLayerTarget( LAYER_DRC_ERROR, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerTarget( LAYER_DRC_WARNING, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerTarget( LAYER_DRC_EXCLUSION, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerTarget( LAYER_MARKER_SHADOWS, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerDisplayOnly( LAYER_MARKER_SHADOWS );
++    aView->SetLayerTarget( LAYER_DRC_SHAPES, KIGFX::TARGET_OVERLAY );
++    aView->SetLayerDisplayOnly( LAYER_DRC_SHAPES );    // markers can't be selected through shapes
++
++    aView->SetLayerTarget( LAYER_DRAWINGSHEET, KIGFX::TARGET_NONCACHED );
++    aView->SetLayerDisplayOnly( LAYER_DRAWINGSHEET ) ; // drawing sheet can't be selected
++    aView->SetLayerDisplayOnly( LAYER_GRID );          // grid can't be selected
+ 
+     for( int i = LAYER_UI_START; i < LAYER_UI_END; ++i )
+     {
+-        m_view->SetLayerTarget( i, KIGFX::TARGET_OVERLAY );
+-        m_view->SetLayerDisplayOnly( i );
++        aView->SetLayerTarget( i, KIGFX::TARGET_OVERLAY );
++        aView->SetLayerDisplayOnly( i );
+     }
+ }
+ 
+ 
++void PCB_DRAW_PANEL_GAL::setDefaultLayerDeps()
++{
++    PcbSetDefaultLayerDeps( m_view, m_backend == GAL_TYPE_OPENGL );
++}
++
++
+ KIGFX::PCB_VIEW* PCB_DRAW_PANEL_GAL::GetView() const
+ {
+     return static_cast<KIGFX::PCB_VIEW*>( m_view );
+diff --git a/pcbnew/pcb_draw_panel_gal.h b/pcbnew/pcb_draw_panel_gal.h
+index 8023356658974f22cea9df3ed50d8c27b6f439dc..a7eebf267b95a98eba74cb34251b0f200d364f92 100644
+--- a/pcbnew/pcb_draw_panel_gal.h
++++ b/pcbnew/pcb_draw_panel_gal.h
+@@ -120,4 +120,11 @@ protected:
+     std::unique_ptr<RATSNEST_VIEW_ITEM> m_ratsnest;      ///< Ratsnest view item
+ };
+ 
++/**
++ * Triage: the board view's layer order and dependencies, for a #KIGFX::VIEW without a
++ * panel (Triage's headless engine). #PCB_DRAW_PANEL_GAL uses the same functions.
++ */
++void PcbSetDefaultLayerOrder( KIGFX::VIEW* aView );
++void PcbSetDefaultLayerDeps( KIGFX::VIEW* aView, bool aCached );
++
+ #endif /* PCB_DRAW_PANEL_GAL_H_ */
