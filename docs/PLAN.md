@@ -187,7 +187,7 @@ flowchart TB
 | **CAD engine** | **FreeCAD fork** (C++/Python, App layer) | documents, features, sketches with solver, assemblies, materials, STEP/STL/3MF, FEM, TechDraw. Tessellation streaming. JSON-RPC | CAD ops retry |
 | **Sim engine** | Triage (Rust kernel via napi-rs + Node utility process for the JS emulators) | scheduler, signal bus, units, scopes and stubs, recording/replay. Spawns QEMU (ESP32), Renode and the Raspberry Pi Python bridge | simulation stops with an error |
 | **Render engine** | Blender (`blender -b` + Triage RPC script), optional | Cycles renders, mesh/sculpt operations, glTF/USD exchange | render job fails, retry |
-| **Companion broker** (PC, proposed: [ADR 0005](adr/0005-phone-companion.md)) | Triage (Rust `triage-companion` via napi-rs, in a utility process) | paired phones and tablets: WebTransport server on the LAN, optional relay client, pairing, keys, permissions; relays the phone's requests to the window's engine services (§4.16) | phones show "reconnecting" |
+| **Companion broker** (PC, [ADR 0005](adr/0005-phone-companion.md)) | Triage (Rust `triage-companion` via napi-rs, in a utility process) | paired phones and tablets: WebTransport server on the LAN, relay client, pairing, keys, permissions; relays the phone's requests to the window's engine services (§4.16) | phones show "reconnecting" |
 
 **Transport.** Engines are native executables. A small Node **broker** in each
 engine's utility process speaks to its engine over a local socket (KiCad's nng for
@@ -225,7 +225,7 @@ positions from Triage, without the wx tool framework. **Driving KiCad's tools
 headlessly is the main technical risk**, so both paths get an early spike (ROADMAP
 P1-6). The spike proposes direct hosting: KiCad's tools are built on a `wxFrame`,
 while its router, commits and connectivity run headless in the engine
-([ADR 0004](adr/0004-editing-path.md), proposed).
+([ADR 0004](adr/0004-editing-path.md), accepted).
 
 ### 4.4 The unified project model
 
@@ -523,7 +523,7 @@ engineering-solution-/
     qemu-esp32/         # Espressif QEMU fork: upstream + patches/ + Triage peripheral models
     render/             # Blender scripts and RPC
   crates/               # Rust: triage-model, triage-sim-kernel, triage-mna, triage-ngspice, triage-mujoco, triage-part-sdk, triage-companion
-  companion/            # phone and tablet companion (§4.16, proposed): web/ (the installable phone web app), relay/ (optional relay)
+  companion/            # phone and tablet companion (§4.16): web/ (the installable phone web app), relay/ (the relay)
   sim/                  # Node helper for JS emulators, QEMU and Renode adapters, Pi Python bridge, network gateway
   parts/                # smart part library + per-part scenarios
   cli/                  # `triage` CLI
@@ -574,7 +574,7 @@ decision before P8.
 - Release builds harden the Electron fuses VS Code leaves open (RunAsNode off,
   Inspect off) **once** Triage no longer needs `fork` for Node helpers (utility
   processes replace it).
-- **Phone companion** (§4.16, proposed): off until the user picks Show on phone.
+- **Phone companion** (§4.16): off until the user picks Show on phone.
   A phone joins only by scanning a fresh QR code **and** the user confirming a
   matching code on the laptop; each phone has its own revocable key and a
   permission (view, or view and edit). Traffic is end-to-end encrypted (a relay
@@ -585,8 +585,8 @@ decision before P8.
 
 ### 4.16 Phone and tablet companion
 
-> **Proposed** in [ADR 0005](adr/0005-phone-companion.md) at the owner's request
-> (2026-11-25); evidence in [research/companion.md](research/companion.md);
+> **Accepted** in [ADR 0005](adr/0005-phone-companion.md) (2026-11-25, at the owner's
+> request; the owner's choices are at the end of the ADR); evidence in [research/companion.md](research/companion.md);
 > delivered by ROADMAP phase **PC**. The laptop does all the work; the phone is
 > one more Triage view of the open project.
 
@@ -602,12 +602,15 @@ decision before P8.
    iOS keeps an installed web app's storage apart from Safari's, so the app
    scans the QR again itself, or takes the 8-character code shown under it.
 4. **Check 1:** both screens show the same six-digit code. **Check 2:** the user
-   clicks **Allow** on the laptop, picks **View only** (the default) or **View and
-   edit**, and may rename the phone.
+   clicks **Allow** on the laptop, picks **View only** or **View and edit** (asked
+   every time the laptop shares), and may rename the phone. During the session
+   the laptop can switch the phone between the two at any moment (status bar
+   item, Phones list); the phone shows a banner when it changes.
 5. The phone opens the tab that was picked and can switch to the project's other
    tabs. **Follow laptop** keeps it on the laptop's tab, camera and selection.
    Later the phone app reconnects by itself whenever Triage runs with the
-   companion on: no QR, no prompt.
+   companion on: no QR. It starts as view only, and the laptop's notification
+   offers **Allow editing**.
 
 ```mermaid
 sequenceDiagram
@@ -644,7 +647,7 @@ sequenceDiagram
 | Path | How | Needs |
 |---|---|---|
 | **Same network** (first) | WebTransport (HTTP/3 over QUIC) from the phone app to the laptop's LAN address. The laptop's certificate is self-signed (ECDSA P-256, renewed every 13 days, as browsers require under 2 weeks) and pinned with `serverCertificateHashes` from the QR: no warning page, no certificate authority, no internet. While connected, the laptop gives the phone the hashes of its next certificates, so a phone in regular use never needs a new QR | iOS / iPadOS 26.4+ or Chrome 100+; a Wi-Fi that lets the two reach each other |
-| **Anywhere** (optional) | the laptop and the phone each open a WebSocket to a small **relay**, which forwards sealed frames between them and holds no keys (Signal's provisioning relay works this way) | a hosted relay (owner decision, ADR 0005); iOS 17+ |
+| **Anywhere** | the laptop and the phone each open a WebSocket to a small **relay**, which forwards sealed frames between them and holds no keys (Signal's provisioning relay works this way); used when the direct path fails | the relay (the owner chose to have one; where it runs is decided in PC-1); iOS 17+ |
 | Fallback (only if PC-1 rules out WebTransport) | WebRTC data channel, signalled through the relay, with TURN | the relay and TURN |
 
 Both paths carry one **companion protocol** inside an end-to-end **Noise** session:
@@ -691,7 +694,7 @@ Display-list chunks are split for the wire.
 - `app/src/vs/triage/node/companionBrokerMain.ts`: the utility process, with
   `crates/triage-companion` (Rust, napi-rs, built from source with Cargo on Windows
   and Linux: QUIC and WebTransport, certificates, Noise, QR payloads, relay client).
-- Settings: companion on or off, LAN address and port, relay, default permission,
+- Settings: companion on or off, LAN address and port, relay,
   and "keep the laptop awake while a phone is connected" (Electron's
   `powerSaveBlocker`; `code tunnel` keeps the computer awake the same way).
 
@@ -703,8 +706,11 @@ Triage's icons (`scripts/branding/icons.py`), a JavaScript QR decoder (iOS has n
 `engineProtocol.ts` unchanged; none of them imports VS Code. **Rule for later
 WPs:** the 3D view (P2-3) and the instruments (P3-5) keep their drawing code free
 of VS Code imports too, so the phone app can bundle it. **Relay**
-(`companion/relay/`, optional): a stateless WebSocket forwarder keyed by mailbox
-id, with frame-size, rate and idle limits, no accounts and no content logs.
+(`companion/relay/`): a stateless WebSocket forwarder keyed by mailbox id, with
+frame-size, rate and idle limits, no accounts and no content logs. It only sees
+frames sealed with the Noise keys phone and laptop agreed through the QR. **The
+phone app's origin** is GitHub Pages first and the owner's domain later (moving
+makes paired phones pair once more).
 
 **Phone limits to design around** ([companion.md](research/companion.md) §2): iOS
 26.4+ for the direct path; installed iOS web apps keep their own storage (pair
@@ -733,8 +739,8 @@ simulation updates at 30 Hz on the LAN and 10 Hz through a relay.
 | D7 | **License:** GPL-3.0-or-later for the combined app (compatible with everything reused; no further license work) | default |
 | D8 | **Name:** Triage | **confirmed** 2026-11-24 |
 | D9 | **Integration:** everything in one window, with any tab poppable into a separate Triage window (§1); stock KiCad/FreeCAD windows only as a temporary fallback (§4.3); simulation scopes for checking together or separately (§4.7) | **confirmed** 2026-11-24 (the owner's requirement; separate windows added by the owner the same day, DV-14) |
-| D10 | **Editing path** for KiCad's interactive tools: remote tools vs direct hosting | **proposed** 2026-11-25 from the P1-6 spike: direct hosting, Triage owns the tool front ends ([ADR 0004](adr/0004-editing-path.md)); the owner decides |
-| D11 | **Phone and tablet companion:** a web app paired by QR code that views, and with permission edits, any tab while the laptop does the work; WebTransport on the LAN, an optional relay elsewhere (§4.16, [ADR 0005](adr/0005-phone-companion.md)) | **proposed** 2026-11-25 (the owner's request); the owner decides |
+| D10 | **Editing path** for KiCad's interactive tools: remote tools vs direct hosting | **confirmed** 2026-11-25: direct hosting, Triage owns the tool front ends ([ADR 0004](adr/0004-editing-path.md), from the P1-6 spike) |
+| D11 | **Phone and tablet companion:** a web app paired by QR code that views, and with permission edits, any tab while the laptop does the work; WebTransport on the LAN, a relay elsewhere (§4.16, [ADR 0005](adr/0005-phone-companion.md)) | **confirmed** 2026-11-25: accepted with a relay, GitHub Pages then the owner's domain, iOS 26.4+, phase PC between P3 and P4, permission asked each time and changeable during a session ([ADR 0005](adr/0005-phone-companion.md)) |
 
 ## 6. Risks and mitigations
 

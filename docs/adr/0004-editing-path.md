@@ -1,8 +1,9 @@
 # ADR 0004: Host KiCad's editing algorithms directly; Triage owns the interactive tools
 
-- **Status:** **Proposed**, 2026-11-25, from the P1-6 spike. The owner decides
-  (GUIDELINES §11). Until then, P1's simple edits stand as they are and nothing
-  in P5 or P6 starts on either path.
+- **Status:** **Accepted**, 2026-11-25 (owner: "I'm guessing the proposed one is
+  better"; the plain-words comparison below was written for that decision).
+  Proposed the same day from the P1-6 spike. Nothing depends on it until P5, so
+  the owner can still change it before then.
 - **Related:** [ADR 0002](0002-absorb-engines-headless.md) (hidden engines,
   Stream GAL), PLAN §4.3 (stage 2: full in-app editing) and D10, ROADMAP P1-6,
   P5-1, P6, research [kicad.md](../research/kicad.md)
@@ -15,10 +16,23 @@ rules checks and the file writing are all KiCad's. **Triage draws the tool**: th
 rubber-band track under your cursor, the snapping, the keyboard shortcuts, the
 little panels. This decision is about how those two halves talk to each other.
 
-The spike tried the two ways the plan listed. Running KiCad's tools unchanged
-would need a hidden KiCad editor window inside the engine. Hosting KiCad's
-algorithms directly works today without any window, and the router answers a
-cursor move in under 1 ms.
+There were two ways to do it:
+
+- **Remote tools (rejected):** keep KiCad's whole editor running, hidden inside
+  the engine, and have Triage send it fake mouse clicks and key presses. Every
+  KiCad tool expects to sit inside a KiCad editor window, so the engine would have
+  to create an invisible KiCad window and pretend to be a user. It is like
+  remote-controlling KiCad behind a curtain.
+- **Direct hosting (chosen):** use KiCad as a **calculator**. Triage handles the
+  mouse and the drawing on screen and asks KiCad's code to do the work: "where
+  does the track go if the cursor is here?", "is this rule broken?", "save this
+  board". KiCad's answers are KiCad's own, so the results match stock KiCad.
+
+Direct hosting already works: the router answers each mouse move in under 1 ms
+(the budget is 16 ms), without any window. It keeps the engine invisible, so it
+runs the same on Windows, on Linux and in CI. It also lets each tab work
+independently. The price is that Triage builds the tools' look and feel itself
+(their panels, shortcuts and previews) in P5 and P6, instead of borrowing KiCad's.
 
 ## Context
 
@@ -54,7 +68,7 @@ frame's private behaviour, which KiCad changes between releases. The tools' even
 loops (`Wait()` coroutines) would also run one tool at a time per frame, while
 Triage wants each tab to be independent.
 
-## Decision (proposed)
+## Decision
 
 1. **Direct hosting is the editing path.** The engine hosts KiCad's algorithm
    layers through the engine faces:

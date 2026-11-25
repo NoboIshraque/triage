@@ -8,7 +8,9 @@ about 12:03 UTC today (see "CI is down" below), so the Windows engine has never
 been built. **Next:** the owner gets Actions running again; then the EDA
 workflow builds KiCad on Windows (it continues from its caches over several
 runs), and the owner runs the M1 demo on Windows (steps below). P1 is done when
-both pass. P0-8 (the owner's Copilot sign-in test) and P0-9 stay open.
+both pass. P0-8 (the owner's Copilot sign-in test, planned for 2026-11-26) and
+P0-9 stay open. ADR 0004 and ADR 0005 were accepted on 2026-11-25 (decisions
+below); phase PC now runs between P3 and P4.
 
 ### P1 in one paragraph
 
@@ -24,8 +26,8 @@ Renaming a net rewrites `firmware/generated/board_pins.h` in 280–305 ms, and t
 code editor shows pin diagnostics and hovers. "Edit in KiCad" opens the stock
 editor as a fallback, and Triage reloads a file saved elsewhere within 2 s.
 KiCad's push-and-shove router runs inside the engine at 0.15–0.18 ms per
-cursor move (the frame budget is 16 ms). That spike led to the editing path
-proposed in [ADR 0004](adr/0004-editing-path.md).
+cursor move (the frame budget is 16 ms). That spike led to the editing path in
+[ADR 0004](adr/0004-editing-path.md) (accepted).
 
 ### CI is down (since 2026-11-25 about 12:03 UTC)
 
@@ -185,11 +187,13 @@ The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt
 | — | Triage's logo: the owner's T in **K3 Slate**; Triage's dark themes show it **reversed** (light T, slate traces; option C) | `scripts/branding/icons.py`, `docs/brand/`, [choices](DEVIATIONS.md#choices-the-plan-left-open) |
 | — | **No VS Code name or logo** in Triage now (P0-9), and a **public release checklist** before builds are shared (P8-7) | ROADMAP P0-9, P8-7, [DV-16](DEVIATIONS.md) |
 | — | GitHub Actions **minutes are no concern** (the owner's GitHub student account): the App workflow runs on every push except documentation-only ones | [DV-08](DEVIATIONS.md) |
+| D10 (2026-11-25) | **Editing path: direct hosting.** KiCad's code does the routing, checks and saving inside the engine; Triage draws the tools (owner: "I'm guessing the proposed one is better") | [ADR 0004](adr/0004-editing-path.md) (Accepted) |
+| D11 (2026-11-25) | **Phone and tablet companion accepted**: a relay, "whichever is the most secure" (end-to-end sealed, holds no keys); the phone app on **GitHub Pages**, the owner's domain later; **iOS 26.4+** for the direct path; phase **PC between P3 and P4**; **View only or View and edit asked each time**, and a view-only phone can be given edit permission during the session | [ADR 0005](adr/0005-phone-companion.md) (Accepted), PLAN §4.16, ROADMAP PC, [DV-23](DEVIATIONS.md) |
 
 ## Deviations from the plan
 
 Every place the build differs from the plan is logged in
-[DEVIATIONS.md](DEVIATIONS.md) (22 entries, DV-01 … DV-22, plus choices the plan left open), so the
+[DEVIATIONS.md](DEVIATIONS.md) (23 entries, DV-01 … DV-23, plus choices the plan left open), so the
 owner can compare the final build with the plan.
 
 ## Open questions
@@ -203,9 +207,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
 | Windows code-signing certificate (avoids SmartScreen warnings) | unsigned nightlies; decide before P8-2 | P8 |
-| **KiCad editing path: accept [ADR 0004](adr/0004-editing-path.md)?** The P1-6 spike proposes **direct hosting**: KiCad's router, commits and connectivity run inside the engine (they work headless today), and Triage draws the interactive tools itself. Running KiCad's own tools would need a hidden KiCad editor window inside the engine | Proposed; P1's simple edits stand either way | before P5 |
 | **CI is down** (jobs refused since 2026-11-25 12:03 UTC; section above) | the owner checks the Actions page or billing | now: Windows for P1 |
-| **Phone companion: accept [ADR 0005](adr/0005-phone-companion.md)?** (Show on phone, QR pairing, a web app; PLAN §4.16, ROADMAP phase PC.) Choices with it: **(1)** where the phone app is hosted (GitHub Pages, which needs a public repository or GitHub Pro, or the owner's own domain); **(2)** a relay for phones on other networks: none at first, a small one the owner hosts (traffic costs), or decide after PC-1; **(3)** iOS 26.4+ for the direct path (older iPhones only through a relay); **(4)** phase PC beside P4 in its own sessions, or between P3 and P4; **(5)** new phones view-only by default | Proposed, nothing built. If accepted: same Wi-Fi only (no relay), hosting decided in PC-1, PC beside P4, view-only by default | before PC-1 (after M2; PC-1 could run during P2) |
 
 ## Work packages
 
@@ -215,6 +217,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **all built and checked on Linux** (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 proposed); **Windows not built yet** (CI down); the owner's M1 run on Windows next |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
+| PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | not started (after P3, before P4) |
 | P4 ESP32 + Raspberry Pi (M3) | P4-1 … P4-6 | not started |
 | P5 In-app electronics editing | P5-1 … P5-7 | not started |
 | P6 In-app 3D design (M4) | P6-1 … P6-5 | not started |
@@ -383,3 +386,9 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   libraries; `LayerName()` has no names for a few virtual layers ("In559.Cu" for
   LAYER_DANGLING); the P1 `Route` request takes all cursor moves in one call
   (P6 makes it a session, ADR 0004).
+- **2026-11-25 (owner's decisions).** ADR 0004 accepted (direct hosting), after a
+  plain-words comparison of the two paths. ADR 0005 accepted with a relay (the
+  most secure design: sealed end to end, no keys on the relay), GitHub Pages then
+  the owner's domain, iOS 26.4+, phase PC between P3 and P4 (DV-23), and the
+  permission asked each time the laptop shares, changeable during a session.
+  The owner runs the P0-8 Copilot test on 2026-11-26.

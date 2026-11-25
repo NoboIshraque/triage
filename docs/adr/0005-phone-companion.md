@@ -1,7 +1,7 @@
 # ADR 0005: Show any Triage tab on a phone or tablet: a web app paired by QR code, with the laptop doing the work
 
-- **Status:** **Proposed**, 2026-11-25 (the owner asked for a phone companion the
-  same day). The owner decides (GUIDELINES §11); nothing is built until then.
+- **Status:** **Accepted**, 2026-11-25, with the owner's choices (the end of this
+  ADR). Proposed the same day at the owner's request.
 - **Related:** [ADR 0001](0001-standalone-app-on-vscode-codebase.md) (the app is a
   VS Code fork), [ADR 0002](0002-absorb-engines-headless.md) (hidden engines),
   PLAN §4.16 and §4.15, ROADMAP phase **PC**, research
@@ -15,15 +15,18 @@ once. Point the phone's camera at it: Triage's phone app opens (the first time
 in the browser, which offers to add it to the Home Screen). Both screens then
 show the **same six-digit code**. If they match, click **Allow** on the laptop and
 choose **View only** or **View and edit**. That's it: the phone shows the tab you
-picked, and you can switch to the project's other tabs.
+picked, and you can switch to the project's other tabs. Triage asks that question
+every time you share, and while a phone views, the laptop can give it edit
+permission (or take it back) at any moment.
 
 On the phone you can pan and pinch-zoom the PCB, tap a part to see its value and
 net, orbit the 3D model, and run the simulation and press its virtual buttons.
 With edit permission you can also make the simple edits the laptop's tabs allow
 (change a value, move or rotate a part, undo), and they show up on the laptop
 straight away. Next time the phone app reconnects by itself while Triage is
-running. No QR is needed, and you can remove the phone from the laptop's list
-at any time.
+running. No QR is needed; it starts as view only, and the laptop shows a
+notification with **Allow editing**. You can remove the phone from the laptop's
+list at any time.
 
 **The laptop still does all the work.** KiCad's and FreeCAD's engines, the
 simulation and your files stay on the laptop. The phone only receives what to
@@ -41,8 +44,9 @@ holding gets in, and only with the permission you chose.
 no internet needed once the app is installed. On different networks (the laptop
 at home, the phone on mobile data), through a small relay server that passes
 sealed messages it cannot read, like the one Signal uses to link its desktop app.
-The relay is optional, and someone has to host it (a question for the owner,
-below).
+The keys that seal them exist only on the laptop and the phone (they meet through
+the QR code), so whoever runs the relay sees only scrambled bytes. The direct
+path is always tried first.
 
 ## Context
 
@@ -122,17 +126,18 @@ on iOS keep **their own storage**, separate from Safari's.
 | **D3** Typed 8-character code (WhatsApp's option 2, Magic Wormhole's model) when the camera fails | **recommended as the fallback**; needs the relay to meet |
 | **D4** Bluetooth or NFC tap | not available to web apps on iOS [D] |
 
-## Decision (proposed)
+## Decision
 
 1. **A phone and tablet companion** joins the plan as PLAN §4.16 and ROADMAP phase
-   **PC**, after M2, so schematic, board, 3D and simulation all exist to show.
+   **PC**, after M2 and **before P4** (the owner's choice), so schematic, board,
+   3D and simulation all exist to show.
 2. **The phone runs a Triage web app** (A3 + B3): TypeScript in `companion/web/`,
    hosted as static files at a public HTTPS origin, installable on Android and
    addable to the Home Screen on iOS. It bundles Triage's renderers (the WebGL2
    display-list renderer now; the 3D view and plots later) and draws data the
    laptop streams. It never runs the engines and never holds the files.
-3. **Transport:** WebTransport on the same network (C1), and an optional relay for
-   everything else (C3). Both carry the same **companion protocol** inside an
+3. **Transport:** WebTransport on the same network (C1), and a **relay** for
+   everything else (C3; the owner chose to have one). Both carry the same **companion protocol** inside an
    end-to-end **Noise** session between the phone and the laptop (X25519,
    AES-GCM, SHA-256, all in WebCrypto). On the LAN this sits inside TLS pinned
    to the laptop's certificate. The PC-1 spike confirms C1 on real phones;
@@ -140,8 +145,12 @@ on iOS keep **their own storage**, separate from Safari's.
 4. **Pairing:** D1, with D3 as the fallback. The phone's key is a non-extractable
    WebCrypto key in the installed app's storage. The laptop keeps its keys in
    VS Code's secret storage (Electron `safeStorage`: DPAPI on Windows).
-5. **Permissions per phone:** **View** (default) or **View and edit**. Edits are the
-   engines' own edit commands (`triage.eda.v1` `Edit`, later CAD and simulation
+5. **Permissions per session:** the laptop asks **View only** or **View and edit**
+   every time it shares (pairing, or **Show on** a paired phone). A phone that
+   reconnects by itself starts as view only, with **Allow editing** in the
+   laptop's notification. During any session the laptop can switch the phone
+   between the two at once, from the status bar item or the Phones list; the
+   phone shows a banner when it changes. Edits are the engines' own edit commands (`triage.eda.v1` `Edit`, later CAD and simulation
    controls), checked by the laptop. The phone never gets files, a terminal,
    tasks, extensions or settings.
 6. **Laptop side:** a **companion broker** utility process (the P0-4 pattern)
@@ -167,8 +176,8 @@ Costs:
 - **A new attack surface:** a listening port on the laptop and edits from another
   device. PLAN §4.15 gains rules; PC-2 and PC-7 include security reviews and
   fuzz tests.
-- **Hosting:** a public origin for the phone app (static, cheap or free) and,
-  optionally, a relay (a small always-on service, with traffic costs). Whoever
+- **Hosting:** a public origin for the phone app (static, free on GitHub Pages)
+  and a relay (a small always-on service, with traffic costs). Whoever
   controls the origin controls the phone app's code.
 - **iOS 26.4+** for the direct path. Older iPhones (iOS 17+) work only through the
   relay.
@@ -177,24 +186,28 @@ Costs:
   app can bundle it.
 - **The laptop must stay on.** Triage can keep it awake while a phone is connected,
   as `code tunnel` does (optional setting).
-- One more phase (about 6 weeks) and one more Rust crate.
+- One more phase (about 6 weeks, before P4, which moves back by as much) and one
+  more Rust crate.
 - PLAN §0 listed "mobile" as out of scope for v1.0. That line now excludes native
   mobile apps only (DEVIATIONS).
 
-## What the owner decides
+## The owner's decisions (2026-11-25)
 
-1. **Accept this ADR?** (Then ROADMAP phase PC is scheduled, and PLAN §4.16
-   stands.)
-2. **Where the phone app lives** (its public HTTPS origin): GitHub Pages (needs a
-   public repository, or GitHub Pro for a private one; GitHub's student pack
-   includes Pro [D]), or a domain of the owner's. It can change later, but
-   paired phones would have to pair again.
-3. **The relay:** (a) none at first, so the same Wi-Fi only (Claude's
-   recommendation for PC's first release); (b) a small relay the owner hosts (a
-   tiny cloud server or a serverless WebSocket service, with traffic costs);
-   (c) decide after PC-1's measurements.
-4. **Minimum phones:** iOS / iPadOS 26.4 or newer for the direct path (older
-   iPhones only with a relay); any current Android with Chrome.
-5. **When:** phase PC after M2, **in parallel with P4** in a separate session
-   (recommended), or between P3 and P4 (then P4 onward move by about 6 weeks).
-6. **Default permission for a new phone:** View only (recommended), or ask each time.
+1. **Accepted**, with a walkthrough of how it works (this ADR's plain words and
+   PLAN §4.16).
+2. **Where the phone app lives:** **GitHub Pages** for now, **the owner's own domain**
+   later. Pages on a private repository needs GitHub Pro (the student pack
+   includes it [D]); PC-3 checks it. Moving to the domain makes paired phones pair
+   once more (their keys belong to the app's origin).
+3. **Relay: yes**, "whichever is the most secure". So: the relay only ever forwards
+   frames sealed end to end with the Noise keys that phone and laptop agreed
+   through the QR; it holds no keys, no accounts and no content logs; mailboxes
+   are random 16-byte ids; frames are size-, rate- and idle-limited; the direct
+   LAN path is always tried first. Where the relay runs (a serverless WebSocket
+   service or a small server) and what it costs is put to the owner in PC-1,
+   before any account is created.
+4. **iOS / iPadOS 26.4 or newer** for the direct path: accepted (older iPhones,
+   iOS 17+, through the relay).
+5. **When:** **between P3 and P4**. P4 onward move by about 6 weeks.
+6. **Permission:** asked **each time** the laptop shares; a view-only phone can be
+   given edit permission from the laptop during the session (decision 5 above).
