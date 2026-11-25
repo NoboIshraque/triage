@@ -4,9 +4,11 @@
 //! `schema/triage.schema.json`) that names the project and where each domain's
 //! files live: code, electronics (`KiCad`), mechanical (`FreeCAD`) and simulation.
 //! This crate loads and validates the manifest and summarizes the four domains for
-//! the project explorer. The link graph and code generation come later (P1-5).
+//! the project explorer. [`pinmap`] maps the schematic's nets to the firmware's
+//! pins and writes `board_pins.h` (P1-5).
 
 mod manifest;
+pub mod pinmap;
 mod summary;
 
 pub use manifest::{

@@ -29,6 +29,10 @@ export class TriageEdaEngineService extends Disposable implements ITriageEdaEngi
 	readonly onDidChangeState = this._onDidChangeState.event;
 	private readonly _onDidRestart = this._register(new Emitter<void>());
 	readonly onDidRestart = this._onDidRestart.event;
+	private readonly _onDidChangeDocument = this._register(new Emitter<{ document: number; path: string }>());
+	readonly onDidChangeDocument = this._onDidChangeDocument.event;
+	/** Open documents: id -> path. */
+	private readonly documents = new Map<number, string>();
 
 	private broker: Promise<IEdaEngineBroker> | undefined;
 	private readonly worker = this._register(new MutableDisposable());
@@ -60,7 +64,31 @@ export class TriageEdaEngineService extends Disposable implements ITriageEdaEngi
 		if (!response.ok) {
 			throw new EdaEngineError(response.error || `${command} failed`);
 		}
+		this.track(command, body, response);
 		return { response, chunks: reply.chunks.map(chunk => chunk.buffer) };
+	}
+
+	documentFor(path: string): number | undefined {
+		let found: number | undefined;
+		for (const [document, documentPath] of this.documents) {
+			if (documentPath === path) {
+				found = document;
+			}
+		}
+		return found;
+	}
+
+	private track(command: string, body: Message, response: Message): void {
+		if (command === 'openDocument' && response.document) {
+			this.documents.set(response.document.document, response.document.path);
+		} else if (command === 'closeDocument') {
+			this.documents.delete(body.document);
+		} else if (['edit', 'undo', 'redo', 'reload', 'save'].includes(command)) {
+			const path = this.documents.get(body.document);
+			if (path) {
+				this._onDidChangeDocument.fire({ document: body.document, path });
+			}
+		}
 	}
 
 	async kill(): Promise<void> {
@@ -93,6 +121,7 @@ export class TriageEdaEngineService extends Disposable implements ITriageEdaEngi
 		void worker.onDidTerminate.then(() => {
 			if (this.worker.value === worker) {
 				this.broker = undefined;
+				this.documents.clear();
 				this.setState({ kind: 'stopped', reason: 'broker exited' });
 				this._onDidRestart.fire();
 			}
@@ -113,6 +142,7 @@ export class TriageEdaEngineService extends Disposable implements ITriageEdaEngi
 		this._state = state;
 		this._onDidChangeState.fire(state);
 		if (restarted) {
+			this.documents.clear();
 			this._onDidRestart.fire();
 		}
 		const icon = state.kind === 'connected' ? '$(circuit-board)' : state.kind === 'stopped' ? '$(error)' : '$(sync~spin)';

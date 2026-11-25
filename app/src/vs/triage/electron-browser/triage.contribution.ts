@@ -17,6 +17,10 @@ import { ITriageProjectService } from '../common/projectModel.js';
 import { TriageProjectService } from './projectService.js';
 import { ITriageEdaEngineService } from '../common/eda/edaEngine.js';
 import { TriageEdaEngineService } from './edaEngineService.js';
+import { registerWorkbenchContribution2, WorkbenchPhase } from '../../workbench/common/contributions.js';
+import { TriagePinMapContribution } from './pinMapContribution.js';
+import { ICommandService } from '../../platform/commands/common/commands.js';
+import { join } from '../../base/common/path.js';
 
 registerSingleton(ITriageHelloEngineService, TriageHelloEngineService, InstantiationType.Delayed);
 registerSingleton(ITriageProjectService, TriageProjectService, InstantiationType.Delayed);
@@ -51,3 +55,44 @@ registerAction2(class extends Action2 {
 		return accessor.get(ITriageHelloEngineService).kill();
 	}
 });
+
+registerWorkbenchContribution2(TriagePinMapContribution.ID, TriagePinMapContribution, WorkbenchPhase.AfterRestored);
+
+// Board build tasks (ROADMAP P1-5): the project's board profile names the board for
+// arduino-cli or PlatformIO, run in a terminal.
+registerAction2(class extends Action2 {
+	constructor() {
+		super({ id: 'triage.firmware.build', title: localize2('triage.firmware.build', "Build Firmware"), category: TRIAGE_CATEGORY, icon: Codicon.gear, f1: true });
+	}
+	async run(accessor: ServicesAccessor): Promise<void> {
+		const projectService = accessor.get(ITriageProjectService);
+		// Through the terminal's commands: importing its service pulls most of the
+		// workbench into Triage's typecheck.
+		const commands = accessor.get(ICommandService);
+		const notifications = accessor.get(INotificationService);
+		const state = projectService.state;
+		if (state.kind !== 'project') {
+			notifications.info(localize('triage.firmware.noProject', "Open a Triage project first."));
+			return;
+		}
+		const code = state.project.domains.find(domain => domain.id === 'code');
+		const board = BOARD_BUILDS[state.project.board ?? ''];
+		if (!code || !board) {
+			notifications.info(localize('triage.firmware.noBoard', "triage.toml names no board Triage can build for (firmware.board: arduino-uno or arduino-nano)."));
+			return;
+		}
+		const folder = join(state.project.root, code.path);
+		const platformio = (code.detail ?? '').includes('PlatformIO');
+		const command = platformio
+			? `pio run -d "${folder}" -e ${board.platformio}`
+			: `arduino-cli compile --fqbn ${board.fqbn} "${folder}"`;
+		await commands.executeCommand('workbench.action.terminal.new');
+		await commands.executeCommand('workbench.action.terminal.sendSequence', { text: `${command}\r` });
+	}
+});
+
+/** The board profiles of crates/triage-model/src/pinmap.rs, for the build command. */
+const BOARD_BUILDS: Record<string, { fqbn: string; platformio: string }> = {
+	'arduino-uno': { fqbn: 'arduino:avr:uno', platformio: 'uno' },
+	'arduino-nano': { fqbn: 'arduino:avr:nano', platformio: 'nanoatmega328' },
+};

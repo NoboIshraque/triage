@@ -18,6 +18,8 @@ export interface ITriageProject {
 	readonly description?: string;
 	readonly format: number;
 	readonly domains: readonly ITriageDomain[];
+	/** firmware.board, the board profile id (arduino-uno). */
+	readonly board?: string;
 }
 
 export interface ITriageDomain {
@@ -30,10 +32,55 @@ export interface ITriageDomain {
 	readonly detail?: string;
 }
 
+/** A schematic component as the pin map needs it (from the EDA engine's netlist). */
+export interface IPinMapComponent {
+	readonly reference: string;
+	readonly libId: string;
+	readonly footprint: string;
+	readonly pins: readonly { readonly number: string; readonly name: string; readonly net: string }[];
+}
+
+/** One board pin and its net (crates/triage-model/src/pinmap.rs). */
+export interface IPinAssignment {
+	readonly pin: string;
+	readonly number: number;
+	readonly net: string;
+	readonly constant?: string;
+	readonly connected: boolean;
+	readonly pwm: boolean;
+	readonly analog: boolean;
+	readonly digital: boolean;
+	readonly role?: string;
+}
+
+export interface IPinDiagnostic {
+	readonly path: string;
+	readonly severity: 'error' | 'warning';
+	readonly line: number;
+	readonly column: number;
+	readonly endColumn: number;
+	readonly message: string;
+}
+
+/** The pin map of a project (ROADMAP P1-5). */
+export interface IPinMap {
+	readonly board: string;
+	readonly boardName: string;
+	readonly fqbn: string;
+	readonly platformio: string;
+	readonly reference: string;
+	/** The text of board_pins.h. */
+	readonly header: string;
+	readonly pins: readonly IPinAssignment[];
+	readonly diagnostics: readonly IPinDiagnostic[];
+}
+
 /** The model service's side of the MessagePort channel (utility process). */
 export interface IProjectModelChannel {
 	/** Loads `<folder>/triage.toml`; null when the folder is not a Triage project. */
 	loadProject(addonPath: string, folder: string): Promise<ITriageProject | null>;
+	/** Maps the schematic's nets to the board's pins and checks the firmware sources. */
+	pinMap(addonPath: string, board: string, schematic: string, components: readonly IPinMapComponent[], sources: readonly { path: string; text: string }[]): Promise<IPinMap>;
 }
 
 export type TriageProjectState =
@@ -50,4 +97,6 @@ export interface ITriageProjectService {
 	readonly state: TriageProjectState;
 	readonly onDidChangeState: Event<TriageProjectState>;
 	refresh(): Promise<void>;
+	/** Runs the pin map in the model service (see IProjectModelChannel.pinMap). */
+	pinMap(board: string, schematic: string, components: readonly IPinMapComponent[], sources: readonly { path: string; text: string }[]): Promise<IPinMap>;
 }

@@ -11,7 +11,7 @@ import { ProxyChannel } from '../../base/parts/ipc/common/ipc.js';
 import { IWorkspaceContextService } from '../../platform/workspace/common/workspace.js';
 import { INativeWorkbenchEnvironmentService } from '../../workbench/services/environment/electron-browser/environmentService.js';
 import { IUtilityProcessWorkerWorkbenchService } from '../../workbench/services/utilityProcess/electron-browser/utilityProcessWorkerWorkbenchService.js';
-import { IProjectModelChannel, ITriageProjectService, PROJECT_MODEL_ADDON, PROJECT_MODEL_CHANNEL, PROJECT_MODEL_MODULE, TriageProjectState } from '../common/projectModel.js';
+import { IPinMap, IPinMapComponent, IProjectModelChannel, ITriageProjectService, PROJECT_MODEL_ADDON, PROJECT_MODEL_CHANNEL, PROJECT_MODEL_MODULE, TriageProjectState } from '../common/projectModel.js';
 
 export class TriageProjectService extends Disposable implements ITriageProjectService {
 	declare readonly _serviceBrand: undefined;
@@ -57,6 +57,12 @@ export class TriageProjectService extends Disposable implements ITriageProjectSe
 				this.setState({ kind: 'error', message: error instanceof Error ? error.message : String(error) });
 			}
 		}
+	}
+
+	async pinMap(board: string, schematic: string, components: readonly IPinMapComponent[], sources: readonly { path: string; text: string }[]): Promise<IPinMap> {
+		const channel = await this.getChannel();
+		const addon = join(this.environmentService.appRoot, 'engines', PROJECT_MODEL_ADDON);
+		return channel.pinMap(addon, board, schematic, components, sources);
 	}
 
 	private async getChannel(): Promise<IProjectModelChannel> {

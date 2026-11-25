@@ -10,20 +10,29 @@ import { DisposableStore } from '../../base/common/lifecycle.js';
 import { ProxyChannel } from '../../base/parts/ipc/common/ipc.js';
 import { Server as UtilityProcessServer } from '../../base/parts/ipc/node/ipc.mp.js';
 import { isUtilityProcess } from '../../base/parts/sandbox/node/electronTypes.js';
-import { IProjectModelChannel, ITriageProject, PROJECT_MODEL_CHANNEL } from '../common/projectModel.js';
+import { IPinMap, IPinMapComponent, IProjectModelChannel, ITriageProject, PROJECT_MODEL_CHANNEL } from '../common/projectModel.js';
 
 interface TriageModelAddon {
 	loadProject(dir: string): ITriageProject | null;
+	pinMap(board: string, schematic: string, components: readonly IPinMapComponent[], sources: readonly { path: string; text: string }[]): IPinMap;
 }
 
 class ProjectModelService implements IProjectModelChannel {
 	private addon: TriageModelAddon | undefined;
 
-	async loadProject(addonPath: string, folder: string): Promise<ITriageProject | null> {
+	private load(addonPath: string): TriageModelAddon {
 		if (!this.addon) {
 			this.addon = createRequire(import.meta.url)(addonPath) as TriageModelAddon;
 		}
-		return this.addon.loadProject(folder);
+		return this.addon;
+	}
+
+	async loadProject(addonPath: string, folder: string): Promise<ITriageProject | null> {
+		return this.load(addonPath).loadProject(folder);
+	}
+
+	async pinMap(addonPath: string, board: string, schematic: string, components: readonly IPinMapComponent[], sources: readonly { path: string; text: string }[]): Promise<IPinMap> {
+		return this.load(addonPath).pinMap(board, schematic, components, sources);
 	}
 }
 

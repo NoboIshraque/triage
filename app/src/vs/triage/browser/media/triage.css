@@ -191,3 +191,9 @@
 	border-top: 1px solid var(--vscode-editorGroup-border);
 	color: var(--vscode-descriptionForeground);
 }
+
+/* A net picked in the schematic or board, in the code (ROADMAP P1-5). */
+.monaco-editor .triage-net-highlight {
+	background-color: var(--vscode-editor-wordHighlightStrongBackground);
+	outline: 1px solid var(--vscode-editor-wordHighlightStrongBorder, transparent);
+}

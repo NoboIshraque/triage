@@ -60,6 +60,10 @@ export interface ITriageEdaEngineService {
 	readonly onDidChangeState: Event<EngineState>;
 	/** Fires when the engine restarted: documents must be opened again. */
 	readonly onDidRestart: Event<void>;
+	/** Fires after an edit, undo, redo, reload or save changed an open document. */
+	readonly onDidChangeDocument: Event<{ readonly document: number; readonly path: string }>;
+	/** An open document of this window's engine for `path` (the latest opened), if any. */
+	documentFor(path: string): number | undefined;
 	/**
 	 * Sends a request: `command` is the Request field (e.g. 'openDocument') and
 	 * `body` its message. Rejects with EdaEngineError when the engine says no.
