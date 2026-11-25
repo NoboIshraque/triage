@@ -20,7 +20,7 @@ kicad-cli's own plots of 10 demo files pixel for pixel within 2 px (coverage 1.0
 precision 0.98–1.0). In the tabs you can select, cross-probe a part between
 schematic and board, move, rotate, delete, edit values and references, draw a
 wire or a track, undo, redo and save. Files saved by Triage open in kicad-cli.
-Renaming a net rewrites `firmware/generated/board_pins.h` in 280 ms, and the
+Renaming a net rewrites `firmware/generated/board_pins.h` in 280–305 ms, and the
 code editor shows pin diagnostics and hovers. "Edit in KiCad" opens the stock
 editor as a fallback, and Triage reloads a file saved elsewhere within 2 s.
 KiCad's push-and-shove router runs inside the engine at 0.15–0.18 ms per
@@ -370,7 +370,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   | P1-2 | The engine loads all demos and answers API queries | Linux: the same 54 files through `--load-all`; the largest (Jetson) 548,549 groups in 12 s; engine integration tests 8/8 (open, display lists, queries, selection, edits, undo, save, reload, router, restart) |
   | P1-3 | Display lists match OpenGL GAL (DV-21) | compared with kicad-cli's plots instead: 10 files, coverage 1.0, precision 0.98–1.0 (`compare.mjs`); bitmaps included |
   | P1-4 | 60 fps; pixel compare against kicad-cli | pixel compare as P1-3; frame rates recorded under software GL only (9.7 and 11.8 fps, DV-22): the owner's GPU run decides |
-  | P1-5 | Net rename updates the header and diagnostics within 2 s | 280 ms in the packaged app (smoke test) |
+  | P1-5 | Net rename updates the header and diagnostics within 2 s | 280–305 ms in the packaged app (smoke test, 22/22 checks pass on Linux) |
   | P1-6 | Saved files open in stock KiCad; spike + ADR 0004 | kicad-cli reads Triage's saved board and schematic (smoke and engine tests); router 0.15–0.18 ms per move; [ADR 0004](adr/0004-editing-path.md) proposed |
   | P1-7 | A KiCad save shows in Triage within 2 s | the smoke test saves with kicad-cli and times the reload |
 
