@@ -1,0 +1,415 @@
+{
+  "cm5_minima/CM5_MINIMA_3.kicad_pcb": {
+    "drcViolations": 171,
+    "unconnected": 0,
+    "engineComponents": 112,
+    "engineNets": 220,
+    "engineGroups": 18780
+  },
+  "cm5_minima/CM5_MINIMA_3.kicad_sch": {
+    "components": 84,
+    "nets": 221,
+    "ercViolations": 114,
+    "engineComponents": 89,
+    "engineNets": 221,
+    "engineGroups": 1051
+  },
+  "complex_hierarchy/complex_hierarchy.kicad_pcb": {
+    "drcViolations": 73,
+    "unconnected": 0,
+    "engineComponents": 68,
+    "engineNets": 53,
+    "engineGroups": 4330
+  },
+  "complex_hierarchy/complex_hierarchy.kicad_sch": {
+    "components": 68,
+    "nets": 53,
+    "ercViolations": 40,
+    "engineComponents": 68,
+    "engineNets": 53,
+    "engineGroups": 531
+  },
+  "ecc83/ecc83-pp.kicad_pcb": {
+    "drcViolations": 2,
+    "unconnected": 0,
+    "engineComponents": 15,
+    "engineNets": 13,
+    "engineGroups": 935
+  },
+  "ecc83/ecc83-pp.kicad_sch": {
+    "components": 15,
+    "nets": 13,
+    "ercViolations": 6,
+    "engineComponents": 15,
+    "engineNets": 13,
+    "engineGroups": 471
+  },
+  "ecc83/ecc83-pp_v2.kicad_pcb": {
+    "drcViolations": 0,
+    "unconnected": 0,
+    "engineComponents": 15,
+    "engineNets": 13,
+    "engineGroups": 970
+  },
+  "ecc83/ecc83-pp_v2.kicad_sch": {
+    "components": 15,
+    "nets": 13,
+    "ercViolations": 10,
+    "engineComponents": 15,
+    "engineNets": 13,
+    "engineGroups": 483
+  },
+  "interf_u/interf_u.kicad_pcb": {
+    "drcViolations": 3,
+    "unconnected": 0,
+    "engineComponents": 25,
+    "engineNets": 173,
+    "engineGroups": 6682
+  },
+  "interf_u/interf_u.kicad_sch": {
+    "components": 24,
+    "nets": 173,
+    "ercViolations": 22,
+    "engineComponents": 24,
+    "engineNets": 173,
+    "engineGroups": 3698
+  },
+  "jetson-agx-thor-baseboard/jetson-agx-thor-baseboard.kicad_pcb": {
+    "drcViolations": 578,
+    "unconnected": 0,
+    "engineComponents": 1125,
+    "engineNets": 1387,
+    "engineGroups": 548549
+  },
+  "jetson-agx-thor-baseboard/jetson-agx-thor-baseboard.kicad_sch": {
+    "components": 1123,
+    "nets": 1355,
+    "ercViolations": 3012,
+    "engineComponents": 1123,
+    "engineNets": 1355,
+    "engineGroups": 1173
+  },
+  "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_pcb": {
+    "drcViolations": 147,
+    "unconnected": 0,
+    "engineComponents": 160,
+    "engineNets": 278,
+    "engineGroups": 20763
+  },
+  "kit-dev-coldfire-xilinx_5213/kit-dev-coldfire-xilinx_5213.kicad_sch": {
+    "components": 160,
+    "nets": 278,
+    "ercViolations": 152,
+    "engineComponents": 160,
+    "engineNets": 278,
+    "engineGroups": 4006
+  },
+  "microwave/microwave.kicad_pcb": {
+    "drcViolations": 24,
+    "unconnected": 0,
+    "engineComponents": 4,
+    "engineNets": 0,
+    "engineGroups": 67
+  },
+  "multichannel/multichannel_mixer-unrouted.kicad_pcb": {
+    "drcViolations": 132,
+    "unconnected": 148,
+    "engineComponents": 114,
+    "engineNets": 80,
+    "engineGroups": 8418
+  },
+  "multichannel/multichannel_mixer.kicad_pcb": {
+    "drcViolations": 103,
+    "unconnected": 0,
+    "engineComponents": 114,
+    "engineNets": 80,
+    "engineGroups": 9798
+  },
+  "multichannel/multichannel_mixer.kicad_sch": {
+    "components": 114,
+    "nets": 80,
+    "ercViolations": 42,
+    "engineComponents": 114,
+    "engineNets": 80,
+    "engineGroups": 543
+  },
+  "openair-max/One-Air-Max.kicad_pcb": {
+    "drcViolations": 477,
+    "unconnected": 0,
+    "engineComponents": 210,
+    "engineNets": 156,
+    "engineGroups": 16887
+  },
+  "openair-max/One-Air-Max.kicad_sch": {
+    "components": 204,
+    "nets": 155,
+    "ercViolations": 1027,
+    "engineComponents": 204,
+    "engineNets": 155,
+    "engineGroups": 5758
+  },
+  "pic_programmer/pic_programmer.kicad_pcb": {
+    "drcViolations": 58,
+    "unconnected": 0,
+    "engineComponents": 63,
+    "engineNets": 111,
+    "engineGroups": 4531
+  },
+  "pic_programmer/pic_programmer.kicad_sch": {
+    "components": 63,
+    "nets": 111,
+    "ercViolations": 61,
+    "engineComponents": 63,
+    "engineNets": 111,
+    "engineGroups": 1877
+  },
+  "royalblue54L_feather/RoyalBlue54L-Feather.kicad_pcb": {
+    "drcViolations": 305,
+    "unconnected": 0,
+    "engineComponents": 71,
+    "engineNets": 95,
+    "engineGroups": 11781
+  },
+  "royalblue54L_feather/RoyalBlue54L-Feather.kicad_sch": {
+    "components": 71,
+    "nets": 95,
+    "ercViolations": 204,
+    "engineComponents": 71,
+    "engineNets": 95,
+    "engineGroups": 289
+  },
+  "royalblue54L_feather/nfc_antenna/RoyalBlue54L-NFC-Antenna/RoyalBlue54L-NFC-Antenna.kicad_pcb": {
+    "drcViolations": 7,
+    "unconnected": 0,
+    "engineComponents": 2,
+    "engineNets": 1,
+    "engineGroups": 589
+  },
+  "royalblue54L_feather/nfc_antenna/RoyalBlue54L-NFC-Antenna/RoyalBlue54L-NFC-Antenna.kicad_sch": {
+    "components": 1,
+    "nets": 1,
+    "ercViolations": 1,
+    "engineComponents": 1,
+    "engineNets": 1,
+    "engineGroups": 22
+  },
+  "simulation/amplifier-ac/amplifier-ac.kicad_sch": {
+    "components": 23,
+    "nets": 13,
+    "ercViolations": 39,
+    "engineComponents": 23,
+    "engineNets": 13,
+    "engineGroups": 737
+  },
+  "simulation/analog-multiplier/a-multi.kicad_sch": {
+    "components": 4,
+    "nets": 4,
+    "ercViolations": 8,
+    "engineComponents": 4,
+    "engineNets": 4,
+    "engineGroups": 121
+  },
+  "simulation/class-d/Class-D.kicad_sch": {
+    "components": 39,
+    "nets": 23,
+    "ercViolations": 46,
+    "engineComponents": 39,
+    "engineNets": 23,
+    "engineGroups": 1241
+  },
+  "simulation/gain_control/mult_vca810.kicad_sch": {
+    "components": 5,
+    "nets": 7,
+    "ercViolations": 17,
+    "engineComponents": 5,
+    "engineNets": 7,
+    "engineGroups": 244
+  },
+  "simulation/generic_models/generic_opamp_bip.kicad_sch": {
+    "components": 14,
+    "nets": 10,
+    "ercViolations": 28,
+    "engineComponents": 14,
+    "engineNets": 10,
+    "engineGroups": 487
+  },
+  "simulation/ibis/ibis.kicad_sch": {
+    "components": 19,
+    "nets": 9,
+    "ercViolations": 40,
+    "engineComponents": 19,
+    "engineNets": 9,
+    "engineGroups": 711
+  },
+  "simulation/laser_driver/laser_driver.kicad_sch": {
+    "components": 13,
+    "nets": 9,
+    "ercViolations": 2,
+    "engineComponents": 13,
+    "engineNets": 9,
+    "engineGroups": 499
+  },
+  "simulation/power_supplies/LM317_power_supply/power_supply.kicad_sch": {
+    "components": 14,
+    "nets": 9,
+    "ercViolations": 21,
+    "engineComponents": 14,
+    "engineNets": 9,
+    "engineGroups": 435
+  },
+  "simulation/power_supplies/boost/smps-com.kicad_sch": {
+    "components": 21,
+    "nets": 15,
+    "ercViolations": 27,
+    "engineComponents": 21,
+    "engineNets": 15,
+    "engineGroups": 692
+  },
+  "simulation/power_supplies/buck_conv/buck_conv.kicad_sch": {
+    "components": 8,
+    "nets": 6,
+    "ercViolations": 15,
+    "engineComponents": 8,
+    "engineNets": 6,
+    "engineGroups": 243
+  },
+  "simulation/power_supplies/hv_converter/hv_converter.kicad_sch": {
+    "components": 25,
+    "nets": 14,
+    "ercViolations": 123,
+    "engineComponents": 25,
+    "engineNets": 14,
+    "engineGroups": 724
+  },
+  "simulation/power_supplies/royer/royer1.kicad_sch": {
+    "components": 17,
+    "nets": 10,
+    "ercViolations": 26,
+    "engineComponents": 17,
+    "engineNets": 10,
+    "engineGroups": 541
+  },
+  "simulation/q17/Q17ng.kicad_sch": {
+    "components": 84,
+    "nets": 49,
+    "ercViolations": 527,
+    "engineComponents": 84,
+    "engineNets": 49,
+    "engineGroups": 2516
+  },
+  "simulation/rectifier/rectifier.kicad_sch": {
+    "components": 5,
+    "nets": 4,
+    "ercViolations": 1,
+    "engineComponents": 5,
+    "engineNets": 4,
+    "engineGroups": 147
+  },
+  "simulation/sallen_key/sallen_key.kicad_sch": {
+    "components": 8,
+    "nets": 7,
+    "ercViolations": 0,
+    "engineComponents": 8,
+    "engineNets": 7,
+    "engineGroups": 341
+  },
+  "simulation/subsheets/mainsheet.kicad_sch": {
+    "components": 13,
+    "nets": 8,
+    "ercViolations": 19,
+    "engineComponents": 13,
+    "engineNets": 8,
+    "engineGroups": 191
+  },
+  "simulation/up-down-counter/up-down-c.kicad_sch": {
+    "components": 3,
+    "nets": 6,
+    "ercViolations": 9,
+    "engineComponents": 3,
+    "engineNets": 6,
+    "engineGroups": 99
+  },
+  "simulation/v_i_sources/v_i_sources.kicad_sch": {
+    "components": 36,
+    "nets": 19,
+    "ercViolations": 11,
+    "engineComponents": 36,
+    "engineNets": 19,
+    "engineGroups": 1234
+  },
+  "sonde xilinx/sonde xilinx.kicad_pcb": {
+    "drcViolations": 1,
+    "unconnected": 0,
+    "engineComponents": 25,
+    "engineNets": 42,
+    "engineGroups": 2270
+  },
+  "sonde xilinx/sonde xilinx.kicad_sch": {
+    "components": 25,
+    "nets": 42,
+    "ercViolations": 31,
+    "engineComponents": 25,
+    "engineNets": 42,
+    "engineGroups": 1273
+  },
+  "stickhub/StickHub.kicad_pcb": {
+    "drcViolations": 0,
+    "unconnected": 0,
+    "engineComponents": 94,
+    "engineNets": 47,
+    "engineGroups": 8472
+  },
+  "stickhub/StickHub.kicad_sch": {
+    "components": 94,
+    "nets": 47,
+    "ercViolations": 0,
+    "engineComponents": 94,
+    "engineNets": 47,
+    "engineGroups": 4188
+  },
+  "tiny_tapeout/tinytapeout-demo.kicad_pcb": {
+    "drcViolations": 664,
+    "unconnected": 1,
+    "engineComponents": 309,
+    "engineNets": 114,
+    "engineGroups": 22255
+  },
+  "tiny_tapeout/tinytapeout-demo.kicad_sch": {
+    "components": 150,
+    "nets": 114,
+    "ercViolations": 187,
+    "engineComponents": 150,
+    "engineNets": 114,
+    "engineGroups": 7547
+  },
+  "video/video.kicad_pcb": {
+    "drcViolations": 161,
+    "unconnected": 0,
+    "engineComponents": 189,
+    "engineNets": 588,
+    "engineGroups": 53515
+  },
+  "video/video.kicad_sch": {
+    "components": 189,
+    "nets": 588,
+    "ercViolations": 179,
+    "engineComponents": 189,
+    "engineNets": 588,
+    "engineGroups": 1879
+  },
+  "vme-wren/vme-wren.kicad_pcb": {
+    "drcViolations": 610,
+    "unconnected": 0,
+    "engineComponents": 1508,
+    "engineNets": 1800,
+    "engineGroups": 348213
+  },
+  "vme-wren/vme-wren.kicad_sch": {
+    "components": 1507,
+    "nets": 1800,
+    "ercViolations": 3276,
+    "engineComponents": 1507,
+    "engineNets": 1800,
+    "engineGroups": 3348
+  }
+}

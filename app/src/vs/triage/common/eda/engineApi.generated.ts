@@ -51,6 +51,8 @@ export const Redo: MessageDescriptor = { name: 'Redo', fields: [] };
 export const Save: MessageDescriptor = { name: 'Save', fields: [] };
 export const Reload: MessageDescriptor = { name: 'Reload', fields: [] };
 export const EditResult: MessageDescriptor = { name: 'EditResult', fields: [] };
+export const Route: MessageDescriptor = { name: 'Route', fields: [] };
+export const RouteResult: MessageDescriptor = { name: 'RouteResult', fields: [] };
 export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 
 (Request.fields as unknown[]).push(
@@ -69,6 +71,7 @@ export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 	{ name: 'reload', number: 21, type: Reload },
 	{ name: 'getItems', number: 22, type: GetItems },
 	{ name: 'highlight', number: 23, type: Highlight },
+	{ name: 'route', number: 24, type: Route },
 );
 (Response.fields as unknown[]).push(
 	{ name: 'id', number: 1, type: 'uint64' },
@@ -82,6 +85,7 @@ export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 	{ name: 'netlist', number: 14, type: Netlist },
 	{ name: 'edit', number: 15, type: EditResult },
 	{ name: 'items', number: 16, type: Items },
+	{ name: 'route', number: 17, type: RouteResult },
 );
 (GetVersion.fields as unknown[]).push(
 );
@@ -286,6 +290,24 @@ export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 	{ name: 'modified', number: 2, type: 'bool' },
 	{ name: 'undoDepth', number: 3, type: 'uint32' },
 	{ name: 'redoDepth', number: 4, type: 'uint32' },
+);
+(Route.fields as unknown[]).push(
+	{ name: 'document', number: 1, type: 'uint32' },
+	{ name: 'x', number: 2, type: 'double' },
+	{ name: 'y', number: 3, type: 'double' },
+	{ name: 'moves', number: 4, type: 'double', repeated: true },
+	{ name: 'layer', number: 5, type: 'int32' },
+	{ name: 'commit', number: 6, type: 'bool' },
+	{ name: 'shove', number: 7, type: 'bool' },
+);
+(RouteResult.fields as unknown[]).push(
+	{ name: 'moves', number: 1, type: 'uint32' },
+	{ name: 'averageMs', number: 2, type: 'double' },
+	{ name: 'worstMs', number: 3, type: 'double' },
+	{ name: 'committed', number: 4, type: 'bool' },
+	{ name: 'added', number: 5, type: 'uint32' },
+	{ name: 'removed', number: 6, type: 'uint32' },
+	{ name: 'mode', number: 7, type: 'string' },
 );
 (Event.fields as unknown[]).push(
 	{ name: 'log', number: 1, type: 'string' },

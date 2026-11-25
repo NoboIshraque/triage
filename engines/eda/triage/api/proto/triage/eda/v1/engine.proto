@@ -27,6 +27,7 @@ message Request {
     Reload reload = 21;
     GetItems get_items = 22;
     Highlight highlight = 23;
+    Route route = 24;
   }
 }
 
@@ -44,6 +45,7 @@ message Response {
     Netlist netlist = 14;
     EditResult edit = 15;
     Items items = 16;
+    RouteResult route = 17;
   }
 }
 
@@ -295,6 +297,29 @@ message EditResult {
   bool modified = 2;
   uint32 undo_depth = 3;
   uint32 redo_depth = 4;
+}
+
+// Interactive routing with KiCad's push-and-shove router, hosted in the engine
+// (ROADMAP P1-6 spike, ADR 0004): start at a point (a pad or a track end), follow
+// the cursor positions, and commit the route at the last one if asked.
+message Route {
+  uint32 document = 1;
+  double x = 2;
+  double y = 3;
+  repeated double moves = 4; // cursor positions: x0, y0, x1, y1, ...
+  int32 layer = 5;           // board layer; -1: the start item's
+  bool commit = 6;
+  bool shove = 7;            // shove (else walk around)
+}
+
+message RouteResult {
+  uint32 moves = 1;
+  double average_ms = 2;  // per Move() call: the time a cursor update costs
+  double worst_ms = 3;
+  bool committed = 4;
+  uint32 added = 5;       // board items the route added
+  uint32 removed = 6;     // board items it replaced (shoved tracks)
+  string mode = 7;
 }
 
 // Engine -> broker, unsolicited (frame type 0x23).

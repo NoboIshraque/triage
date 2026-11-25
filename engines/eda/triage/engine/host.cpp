@@ -124,6 +124,7 @@ private:
         case pb::Request::kReload: return aRequest.reload().document();
         case pb::Request::kGetItems: return aRequest.get_items().document();
         case pb::Request::kHighlight: return aRequest.highlight().document();
+        case pb::Request::kRoute: return aRequest.route().document();
         default: return 0;
         }
     }

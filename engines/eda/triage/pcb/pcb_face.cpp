@@ -565,6 +565,11 @@ void PCB_FACE::Handle( const pb::Request& aRequest, pb::Response& aResponse,
             undoRedo( *d, false, aResponse, aRequest.id(), aBulk );
         return;
 
+    case pb::Request::kRoute:
+        if( PCB_DOC* d = doc( aRequest.route().document(), aResponse ) )
+            route( *d, aRequest.route(), aResponse, aRequest.id(), aBulk );
+        return;
+
     case pb::Request::kSave:
         if( PCB_DOC* d = doc( aRequest.save().document(), aResponse ) )
             save( *d, aRequest.save(), aResponse );

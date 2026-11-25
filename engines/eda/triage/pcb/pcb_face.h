@@ -110,6 +110,10 @@ private:
                    const BULK_SINK& aBulk );
     void save( PCB_DOC& aDoc, const pb::Save& aReq, pb::Response& aResponse );
     void refreshConnectivity( PCB_DOC& aDoc );
+
+    // pcb_route.cpp: KiCad's router hosted in the engine (P1-6 spike).
+    void route( PCB_DOC& aDoc, const pb::Route& aReq, pb::Response& aResponse,
+                uint64_t aRequestId, const BULK_SINK& aBulk );
     void commit( PCB_DOC& aDoc, PCB_CHANGE_SET&& aChanges, pb::Response& aResponse,
                  uint64_t aRequestId, const BULK_SINK& aBulk );
 
