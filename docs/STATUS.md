@@ -154,6 +154,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
 | Windows code-signing certificate (avoids SmartScreen warnings) | unsigned nightlies; decide before P8-2 | P8 |
 | KiCad editing path (remote tools vs direct hosting) | decided by the P1-6 spike, ADR 0004 | P1 |
+| **Phone companion: accept [ADR 0005](adr/0005-phone-companion.md)?** (Show on phone, QR pairing, a web app; PLAN §4.16, ROADMAP phase PC.) Choices with it: **(1)** where the phone app is hosted (GitHub Pages, which needs a public repository or GitHub Pro, or the owner's own domain); **(2)** a relay for phones on other networks: none at first, a small one the owner hosts (traffic costs), or decide after PC-1; **(3)** iOS 26.4+ for the direct path (older iPhones only through a relay); **(4)** phase PC beside P4 in its own sessions, or between P3 and P4; **(5)** new phones view-only by default | Proposed, nothing built. If accepted: same Wi-Fi only (no relay), hosting decided in PC-1, PC beside P4, view-only by default | before PC-1 (after M2; PC-1 could run during P2) |
 
 ## Work packages
 
@@ -300,3 +301,13 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   - The "workflow run failed" notifications the owner saw come from App runs
     2, 8, 9 and 10 and CI run 7, the failures this session fixed (DV-11, DV-13,
     the swap-file disk issue).
+- **2026-11-25 (phone companion planned, the owner's request; docs only):**
+  researched how WhatsApp, Signal (source plus a REA breakdown of Signal Desktop
+  8.36.0), VS Code tunnels, KDE Connect and Sunshine link a second device, and
+  what phone browsers can do ([companion.md](research/companion.md), ledger
+  round 4). Proposed [ADR 0005](adr/0005-phone-companion.md): an installable web
+  app that draws Triage's own data (display lists, tessellations, simulation
+  state), WebTransport on the same Wi-Fi with the laptop's certificate pinned by
+  the QR, an optional relay elsewhere, a six-digit code plus **Allow** on the
+  laptop, per-phone keys and view or edit permission. Added PLAN §4.16, ROADMAP
+  phase PC (PC-1 to PC-7) and DV-20. Waiting for the owner (open question above).

@@ -35,7 +35,8 @@ Arduino and Raspberry Pi**. It runs offline on a laptop, **Windows first**.
 
 **Out of scope for v1.0** (guardrails against an infinite project): HDI/RF PCB
 design · FEA/CFD beyond FreeCAD FEM basics · cloud accounts and collaboration ·
-mobile. Blender's animation and VFX features stay inside the optional render engine.
+native mobile apps (the phone and tablet companion, §4.16, is a web app served by
+the laptop's Triage). Blender's animation and VFX features stay inside the optional render engine.
 
 **Confirmed with the owner (2026-11-24, §5):** everything integrated in one app;
 simulation of everything together or any part separately; boards ESP32, Arduino
@@ -47,7 +48,9 @@ the name Triage; hidden engines ([ADR 0002](adr/0002-absorb-engines-headless.md)
 ## 1. Who it's for and what it must do
 
 **Users:** engineering students (EE, ME, mechatronics, CS), robotics and maker
-clubs, capstone teams, and instructors who set and grade lab work.
+clubs, capstone teams, and instructors who set and grade lab work. Many of them
+work on **one small laptop screen**, so any tab can also be shown on their phone
+or tablet (§4.16).
 
 **Jobs to be done**
 1. Design a device end to end without juggling 3–4 tools and manual exports.
@@ -55,13 +58,17 @@ clubs, capstone teams, and instructors who set and grade lab work.
    mistakes in simulation, for the whole device or one part at a time.
 3. Hand off to manufacturing: Gerbers, BOM, pick-and-place, STEP, STL/3MF, firmware.
 4. (Instructors) ship templates and auto-graded test scenarios.
+5. **Check or continue the design on a phone or tablet** (the owner, 2026-11-25):
+   the PCB, the 3D model or the running simulation, with simple edits, while the
+   laptop does the work (§4.16).
 
 **Principles:**
 - **Everything in one window:** code, schematic, PCB, 3D and simulation are tabs of
   one app working on one project. No switching programs, no exporting between tools.
   Any tab can also be dragged out, or popped out with a button, into a **separate
   Triage window** (the owner, 2026-11-24): still Triage's own view of the same
-  project, never the stock KiCad or FreeCAD window.
+  project, never the stock KiCad or FreeCAD window. **Show on phone** puts a tab on
+  a paired phone or tablet the same way (§4.16).
 - **Check together or separately:** simulate the whole device, or just the circuit,
   the code or the mechanism, whenever you like (§4.7).
 - **One project, one truth, many views.**
@@ -180,6 +187,7 @@ flowchart TB
 | **CAD engine** | **FreeCAD fork** (C++/Python, App layer) | documents, features, sketches with solver, assemblies, materials, STEP/STL/3MF, FEM, TechDraw. Tessellation streaming. JSON-RPC | CAD ops retry |
 | **Sim engine** | Triage (Rust kernel via napi-rs + Node utility process for the JS emulators) | scheduler, signal bus, units, scopes and stubs, recording/replay. Spawns QEMU (ESP32), Renode and the Raspberry Pi Python bridge | simulation stops with an error |
 | **Render engine** | Blender (`blender -b` + Triage RPC script), optional | Cycles renders, mesh/sculpt operations, glTF/USD exchange | render job fails, retry |
+| **Companion broker** (PC, proposed: [ADR 0005](adr/0005-phone-companion.md)) | Triage (Rust `triage-companion` via napi-rs, in a utility process) | paired phones and tablets: WebTransport server on the LAN, optional relay client, pairing, keys, permissions; relays the phone's requests to the window's engine services (§4.16) | phones show "reconnecting" |
 
 **Transport.** Engines are native executables. A small Node **broker** in each
 engine's utility process speaks to its engine over a local socket (KiCad's nng for
@@ -512,7 +520,8 @@ engineering-solution-/
     cad/                # FreeCAD fork: upstream + patches/ + Triage RPC module
     qemu-esp32/         # Espressif QEMU fork: upstream + patches/ + Triage peripheral models
     render/             # Blender scripts and RPC
-  crates/               # Rust: triage-model, triage-sim-kernel, triage-mna, triage-ngspice, triage-mujoco, triage-part-sdk
+  crates/               # Rust: triage-model, triage-sim-kernel, triage-mna, triage-ngspice, triage-mujoco, triage-part-sdk, triage-companion
+  companion/            # phone and tablet companion (§4.16, proposed): web/ (the installable phone web app), relay/ (optional relay)
   sim/                  # Node helper for JS emulators, QEMU and Renode adapters, Pi Python bridge, network gateway
   parts/                # smart part library + per-part scenarios
   cli/                  # `triage` CLI
@@ -563,6 +572,149 @@ decision before P8.
 - Release builds harden the Electron fuses VS Code leaves open (RunAsNode off,
   Inspect off) **once** Triage no longer needs `fork` for Node helpers (utility
   processes replace it).
+- **Phone companion** (§4.16, proposed): off until the user picks Show on phone.
+  A phone joins only by scanning a fresh QR code **and** the user confirming a
+  matching code on the laptop; each phone has its own revocable key and a
+  permission (view, or view and edit). Traffic is end-to-end encrypted (a relay
+  only forwards sealed frames). A phone reaches only the engine and simulation
+  commands its permission allows, schema-checked like engine messages: no
+  files, terminal, tasks, extensions or settings. Untrusted workspaces are view
+  only.
+
+### 4.16 Phone and tablet companion
+
+> **Proposed** in [ADR 0005](adr/0005-phone-companion.md) at the owner's request
+> (2026-11-25); evidence in [research/companion.md](research/companion.md);
+> delivered by ROADMAP phase **PC**. The laptop does all the work; the phone is
+> one more Triage view of the open project.
+
+**What the user does**
+1. In the Schematic, Board, 3D or Sim tab, open **Show on phone** in the tab bar
+   (a dropdown beside the tab's window button; also a command and a Triage
+   sidebar button). It lists paired phones ("Show on Maya's iPhone") and **Pair a
+   new phone…**.
+2. **Pair a new phone** shows a QR code at once. It changes every 45 s and stops
+   after about 5 minutes (**Show again** restarts it), as Signal's does.
+3. The phone's camera opens the link. The first time, the page offers **Install**
+   (Android) or **Add to Home Screen** (iOS) and continues in the installed app.
+   iOS keeps an installed web app's storage apart from Safari's, so the app
+   scans the QR again itself, or takes the 8-character code shown under it.
+4. **Check 1:** both screens show the same six-digit code. **Check 2:** the user
+   clicks **Allow** on the laptop, picks **View only** (the default) or **View and
+   edit**, and may rename the phone.
+5. The phone opens the tab that was picked and can switch to the project's other
+   tabs. **Follow laptop** keeps it on the laptop's tab, camera and selection.
+   Later the phone app reconnects by itself whenever Triage runs with the
+   companion on: no QR, no prompt.
+
+```mermaid
+sequenceDiagram
+  participant L as Laptop (Triage)
+  participant P as Phone (companion web app)
+  L->>L: Show on phone: new pairing secret, QR (laptop key, LAN address, certificate hash)
+  P->>L: scan, connect (WebTransport on the LAN, or the relay), Noise handshake with the secret
+  L-->>P: six-digit code on both screens
+  L->>L: user compares, clicks Allow, picks View or Edit
+  P->>L: phone's own public key and name
+  L-->>P: laptop key and next certificate hashes (pinned), then the tab's data
+```
+
+**What runs where**
+
+| Laptop (Triage) | Phone or tablet (companion web app) |
+|---|---|
+| engines, files, project model, simulation | Triage's renderers and a touch UI; no engines, no files |
+| companion broker: WebTransport server, relay client, pairing, keys, permissions (§4.2) | its own key, the laptop's pinned key and certificate hashes |
+| the window's engine services answer phone requests: edits from either side go to the same engine document and undo history, and every view of that document refreshes | the cached app (service worker) and, optionally, the last views for looking at offline |
+
+**What the phone shows** (never more than the laptop's tabs can do at the time)
+
+| View | Streamed from the laptop | View permission | Edit permission |
+|---|---|---|---|
+| Schematic, Board (from P1) | Stream GAL display lists (`TDL1` chunks), `DocumentInfo`, layers, items, hit tests | pan, pinch zoom, layers, sheets, tap for reference, value and net, cross-probe with the laptop, net highlight | P1-6's simple edits: value, reference, move, rotate, delete, undo, redo, save |
+| 3D (from P2) | tessellations and transforms from the CAD engine (P2-2) and the board model | orbit, pan, zoom, outliner, fit-check highlights | enclosure parameters (P2-4) |
+| Sim (from P3) | signal values, scope samples, serial output and body transforms, at up to 30 Hz | watch the run, serial monitor, plots, 3D playback | Run, Pause, Step, Speed, scope picker, virtual I/O panel (buttons, sliders), environment panel; optionally the phone's tilt as a sensor input (iOS asks for motion permission) |
+| Code | – | later: read-only files and pin-map diagnostics | not planned: code is edited on the laptop |
+| Full editing (P5, P6) | same streams | same | stays on the laptop; the phone keeps the simple edits |
+
+**Transport**
+
+| Path | How | Needs |
+|---|---|---|
+| **Same network** (first) | WebTransport (HTTP/3 over QUIC) from the phone app to the laptop's LAN address. The laptop's certificate is self-signed (ECDSA P-256, renewed every 13 days, as browsers require under 2 weeks) and pinned with `serverCertificateHashes` from the QR: no warning page, no certificate authority, no internet. While connected, the laptop gives the phone the hashes of its next certificates, so a phone in regular use never needs a new QR | iOS / iPadOS 26.4+ or Chrome 100+; a Wi-Fi that lets the two reach each other |
+| **Anywhere** (optional) | the laptop and the phone each open a WebSocket to a small **relay**, which forwards sealed frames between them and holds no keys (Signal's provisioning relay works this way) | a hosted relay (owner decision, ADR 0005); iOS 17+ |
+| Fallback (only if PC-1 rules out WebTransport) | WebRTC data channel, signalled through the relay, with TURN | the relay and TURN |
+
+Both paths carry one **companion protocol** inside an end-to-end **Noise** session:
+`IKpsk2` when pairing (the phone knows the laptop's key from the QR, and the QR's
+secret is the pre-shared key), `IK` with the pinned keys when reconnecting;
+X25519, AES-GCM and SHA-256, all in WebCrypto. On the LAN this runs inside TLS
+pinned to the laptop's certificate, so a relay or a LAN path look the same to
+the rest of the code. Frames are the engine connection's (u32 length, u8 type,
+payload; `engineProtocol.ts`). Payloads are protobuf, `triage.companion.v1`, which
+wraps `triage.eda.v1` requests and later the CAD and simulation messages.
+Display-list chunks are split for the wire.
+
+**Pairing in detail**
+1. The QR holds `https://<companion origin>/p#<payload>`. Browsers never send a URL
+   fragment to the server, so the host never sees the payload. It holds about 150
+   bytes: format version, pairing id (16 random bytes, also the relay mailbox), a
+   one-time **pairing secret** (32 bytes), the laptop's public key, up to three LAN
+   addresses with port, the current certificate hash, the tab to open and an
+   expiry. It names no project or person: a QR on a projector can be photographed.
+2. The phone app connects (LAN first, then the relay if one is set up) and runs
+   the handshake. Without the QR nobody can complete it, and the laptop's key is
+   checked against the QR, so nobody can sit in between.
+3. Both screens show six digits derived from the handshake, as KDE Connect's
+   verification key and Signal's safety numbers do. The user compares them and
+   clicks **Allow** with a permission. Five failed attempts end that QR, and each
+   secret admits one phone.
+4. The phone keeps a non-extractable WebCrypto key in the installed app's
+   storage. The laptop stores the phone's public key, name, permission and
+   dates in Triage's settings, and its own keys in VS Code's secret storage
+   (Electron `safeStorage`: DPAPI on Windows).
+5. **Fallback:** an 8-character code under the QR, typed on the phone, meets the
+   laptop through the relay. A password-authenticated key exchange (WhatsApp's
+   option 2; Magic Wormhole uses SPAKE2) leaves an attacker one guess.
+6. **Revoke:** the Triage sidebar lists phones (name, permission, last seen) with
+   **Remove**, which ends the session at once. A phone unused for 30 days pairs
+   again (WhatsApp's signed device lists expire after 35 days). The phone app has
+   **Unlink**.
+
+**Laptop side**
+- `app/src/vs/triage/browser/companion/`: the Show on phone dropdown on Triage's
+  editors, the QR dialog (drawn locally), the Phones section of the Triage
+  sidebar, a status bar item for connected phones, a notification when a phone
+  connects, and phone edits labeled in the undo history.
+- `app/src/vs/triage/node/companionBrokerMain.ts`: the utility process, with
+  `crates/triage-companion` (Rust, napi-rs, built from source with Cargo on Windows
+  and Linux: QUIC and WebTransport, certificates, Noise, QR payloads, relay client).
+- Settings: companion on or off, LAN address and port, relay, default permission,
+  and "keep the laptop awake while a phone is connected" (Electron's
+  `powerSaveBlocker`; `code tunnel` keeps the computer awake the same way).
+
+**Phone side** (`companion/web/`): TypeScript bundled with esbuild into a static
+site with a web app manifest, a service worker (offline app shell, versioned),
+Triage's icons (`scripts/branding/icons.py`), a JavaScript QR decoder (iOS has no
+`BarcodeDetector`) and a strict content security policy. It imports
+`edaRenderer.ts`, `displayList.ts`, `protobuf.ts`, `engineApi.generated.ts` and
+`engineProtocol.ts` unchanged; none of them imports VS Code. **Rule for later
+WPs:** the 3D view (P2-3) and the instruments (P3-5) keep their drawing code free
+of VS Code imports too, so the phone app can bundle it. **Relay**
+(`companion/relay/`, optional): a stateless WebSocket forwarder keyed by mailbox
+id, with frame-size, rate and idle limits, no accounts and no content logs.
+
+**Phone limits to design around** ([companion.md](research/companion.md) §2): iOS
+26.4+ for the direct path; installed iOS web apps keep their own storage (pair
+inside the installed app); no Web Bluetooth, WebUSB or Web Serial on iOS, so the
+phone never talks to a real board; the camera in an installed iOS web app needs
+testing on real phones; a phone may suspend the app in the background, so it
+reconnects and asks for a fresh view when it returns.
+
+**Targets** (measured in PC-1 on the owner's phone, then added to §4.14): first view
+within 3 s of scanning on the same Wi-Fi; the Smart Fan board and 3D model at
+≥ 30 fps on a mid-range phone; an edit round trip within 150 ms on the LAN;
+simulation updates at 30 Hz on the LAN and 10 Hz through a relay.
 
 ---
 
@@ -580,6 +732,7 @@ decision before P8.
 | D8 | **Name:** Triage | **confirmed** 2026-11-24 |
 | D9 | **Integration:** everything in one window, with any tab poppable into a separate Triage window (§1); stock KiCad/FreeCAD windows only as a temporary fallback (§4.3); simulation scopes for checking together or separately (§4.7) | **confirmed** 2026-11-24 (the owner's requirement; separate windows added by the owner the same day, DV-14) |
 | D10 | **Editing path** for KiCad's interactive tools: remote tools vs direct hosting | open: decided by the P1-6 spike (ADR 0004) |
+| D11 | **Phone and tablet companion:** a web app paired by QR code that views, and with permission edits, any tab while the laptop does the work; WebTransport on the LAN, an optional relay elsewhere (§4.16, [ADR 0005](adr/0005-phone-companion.md)) | **proposed** 2026-11-25 (the owner's request); the owner decides |
 
 ## 6. Risks and mitigations
 
@@ -595,6 +748,7 @@ decision before P8.
 | **Co-sim speed and stability** | high | Netlist partitioning, transaction-level buses, adaptive quanta, tiers, CI benchmarks |
 | **Installer size and RAM use** | medium | Lazy engine start, optional components, per-engine memory budgets |
 | **Running third-party binaries in cloud dev sessions may be blocked by policy**, and sessions run Linux only | low | Build engines from source in sessions. CI runs the Windows builds, and the owner tests nightlies on their laptop |
+| **Phone companion** (§4.16): a listening port and edits from another device; phone browsers' limits (iOS 26.4+ for WebTransport, Windows firewall rules for a per-user app, Wi-Fi that isolates devices) | medium | Off by default, QR plus a confirmed code, per-phone revocable keys and permissions, end-to-end encryption, fuzzed protocol parser; the PC-1 spike tests real phones and the owner's Windows laptop before anything else is built; the relay and WebRTC as fallbacks |
 
 ## 7. Glossary
 
@@ -612,3 +766,5 @@ decision before P8.
 - **Quantum:** the slice of virtual time units may run ahead before synchronizing.
 - **Smart part:** one component with symbol, footprint, 3D, simulation and mechanical data.
 - **T0/T1/T2:** interactive, accurate and analysis simulation tiers.
+- **Companion:** Triage's phone and tablet web app, paired with the laptop by QR code; it shows Triage's tabs and sends edits to the laptop's engines (§4.16).
+- **Relay (companion):** an optional server that forwards sealed frames between a phone and a laptop on different networks; it holds no keys.
