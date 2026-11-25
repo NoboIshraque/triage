@@ -34,6 +34,8 @@ message Response {
   uint64 id = 1;
   bool ok = 2;
   string error = 3;
+  // GetDisplayList on a schematic: the document again, with the shown sheet's layers.
+  DocumentInfo document_info = 4;
   oneof result {
     Version version = 10;
     DocumentInfo document = 11;

@@ -108,6 +108,7 @@ void SCH_FACE::setupView( SCH_DOC& aDoc )
 
     rs->m_ShowHiddenPins = false;
     rs->m_ShowHiddenFields = false;
+    rs->m_ShowPinsElectricalType = false;
     rs->m_ShowPinAltIcons = false;
     rs->SetDefaultPenWidth( sch->Settings().m_DefaultLineWidth );
     rs->m_LabelSizeRatio = sch->Settings().m_LabelSizeRatio;
@@ -208,8 +209,10 @@ void SCH_FACE::fillInfo( SCH_DOC& aDoc, pb::DocumentInfo* aInfo )
         out->set_name( name.IsEmpty() ? "Layer " + std::to_string( layer ) : name.ToStdString() );
         out->set_color( PackColor( rs->GetLayerColor( layer ) ) );
         out->set_order( aDoc.view->GetLayerOrder( layer ) );
+        // As the schematic editor starts: no hidden fields and pins, no simulation
+        // overlays, no selection shadows.
         out->set_visible( layer != LAYER_SELECTION_SHADOWS && layer != LAYER_OP_VOLTAGES
-                          && layer != LAYER_OP_CURRENTS );
+                          && layer != LAYER_OP_CURRENTS && layer != LAYER_HIDDEN );
         out->set_user( false );
         out->set_required( layer );
     }
@@ -575,7 +578,7 @@ void SCH_FACE::Handle( const pb::Request& aRequest, pb::Response& aResponse,
                                                           true, aBulk );
             info.set_items( static_cast<uint32_t>( d->sheet.LastScreen()->Items().size() ) );
             *aResponse.mutable_display_list() = info;
-            fillInfo( *d, aResponse.mutable_document() );
+            fillInfo( *d, aResponse.mutable_document_info() );
             aResponse.set_ok( true );
         }
         return;

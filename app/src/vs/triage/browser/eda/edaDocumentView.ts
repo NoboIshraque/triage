@@ -158,8 +158,8 @@ export class EdaDocumentView extends Disposable {
 	private async loadDisplayList(sheet: string): Promise<void> {
 		const started = performance.now();
 		const result = await this.engine.call('getDisplayList', { document: this.document, sheet });
-		if (result.response.document) {
-			this.setInfo(result.response.document);
+		if (result.response.documentInfo) {
+			this.setInfo(result.response.documentInfo);
 		}
 		this.model.clear();
 		this.renderer?.clear();

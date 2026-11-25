@@ -42,7 +42,12 @@ if( MSVC )
         PRIVATE TRIAGE_API_EXPORT=__declspec\(dllexport\)
         INTERFACE TRIAGE_API_EXPORT=__declspec\(dllimport\) )
 else()
+    # KiCad hides symbols by default (CMAKE_CXX_VISIBILITY_PRESET hidden); the engine
+    # and both kifaces link this library, so it exports everything.
     target_compile_definitions( triage_eda_api PUBLIC TRIAGE_API_EXPORT= )
+    set_target_properties( triage_eda_api PROPERTIES
+        CXX_VISIBILITY_PRESET default
+        VISIBILITY_INLINES_HIDDEN OFF )
 endif()
 
 if( KICAD_USE_CMAKE_FINDPROTOBUF AND Protobuf_VERSION AND Protobuf_VERSION VERSION_GREATER_EQUAL 4.0 )
@@ -85,6 +90,7 @@ include_directories( ${CMAKE_SOURCE_DIR}/common ${INC_AFTER} )
 add_executable( triage-eda-engine
     engine/main.cpp
     engine/host.cpp
+    ${TRIAGE_HELLO_DIR}/src/hello.cpp
     ${TRIAGE_HELLO_DIR}/src/protocol.cpp
     ${TRIAGE_HELLO_DIR}/src/transport.cpp )
 

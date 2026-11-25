@@ -1,4 +1,6 @@
+import { spawnSync } from 'node:child_process';
 import {
+  cpSync,
   existsSync,
   mkdirSync,
   mkdtempSync,
@@ -65,10 +67,41 @@ async function runCommand(window: Page, title: string): Promise<void> {
   await window.keyboard.press('Enter');
 }
 
+/** Polls `condition` every 25 ms; resolves with the milliseconds it took. */
+async function timeUntil(condition: () => boolean, timeoutMs: number): Promise<number> {
+  const started = Date.now();
+  while (!condition()) {
+    if (Date.now() - started > timeoutMs) throw new Error(`not within ${timeoutMs} ms`);
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  return Date.now() - started;
+}
+
 describe('packaged Triage app', () => {
   const app = packagedApp();
   const product = triageProduct();
   const profile = mkdtempSync(path.join(tmpdir(), 'triage-smoke-'));
+  // A copy of the example: the EDA checks edit and save its files.
+  const project = path.join(profile, 'smart-fan');
+  cpSync(path.join(appDir, '..', 'examples', 'smart-fan'), project, { recursive: true });
+  // ROADMAP P1: KiCad's engine ships in the app when the EDA workflow built it.
+  const edaDir = path.join(app.folder, 'resources', 'app', 'engines', 'eda');
+  const exe = process.platform === 'win32' ? '.exe' : '';
+  const edaShipped = existsSync(path.join(edaDir, `triage-eda-engine${exe}`));
+  if (process.env['TRIAGE_REQUIRE_EDA'] === '1' && !edaShipped) {
+    throw new Error(`TRIAGE_REQUIRE_EDA is set but ${edaDir} has no engine`);
+  }
+  const edaIt = edaShipped ? it : it.skip;
+  /** The shipped kicad-cli, for checking that stock KiCad reads what Triage saved. */
+  const kicadCli = (args: string[]) => {
+    const env =
+      process.platform === 'win32'
+        ? { ...process.env, PATH: `${edaDir};${process.env['PATH'] ?? ''}` }
+        : { ...process.env, LD_LIBRARY_PATH: edaDir };
+    const result = spawnSync(path.join(edaDir, `kicad-cli${exe}`), args, { env, encoding: 'utf8' });
+    if (result.status !== 0) throw new Error(`kicad-cli ${args.join(' ')}: ${result.stderr}`);
+    return result.stdout;
+  };
   let electronApp: ElectronApplication | undefined;
   let window: Page;
 
@@ -78,8 +111,8 @@ describe('packaged Triage app', () => {
       executablePath: app.executable,
       // The flags VS Code's own smoke tests use, plus a throwaway profile.
       args: [
-        // ROADMAP P0-5: open the example project.
-        path.join(appDir, '..', 'examples', 'smart-fan'),
+        // ROADMAP P0-5: open (a copy of) the example project.
+        project,
         '--skip-release-notes',
         '--skip-welcome',
         '--disable-telemetry',
@@ -206,6 +239,125 @@ describe('packaged Triage app', () => {
     const bottom = await window.locator('.triage-view-editor[data-triage-view="3d"]').boundingBox();
     expect(top?.height ?? 0).toBeGreaterThan((bottom?.height ?? 0) * 0.6);
     await window.screenshot({ path: shot('engineering-layout') });
+  });
+
+  // ROADMAP P1-4: the Schematic and Board tabs drawn by KiCad's engine.
+  const edaView = (kind: string) => window.locator(`.triage-eda-view[data-triage-eda="${kind}"]`);
+
+  edaIt("draws the schematic and the board with KiCad's engine", async () => {
+    for (const kind of ['schematic', 'board']) {
+      await expect
+        .poll(() => edaView(kind).getAttribute('data-state'), { timeout: 180_000 })
+        .toBe('ready');
+      expect(Number(await edaView(kind).getAttribute('data-groups'))).toBeGreaterThan(20);
+    }
+    await window.screenshot({ path: shot('eda-views') });
+  });
+
+  edaIt('pans and zooms the schematic and board views smoothly', async () => {
+    await runCommand(window, 'Triage: Benchmark Schematic and Board Views');
+    const report: Record<string, number> = {};
+    for (const kind of ['schematic', 'board']) {
+      await expect
+        .poll(() => edaView(kind).getAttribute('data-benchmark-fps'), { timeout: 120_000 })
+        .not.toBeNull();
+      report[kind] = Number(await edaView(kind).getAttribute('data-benchmark-fps'));
+    }
+    writeFileSync(
+      path.join(outputDir, `eda-fps-${process.platform}.json`),
+      `${JSON.stringify({ what: 'frames per second while panning and zooming', ...report }, null, 2)}\n`,
+    );
+    console.log(JSON.stringify(report));
+    // CI renders in software (no GPU): the 60 fps budget is checked on real machines.
+    for (const fps of Object.values(report)) expect(fps).toBeGreaterThan(10);
+  });
+
+  edaIt('cross-probes a part between the schematic and the board', async () => {
+    await runCommand(window, 'Triage: Select Part in Schematic and Board');
+    await window.locator('.quick-input-widget .quick-input-box input').fill('Q1');
+    await window.keyboard.press('Enter');
+    for (const kind of ['schematic', 'board']) {
+      await expect
+        .poll(() => edaView(kind).getAttribute('data-selection'), { timeout: 30_000 })
+        .toContain('Q1');
+    }
+    await window.screenshot({ path: shot('eda-cross-probe') });
+  });
+
+  edaIt('edits the board, saves it, and stock KiCad reads the file', async () => {
+    const pcb = path.join(project, 'electronics', 'smart-fan.kicad_pcb');
+    const before = readFileSync(pcb, 'utf8');
+    // Q1 is selected (previous check): rotate it in the Board tab and save.
+    await edaView('board').locator('.triage-eda-overlay').click({ button: 'middle' });
+    await edaView('board').focus();
+    await window.keyboard.press('r');
+    await expect
+      .poll(() => edaView('board').getAttribute('data-modified'), { timeout: 30_000 })
+      .toBe('true');
+    await window.keyboard.press('Control+s');
+    await expect
+      .poll(() => edaView('board').getAttribute('data-saves'), { timeout: 30_000 })
+      .toBe('1');
+    const after = readFileSync(pcb, 'utf8');
+    expect(after).not.toBe(before);
+    // kicad-cli (KiCad's own loader) opens the saved board.
+    const report = path.join(profile, 'drc.json');
+    kicadCli(['pcb', 'drc', '--format', 'json', '--output', report, pcb]);
+    expect(existsSync(report)).toBe(true);
+  });
+
+  edaIt('renames a net and regenerates board_pins.h within 2 s (ROADMAP P1-5)', async () => {
+    const header = path.join(project, 'firmware', 'generated', 'board_pins.h');
+    await expect
+      .poll(() => (existsSync(header) ? readFileSync(header, 'utf8') : ''), { timeout: 60_000 })
+      .toContain('FAN_PWM');
+    await runCommand(window, 'Triage: Rename Net in the Schematic');
+    const input = window.locator('.quick-input-widget .quick-input-box input');
+    await input.fill('FAN_PWM');
+    await window.keyboard.press('Enter');
+    await expect.poll(() => input.inputValue()).toBe('FAN_PWM');
+    await input.fill('MOTOR_SPEED');
+    await window.keyboard.press('Enter');
+    const ms = await timeUntil(() => readFileSync(header, 'utf8').includes('MOTOR_SPEED'), 10_000);
+    console.log(JSON.stringify({ renameToHeaderMs: ms }));
+    writeFileSync(
+      path.join(outputDir, `eda-rename-${process.platform}.json`),
+      `${JSON.stringify({ what: 'net renamed in the schematic -> board_pins.h rewritten', milliseconds: ms }, null, 2)}\n`,
+    );
+    expect(ms).toBeLessThan(2000);
+    expect(readFileSync(header, 'utf8')).not.toContain('FAN_PWM');
+    // The saved schematic opens in stock KiCad with the new net name.
+    const schematic = path.join(project, 'electronics', 'smart-fan.kicad_sch');
+    const netlist = path.join(profile, 'smart-fan.net');
+    kicadCli(['sch', 'export', 'netlist', '--output', netlist, schematic]);
+    expect(readFileSync(netlist, 'utf8')).toContain('MOTOR_SPEED');
+  });
+
+  edaIt('reloads the board within 2 s when KiCad saves it (ROADMAP P1-7)', async () => {
+    const pcb = path.join(project, 'electronics', 'smart-fan.kicad_pcb');
+    const reloads = async () =>
+      Number((await edaView('board').getAttribute('data-reloads')) ?? '0');
+    const before = await reloads();
+    // What the fallback window's save does: KiCad writes the board file.
+    kicadCli(['pcb', 'upgrade', '--force', pcb]);
+    const started = Date.now();
+    await expect.poll(reloads, { timeout: 10_000, interval: 25 }).toBeGreaterThan(before);
+    const ms = Date.now() - started;
+    console.log(JSON.stringify({ externalSaveToReloadMs: ms }));
+    expect(ms).toBeLessThan(2000);
+  });
+
+  edaIt('restarts the KiCad engine when it dies and reopens the documents', async () => {
+    const status = () => window.locator('[id="triage.edaEngine"]').textContent();
+    await runCommand(window, 'Triage: Kill the KiCad Engine (Restart Test)');
+    await expect.poll(status, { timeout: 30_000 }).toContain('reconnecting');
+    await expect.poll(status, { timeout: 120_000 }).toContain('connected');
+    for (const kind of ['schematic', 'board']) {
+      await expect
+        .poll(() => edaView(kind).getAttribute('data-state'), { timeout: 120_000 })
+        .toBe('ready');
+    }
+    await window.screenshot({ path: shot('eda-restarted') });
   });
 
   // ROADMAP P0-4: the hello engine behind a utility-process broker.

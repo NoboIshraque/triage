@@ -74,6 +74,7 @@ export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 	{ name: 'id', number: 1, type: 'uint64' },
 	{ name: 'ok', number: 2, type: 'bool' },
 	{ name: 'error', number: 3, type: 'string' },
+	{ name: 'documentInfo', number: 4, type: DocumentInfo },
 	{ name: 'version', number: 10, type: Version },
 	{ name: 'document', number: 11, type: DocumentInfo },
 	{ name: 'displayList', number: 12, type: DisplayListInfo },
