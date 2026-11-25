@@ -8,8 +8,8 @@ billing from about 12:03 UTC until the owner made the repository public the
 same day (see "CI" below). **Next:** the EDA workflow builds KiCad on Windows (Actions runs again since
 the repository went public; the build continues from its caches over several
 runs), then the owner runs the M1 demo on Windows (steps below). P1 is done when
-both pass. P0-8 (the owner's Copilot sign-in test, planned for 2026-11-26) and
-P0-9 stay open. ADR 0004 and ADR 0005 were accepted on 2026-11-25 (decisions
+both pass. **P0-8 is done** (Copilot works with Triage's own sign-in, the owner's
+test, 2026-11-25); P0-9 stays open. ADR 0004 and ADR 0005 were accepted on 2026-11-25 (decisions
 below); phase PC now runs between P3 and P4.
 
 ### P1 in one paragraph
@@ -132,6 +132,12 @@ is the likely cause (**inferred**). Patches 0005 and 0006 drop the label, so
 the runtime identifies as an SDK host and Copilot authorizes against the
 user's own entitlement. The owner's Windows test decides.
 
+**Result (2026-11-25): it works.** The owner reports that Copilot now works with
+Triage's own sign-in ("the copilot signup works now"), on a Windows build with
+patches 0005 and 0006. Dropping VS Code's integration label was the fix
+(inferred: it was the only change since the failing tests). **P0-8 is done.**
+P8-7 item (2) still needs GitHub's terms for Copilot in Triage checked.
+
 If that still fails, documented routes remain: a **GitHub App** instead of the
 OAuth App (GitHub calls it "recommended for new projects"); a **fine-grained
 personal access token** with the "Copilot Requests" permission, which the
@@ -142,7 +148,7 @@ runtime supports it); or AI models with the user's **own API key**.
 **Unknown:** whether GitHub Copilot
 accepts a sign-in from an app other than VS Code. Other unofficial Copilot
 clients reuse official GitHub app IDs rather than their own, which hints it may
-not (inferred). The P0-8 test settles it.
+not (inferred). The P0-8 test settled it: it does (result above).
 
 ### Try it on Windows (the P0-7 owner check)
 
@@ -200,7 +206,6 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Topic | Default | Needed by |
 |---|---|---|
-| GitHub Copilot **doesn't accept Triage's own sign-in** (P0-8). Choose: **(A)** AI models with the user's own API key (Anthropic, OpenAI, Google, or a local model through Ollama) in the same chat panel, no GitHub needed; **(B)** the owner's personal builds sign in as VS Code, so Copilot works for the owner, while shared builds stay Triage; **(C)** both (Claude's recommendation); **(D)** drop Copilot | Triage's own sign-in, Copilot unavailable, until the owner decides | P0-8 |
 | Remove the hidden Copilot extension from builds entirely? It is 56 MB of the app; hidden and disabled, it does nothing | kept (one setting turns VS Code's AI features back on) | P8 (installer size) |
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
@@ -210,7 +215,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Phase | WP | Status |
 |---|---|---|
-| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | P0-1 … P0-7 **done**; **P0-8 in progress** (app registered, patch 0004 in; the owner's sign-in test next); **P0-9 in progress** |
+| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | P0-1 … P0-7 **done**; **P0-8 done** 2026-11-25 (Copilot works with Triage's own sign-in); **P0-9 in progress** |
 | P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **all built and checked on Linux** (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 proposed); **Windows not built yet** (CI down); the owner's M1 run on Windows next |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
@@ -392,3 +397,6 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 - **2026-11-25 (CI billing).** Actions refused every job for billing (the owner's
   screenshot of the annotations). The owner made the repository public; the EDA
   workflow now uses the public runners' 4 cores (DV-24).
+- **2026-11-25 (P0-8 done).** The owner reports Copilot works with Triage's own
+  GitHub sign-in on Windows (patches 0004–0006). The open question on Copilot
+  fallbacks is closed.
