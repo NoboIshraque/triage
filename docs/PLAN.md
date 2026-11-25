@@ -223,7 +223,9 @@ points to: some tools have clean adapters, such as the push-and-shove router beh
 `pns_kicad_iface.cpp`, so the engine can host the router itself and feed it cursor
 positions from Triage, without the wx tool framework. **Driving KiCad's tools
 headlessly is the main technical risk**, so both paths get an early spike (ROADMAP
-P1-6, decided in ADR 0004).
+P1-6). The spike proposes direct hosting: KiCad's tools are built on a `wxFrame`,
+while its router, commits and connectivity run headless in the engine
+([ADR 0004](adr/0004-editing-path.md), proposed).
 
 ### 4.4 The unified project model
 
@@ -731,7 +733,7 @@ simulation updates at 30 Hz on the LAN and 10 Hz through a relay.
 | D7 | **License:** GPL-3.0-or-later for the combined app (compatible with everything reused; no further license work) | default |
 | D8 | **Name:** Triage | **confirmed** 2026-11-24 |
 | D9 | **Integration:** everything in one window, with any tab poppable into a separate Triage window (§1); stock KiCad/FreeCAD windows only as a temporary fallback (§4.3); simulation scopes for checking together or separately (§4.7) | **confirmed** 2026-11-24 (the owner's requirement; separate windows added by the owner the same day, DV-14) |
-| D10 | **Editing path** for KiCad's interactive tools: remote tools vs direct hosting | open: decided by the P1-6 spike (ADR 0004) |
+| D10 | **Editing path** for KiCad's interactive tools: remote tools vs direct hosting | **proposed** 2026-11-25 from the P1-6 spike: direct hosting, Triage owns the tool front ends ([ADR 0004](adr/0004-editing-path.md)); the owner decides |
 | D11 | **Phone and tablet companion:** a web app paired by QR code that views, and with permission edits, any tab while the laptop does the work; WebTransport on the LAN, an optional relay elsewhere (§4.16, [ADR 0005](adr/0005-phone-companion.md)) | **proposed** 2026-11-25 (the owner's request); the owner decides |
 
 ## 6. Risks and mitigations

@@ -217,6 +217,27 @@ describe.skipIf(!available)('triage-eda-engine', () => {
     expect(result.averageMs).toBeLessThan(16);
   });
 
+  it('selects and highlights a part in the schematic (cross-probe)', async () => {
+    const document = (await eda.ok('openDocument', { path: schematic })).response.document
+      .document as number;
+    const items = (await eda.ok('getItems', { document, references: ['Q1'] })).response.items
+      .items as Message[];
+    expect(items.map((item) => item.reference)).toEqual(['Q1']);
+    const selected = await eda.ok('setSelection', { document, uuids: [items[0].uuid] });
+    expect(selected.chunks.length).toBeGreaterThan(0);
+    await eda.ok('highlight', { document, net: '/FAN_GATE' });
+    await eda.ok('setSelection', { document, uuids: [] });
+  });
+
+  it('reloads the board from disk', async () => {
+    const document = (await eda.ok('openDocument', { path: board })).response.document
+      .document as number;
+    const reloaded = await eda.ok('reload', { document });
+    expect(reloaded.response.document.document).toBe(document);
+    const list = await eda.ok('getDisplayList', { document });
+    expect(list.response.displayList.groups).toBeGreaterThan(0);
+  });
+
   it('renames a net in the schematic and saves it', async () => {
     const document = (await eda.ok('openDocument', { path: schematic })).response.document
       .document as number;

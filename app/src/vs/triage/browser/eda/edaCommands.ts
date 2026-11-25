@@ -115,15 +115,18 @@ export function registerEdaCommands(): void {
 			super({ id: EDA_COMMANDS.select, title: localize2('triage.eda.selectCommand', "Select Part in Schematic and Board"), category: TRIAGE_CATEGORY, f1: true });
 		}
 		async run(accessor: ServicesAccessor, references?: string[], net?: string): Promise<void> {
+			// The accessor is only valid until the first await.
+			const editorService = accessor.get(IEditorService);
+			const quickInput = accessor.get(IQuickInputService);
 			if (!references) {
-				const typed = await accessor.get(IQuickInputService).input({ prompt: localize('triage.eda.selectPrompt', "References to select (R1, Q1 …)") });
+				const typed = await quickInput.input({ prompt: localize('triage.eda.selectPrompt', "References to select (R1, Q1 …)") });
 				references = typed?.split(/[\s,]+/).filter(Boolean);
 			}
 			if (!references?.length) {
 				return;
 			}
 			const chosen = references;
-			await Promise.all(edaViews(accessor.get(IEditorService)).map(view => view.selectReferences(chosen, net)));
+			await Promise.all(edaViews(editorService).map(view => view.selectReferences(chosen, net)));
 		}
 	});
 

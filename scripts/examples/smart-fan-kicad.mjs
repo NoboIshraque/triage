@@ -327,8 +327,6 @@ const PLACEMENT = {
   J2: [16.51, 36.83, 0],
 };
 
-const GRID = 1.27;
-const snap = (v) => Math.round(v / GRID) * GRID;
 const fmt = (v) => Number(v.toFixed(4));
 
 // ---- Schematic ---------------------------------------------------------------------
