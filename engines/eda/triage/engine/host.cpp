@@ -26,12 +26,14 @@
 #include <kiway.h>
 
 #include <google/protobuf/util/json_util.h>
+#include <nlohmann/json.hpp>
 
 #include <wx/dir.h>
 #include <wx/filename.h>
 
 #include <array>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <map>
@@ -380,14 +382,20 @@ int loadAll( HOST& aHost, const std::string& aDir )
                                   std::chrono::steady_clock::now() - start )
                                   .count();
 
-        // One JSON object per line: engines/eda/tests/ reads them.
-        std::printf( "{\"file\":\"%s\",\"ok\":%s,\"error\":\"%s\",\"groups\":%u,\"bytes\":%llu,"
-                     "\"components\":%d,\"nets\":%d,\"ms\":%.1f}\n",
-                     file.ToStdString( wxConvUTF8 ).c_str(), ok ? "true" : "false",
-                     ok ? "" : ( info.ok() ? list.ok() ? netlist.error() : list.error() : info.error() ).c_str(),
-                     list.display_list().groups(),
-                     static_cast<unsigned long long>( list.display_list().bytes() ),
-                     netlist.netlist().components_size(), netlist.netlist().nets_size(), ms );
+        // One JSON object per line: engines/eda/tests/ reads them. Built with a JSON
+        // library: Windows paths have backslashes, errors may have quotes.
+        nlohmann::json line;
+        line["file"] = file.ToStdString( wxConvUTF8 );
+        line["ok"] = ok;
+        line["error"] = ok ? std::string()
+                           : ( info.ok() ? list.ok() ? netlist.error() : list.error()
+                                         : info.error() );
+        line["groups"] = list.display_list().groups();
+        line["bytes"] = static_cast<unsigned long long>( list.display_list().bytes() );
+        line["components"] = netlist.netlist().components_size();
+        line["nets"] = netlist.netlist().nets_size();
+        line["ms"] = std::round( ms * 10.0 ) / 10.0;
+        std::printf( "%s\n", line.dump( -1, ' ', false, nlohmann::json::error_handler_t::replace ).c_str() );
         std::fflush( stdout );
 
         if( !ok )

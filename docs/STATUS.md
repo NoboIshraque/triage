@@ -61,8 +61,15 @@ system libraries (wxWidgets, OpenCascade, libgit2, Python 3.13 …), which the
 App machine lacked. The App workflow now installs them before the smoke test.
 **Known issue for Linux users:** the Linux app's KiCad engine needs those
 packages installed; the Linux installer must declare or bundle them (P8-2).
-The Windows engine carries its DLLs. EDA run 12's Windows job got past setup
-and configure and is compiling KiCad.
+The Windows engine carries its DLLs.
+
+App run 45 (22:26 UTC): **all 22 smoke checks pass on Linux in CI with the KiCad
+engine** (rename → header 329 ms, a KiCad save → reload 141 ms, cross-probe,
+edit and save read by kicad-cli, engine restart; 17 and 20 fps in software).
+EDA run 12: **KiCad compiled on Windows (MSVC) for the first time**, in 70
+minutes, and kicad-cli passed all 54 demo files on Windows; the engine's
+`--load-all` report then broke on Windows paths (backslashes written into JSON
+by hand). It now writes the lines with a JSON library.
 
 ### Try P1 on Windows (the M1 owner check, once CI builds it)
 
