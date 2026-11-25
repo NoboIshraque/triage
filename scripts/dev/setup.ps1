@@ -59,9 +59,13 @@ function Install-Tool([string]$Tool, [string]$WingetId, [string]$ChocoId, [strin
 function Require([string]$Tool, [scriptblock]$Test, [scriptblock]$Install) {
   if (& $Test) { return $true }
   if ($Check) { Say $Tool 'missing'; $Missing.Add($Tool); return $false }
-  # Installer output must not become part of this function's return value.
-  & $Install | Out-Host
-  if (& $Test) { return $true }
+  # Package servers fail now and then (Chocolatey answered 504 on 2026-11-25), so
+  # try three times. Installer output must not become this function's return value.
+  foreach ($wait in 0, 20, 60) {
+    if ($wait) { Say $Tool "retrying in $wait s"; Start-Sleep -Seconds $wait }
+    & $Install | Out-Host
+    if (& $Test) { return $true }
+  }
   Say $Tool 'still missing after installing'
   $Missing.Add($Tool)
   return $false

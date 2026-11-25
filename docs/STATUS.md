@@ -48,6 +48,13 @@ started through a shell, which split the vcpkg path "C:\Program Files\…" at it
 space (the fork scripts now start programs directly). KiCad's dependencies are
 cached for Windows (vcpkg); KiCad itself has not compiled on Windows yet.
 
+EDA run 11 (19:50 UTC): **Linux passed everything** (build, the 54-file corpus,
+the engine integration tests) and uploaded `triage-eda-linux`. Windows stopped
+in its setup step: Chocolatey's server answered 504 while installing ccache
+(the setup script now retries installs). The App workflow now takes the newest
+engine built for its own OS, so Linux's app build carries the engine and its
+smoke test runs the EDA checks in CI.
+
 ### Try P1 on Windows (the M1 owner check, once CI builds it)
 
 1. **Actions → App →** the newest green run → artifact **triage-Windows** (it

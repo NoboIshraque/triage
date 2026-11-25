@@ -115,8 +115,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # The EDA engine (KiCad, ROADMAP P1-2) builds in its own workflow (eda.yml),
-      # which takes far longer than the app; the app takes the newest one that passed,
-      # from this branch or else from main.
+      # which takes far longer than the app; the app takes the newest engine built for
+      # its OS, from this branch or else from main. An EDA job uploads its engine only
+      # after the corpus and engine tests pass, so the other OS's job may still fail.
       - name: Download the newest EDA engine
         id: eda
         continue-on-error: true
@@ -128,12 +129,15 @@ jobs:
           branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
           run_id=""
           for b in "$branch" main; do
-            run_id=$(gh run list -R "$GITHUB_REPOSITORY" --workflow eda.yml --branch "$b" --status success --limit 1 --json databaseId -q '.[0].databaseId' || true)
-            [ -n "$run_id" ] && break
+            for id in $(gh run list -R "$GITHUB_REPOSITORY" --workflow eda.yml --branch "$b" --status completed --limit 15 --json databaseId -q '.[].databaseId' || true); do
+              if gh run download "$id" -R "$GITHUB_REPOSITORY" -n "triage-eda-$os" -D "engines/eda/build/$os/stage" 2>/dev/null; then
+                run_id=$id
+                break 2
+              fi
+            done
           done
-          if [ -z "$run_id" ]; then echo "No EDA engine has passed yet."; exit 1; fi
+          if [ -z "$run_id" ]; then echo "No EDA engine for $os has passed yet."; exit 1; fi
           echo "EDA run $run_id"
-          gh run download "$run_id" -R "$GITHUB_REPOSITORY" -n "triage-eda-$os" -D "engines/eda/build/$os/stage"
           ls "engines/eda/build/$os/stage/bin" | head -20
           echo "run=$run_id" >> "$GITHUB_OUTPUT"
 
