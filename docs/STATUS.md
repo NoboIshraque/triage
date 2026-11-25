@@ -3,11 +3,11 @@
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
 **Last updated:** 2026-11-25 · **Phase P1 Electronics engine + views: built and
-checked on Linux; Windows blocked** because GitHub Actions stopped running jobs at
-about 12:03 UTC today (see "CI is down" below), so the Windows engine has never
-been built. **Next:** the owner gets Actions running again; then the EDA
-workflow builds KiCad on Windows (it continues from its caches over several
-runs), and the owner runs the M1 demo on Windows (steps below). P1 is done when
+checked on Linux; Windows not built yet**: GitHub Actions refused jobs for
+billing from about 12:03 UTC until the owner made the repository public the
+same day (see "CI" below). **Next:** the EDA workflow builds KiCad on Windows (Actions runs again since
+the repository went public; the build continues from its caches over several
+runs), then the owner runs the M1 demo on Windows (steps below). P1 is done when
 both pass. P0-8 (the owner's Copilot sign-in test, planned for 2026-11-26) and
 P0-9 stay open. ADR 0004 and ADR 0005 were accepted on 2026-11-25 (decisions
 below); phase PC now runs between P3 and P4.
@@ -29,21 +29,16 @@ KiCad's push-and-shove router runs inside the engine at 0.15–0.18 ms per
 cursor move (the frame budget is 16 ms). That spike led to the editing path in
 [ADR 0004](adr/0004-editing-path.md) (accepted).
 
-### CI is down (since 2026-11-25 about 12:03 UTC): Actions billing
+### CI: back on (the repository is public since 2026-11-25)
 
-Every job since then is refused with **"The job was not started because recent
-account payments have failed or your spending limit needs to be increased.
-Please check the 'Billing & plans' section in your settings"** (observed: the
-run's annotations, the owner's screenshot, 2026-11-25). So the account's
-included Actions minutes for private repositories are used up for this billing
-period, or a payment failed. The KiCad builds are the likely cause: one uncached
-EDA run can take up to ~6 hours on Linux and ~10 hours on Windows, where minutes
-count double on private repositories (inferred from the job time limits; the
-owner's **Billing → Usage** page has the real numbers). This also means the
-earlier decision "minutes are no concern" no longer holds. **The owner's choice:**
-(A) raise the Actions spending limit; (B) make the repository public (standard
-runners are free for public repositories); (C) wait for the monthly reset while
-Claude cuts CI's minutes. Until then nothing new is checked on Windows.
+From about 12:03 UTC on 2026-11-25 every job was refused: "The job was not
+started because recent account payments have failed or your spending limit
+needs to be increased" (observed: the run's annotations, the owner's
+screenshot). The KiCad builds had used up the private repository's Actions
+minutes (inferred). The owner made the repository **public** the same day;
+Actions is free for public repositories, whose runners also have 4 cores (the
+EDA build now uses them all). Anyone can now read the code and download CI's
+builds (DV-24).
 
 ### Try P1 on Windows (the M1 owner check, once CI builds it)
 
@@ -190,12 +185,13 @@ The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt
 | — | **No VS Code name or logo** in Triage now (P0-9), and a **public release checklist** before builds are shared (P8-7) | ROADMAP P0-9, P8-7, [DV-16](DEVIATIONS.md) |
 | — | GitHub Actions **minutes are no concern** (the owner's GitHub student account): the App workflow runs on every push except documentation-only ones | [DV-08](DEVIATIONS.md) |
 | D10 (2026-11-25) | **Editing path: direct hosting.** KiCad's code does the routing, checks and saving inside the engine; Triage draws the tools (owner: "I'm guessing the proposed one is better") | [ADR 0004](adr/0004-editing-path.md) (Accepted) |
+| — (2026-11-25) | The repository is **public** (Actions had stopped for billing; public repositories run Actions free) | [DV-24](DEVIATIONS.md) |
 | D11 (2026-11-25) | **Phone and tablet companion accepted**: a relay, "whichever is the most secure" (end-to-end sealed, holds no keys); the phone app on **GitHub Pages**, the owner's domain later; **iOS 26.4+** for the direct path; phase **PC between P3 and P4**; **View only or View and edit asked each time**, and a view-only phone can be given edit permission during the session | [ADR 0005](adr/0005-phone-companion.md) (Accepted), PLAN §4.16, ROADMAP PC, [DV-23](DEVIATIONS.md) |
 
 ## Deviations from the plan
 
 Every place the build differs from the plan is logged in
-[DEVIATIONS.md](DEVIATIONS.md) (23 entries, DV-01 … DV-23, plus choices the plan left open), so the
+[DEVIATIONS.md](DEVIATIONS.md) (24 entries, DV-01 … DV-24, plus choices the plan left open), so the
 owner can compare the final build with the plan.
 
 ## Open questions
@@ -209,7 +205,6 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
 | Windows code-signing certificate (avoids SmartScreen warnings) | unsigned nightlies; decide before P8-2 | P8 |
-| **CI is down: Actions billing** (spending limit or failed payment; section above). Choose (A) raise the spending limit, (B) make the repository public, or (C) wait for the monthly reset while Claude cuts CI's minutes | nothing runs in CI until then | now: Windows for P1 |
 
 ## Work packages
 
@@ -394,3 +389,6 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   the owner's domain, iOS 26.4+, phase PC between P3 and P4 (DV-23), and the
   permission asked each time the laptop shares, changeable during a session.
   The owner runs the P0-8 Copilot test on 2026-11-26.
+- **2026-11-25 (CI billing).** Actions refused every job for billing (the owner's
+  screenshot of the annotations). The owner made the repository public; the EDA
+  workflow now uses the public runners' 4 cores (DV-24).

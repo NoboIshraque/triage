@@ -196,8 +196,8 @@ Costs:
 1. **Accepted**, with a walkthrough of how it works (this ADR's plain words and
    PLAN §4.16).
 2. **Where the phone app lives:** **GitHub Pages** for now, **the owner's own domain**
-   later. Pages on a private repository needs GitHub Pro (the student pack
-   includes it [D]); PC-3 checks it. Moving to the domain makes paired phones pair
+   later. The repository is public since 2026-11-25 (DV-24), so Pages needs no
+   paid plan. Moving to the domain makes paired phones pair
    once more (their keys belong to the app's origin).
 3. **Relay: yes**, "whichever is the most secure". So: the relay only ever forwards
    frames sealed end to end with the Noise keys that phone and laptop agreed

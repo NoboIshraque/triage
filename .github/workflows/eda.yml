@@ -2,7 +2,8 @@
 # Windows (MSVC + vcpkg), then runs the kicad-demos corpus checks (ROADMAP P1-1,
 # P1-2). The staged engine is uploaded for the App workflow to package.
 #
-# KiCad is large for 2-core runners, so the compiler cache (ccache) is saved even
+# KiCad is large for CI runners (4 cores for a public repository; the build uses
+# them all), so the compiler cache (ccache) is saved even
 # when a build step runs out of time: the next run continues where it stopped.
 # On Windows, KiCad's dependencies (vcpkg) build in a job of their own and are
 # cached as vcpkg binary packages.
@@ -82,7 +83,7 @@ jobs:
         timeout-minutes: 300
         run: |
           ccache --zero-stats
-          node engines/eda/build.mjs build --ccache --jobs 3
+          node engines/eda/build.mjs build --ccache
           ccache --show-stats
 
       - name: Save the compiler cache
@@ -231,7 +232,7 @@ jobs:
         timeout-minutes: 270
         run: |
           & $env:CCACHE_EXE --zero-stats
-          node engines/eda/build.mjs build --ccache --jobs 3
+          node engines/eda/build.mjs build --ccache
           & $env:CCACHE_EXE --show-stats
 
       - name: Save the compiler cache
