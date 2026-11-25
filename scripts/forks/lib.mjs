@@ -9,16 +9,16 @@ export const isWindows = process.platform === 'win32';
 
 export class ForkError extends Error {}
 
+/** Commands that are .cmd shims on Windows (started through a shell). */
+const SHIMS = new Set(['corepack', 'pnpm', 'npm', 'npx']);
+
 /** Runs a command, streaming its output. Throws ForkError on failure. */
 export function run(command, args, options = {}) {
   const { cwd, env, allowFailure = false, capture = false } = options;
-  // Windows can only start .cmd shims (corepack, pnpm) through a shell.
-  const shell =
-    isWindows &&
-    !command.endsWith('.exe') &&
-    command !== 'git' &&
-    command !== 'node' &&
-    command !== process.execPath;
+  // Windows can only start .cmd shims (corepack, pnpm) through a shell, and the
+  // shell splits arguments at spaces (a vcpkg toolchain under "C:\Program Files"
+  // broke CMake that way), so everything else starts directly.
+  const shell = isWindows && (SHIMS.has(command) || /\.(cmd|bat)$/i.test(command));
   const result = spawnSync(command, args, {
     cwd,
     env: { ...process.env, ...env },

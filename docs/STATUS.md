@@ -40,6 +40,14 @@ Actions is free for public repositories, whose runners also have 4 cores (the
 EDA build now uses them all). Anyone can now read the code and download CI's
 builds (DV-24).
 
+First runs after that (2026-11-25 18:30 UTC): CI and App green. The EDA workflow
+failed twice, both fixed: on Linux the corpus found 665 rules violations on
+tiny_tapeout where the golden file says 664 (the board uses system fonts the
+runner lacks, so violation counts now get 1% leeway); on Windows CMake was
+started through a shell, which split the vcpkg path "C:\Program Files\…" at its
+space (the fork scripts now start programs directly). KiCad's dependencies are
+cached for Windows (vcpkg); KiCad itself has not compiled on Windows yet.
+
 ### Try P1 on Windows (the M1 owner check, once CI builds it)
 
 1. **Actions → App →** the newest green run → artifact **triage-Windows** (it

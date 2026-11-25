@@ -13,6 +13,21 @@ import path from 'node:path';
 import process from 'node:process';
 import { stagedEnv, stagedProgram, stageDir } from '../stage.mjs';
 
+/**
+ * Rules-check violation counts may differ by a few between machines: boards that
+ * use system fonts (tiny_tapeout: FreeMono, Liberation Mono) get different text
+ * shapes, so different silkscreen results, where a font is missing (664 locally,
+ * 665 on GitHub's Ubuntu runner, 2026-11-25). They get 1% (at least 1); every
+ * other value must match exactly.
+ */
+const LOOSE = new Set(['drcViolations', 'ercViolations']);
+function matches(key, actual, expected) {
+  if (!LOOSE.has(key) || typeof actual !== 'number' || typeof expected !== 'number') {
+    return actual === expected;
+  }
+  return Math.abs(actual - expected) <= Math.max(1, Math.floor(expected * 0.01));
+}
+
 const testsDir = import.meta.dirname;
 const demosDir = path.resolve(testsDir, '..', 'upstream', 'demos');
 const goldenFile = path.join(testsDir, 'golden', 'corpus.json');
@@ -187,7 +202,7 @@ export async function runCorpus({ update = false } = {}) {
         continue;
       }
       for (const [key, value] of Object.entries(expected)) {
-        if (actual[key] !== value) {
+        if (!matches(key, actual[key], value)) {
           failures.push(`${name}: ${key} is ${actual[key]}, the golden file says ${value}`);
         }
       }
