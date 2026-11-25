@@ -30,6 +30,8 @@ on:
 
 permissions:
   contents: read
+  # gh run download: the EDA engine from the EDA workflow.
+  actions: read
 
 # A newer push waits for the running build instead of cancelling it (a build
 # is long); only the newest waiting run is kept.
@@ -112,6 +114,29 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # The EDA engine (KiCad, ROADMAP P1-2) builds in its own workflow (eda.yml),
+      # which takes far longer than the app; the app takes the newest one that passed,
+      # from this branch or else from main.
+      - name: Download the newest EDA engine
+        id: eda
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          os=$([ "$RUNNER_OS" = Windows ] && echo windows || echo linux)
+          branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          run_id=""
+          for b in "$branch" main; do
+            run_id=$(gh run list -R "$GITHUB_REPOSITORY" --workflow eda.yml --branch "$b" --status success --limit 1 --json databaseId -q '.[0].databaseId' || true)
+            [ -n "$run_id" ] && break
+          done
+          if [ -z "$run_id" ]; then echo "No EDA engine has passed yet."; exit 1; fi
+          echo "EDA run $run_id"
+          gh run download "$run_id" -R "$GITHUB_REPOSITORY" -n "triage-eda-$os" -D "engines/eda/build/$os/stage"
+          ls "engines/eda/build/$os/stage/bin" | head -20
+          echo "run=$run_id" >> "$GITHUB_OUTPUT"
+
       - name: Build the engines into the app (CMake, Ninja, Cargo)
         run: node app/build.mjs engines
 
@@ -120,6 +145,8 @@ jobs:
 
       - name: Smoke test (Linux, virtual display)
         if: runner.os == 'Linux'
+        env:
+          TRIAGE_REQUIRE_EDA: ${{ steps.eda.outcome == 'success' && '1' || '0' }}
         run: |
           # Ubuntu 24.04 blocks the unprivileged user namespaces Chromium's sandbox uses.
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
@@ -127,6 +154,8 @@ jobs:
 
       - name: Smoke test (Windows)
         if: runner.os == 'Windows'
+        env:
+          TRIAGE_REQUIRE_EDA: ${{ steps.eda.outcome == 'success' && '1' || '0' }}
         run: corepack pnpm --filter @triage/app-smoke smoke
 
       - name: Upload screenshots and logs

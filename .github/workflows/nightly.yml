@@ -11,6 +11,8 @@ on:
 
 permissions:
   contents: read
+  # The App workflow downloads the EDA engine (gh run download).
+  actions: read
 
 jobs:
   changes:

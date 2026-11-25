@@ -36,6 +36,7 @@
 // Changing upstream: edit app/upstream, then refresh-patches. prepare refuses to
 // discard edits made since the last prepare (unless --force).
 import {
+  chmodSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -259,6 +260,36 @@ function buildEngines({ arch }) {
   for (const file of files) {
     cpSync(path.join(repoRoot, file), path.join(target, path.basename(file)));
     console.log(`Copied ${path.basename(file)} into ${path.relative(process.cwd(), target)}`);
+  }
+  // The EDA engine (KiCad's engine, ROADMAP P1-2), staged by engines/eda/build.mjs
+  // or downloaded from the EDA workflow: programs, kifaces and libraries in one folder.
+  const edaStage = path.join(
+    repoRoot,
+    'engines',
+    'eda',
+    'build',
+    isWindows ? 'windows' : 'linux',
+    'stage',
+    'bin',
+  );
+  const edaTarget = path.join(target, 'eda');
+  rmSync(edaTarget, { recursive: true, force: true });
+  if (existsSync(edaStage)) {
+    cpSync(edaStage, edaTarget, { recursive: true });
+    if (!isWindows) {
+      // Artifacts lose the executable bit.
+      for (const name of ['triage-eda-engine', 'kicad-cli', 'eeschema', 'pcbnew']) {
+        const file = path.join(edaTarget, name);
+        if (existsSync(file)) chmodSync(file, 0o755);
+      }
+    }
+    console.log(
+      `Copied the EDA engine (${readdirSync(edaTarget).length} files) into ${path.relative(process.cwd(), edaTarget)}`,
+    );
+  } else {
+    console.log(
+      `No EDA engine in ${path.relative(process.cwd(), edaStage)}: the Schematic and Board tabs will say so.`,
+    );
   }
 }
 

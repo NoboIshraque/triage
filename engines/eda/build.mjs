@@ -71,6 +71,9 @@ function cmakeOptions({ ccache, debug }) {
     KICAD_BUILD_I18N: 'OFF',
     KICAD_UPDATE_CHECK: 'OFF',
     KICAD_INSTALL_DEMOS: 'OFF',
+    // pcbnew links the IDF tools' library, so they stay on (explicit: a cache from
+    // an older configure may say OFF).
+    KICAD_IDF_TOOLS: 'ON',
     // A compiler cache can't reuse precompiled headers across machines.
     KICAD_USE_PCH: ccache ? 'OFF' : 'ON',
   };
