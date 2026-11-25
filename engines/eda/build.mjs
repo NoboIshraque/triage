@@ -71,7 +71,6 @@ function cmakeOptions({ ccache, debug }) {
     KICAD_BUILD_I18N: 'OFF',
     KICAD_UPDATE_CHECK: 'OFF',
     KICAD_INSTALL_DEMOS: 'OFF',
-    KICAD_IDF_TOOLS: 'OFF',
     // A compiler cache can't reuse precompiled headers across machines.
     KICAD_USE_PCH: ccache ? 'OFF' : 'ON',
   };

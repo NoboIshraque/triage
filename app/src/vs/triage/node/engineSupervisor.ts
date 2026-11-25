@@ -25,6 +25,8 @@ export interface EngineSupervisorOptions {
 	readonly restartDelaysMs?: readonly number[];
 	/** How long a started engine may take to say Hello. */
 	readonly helloTimeoutMs?: number;
+	/** Extra environment for the engine process (library paths). */
+	readonly env?: Readonly<Record<string, string>>;
 }
 
 type Listener<T> = (value: T) => void;
@@ -213,6 +215,7 @@ export class EngineSupervisor {
 		const child = spawn(this.options.executable, ['--connect', this.endpoint], {
 			stdio: ['ignore', 'ignore', 'pipe'],
 			windowsHide: true,
+			env: this.options.env ? { ...process.env, ...this.options.env } : process.env,
 		});
 		this.child = child;
 		let stderr = '';

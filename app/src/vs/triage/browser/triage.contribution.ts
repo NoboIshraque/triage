@@ -18,7 +18,10 @@ import { ViewPaneContainer } from '../../workbench/browser/parts/views/viewPaneC
 import { registerWorkbenchContribution2, WorkbenchPhase } from '../../workbench/common/contributions.js';
 import { EditorExtensions, IEditorFactoryRegistry } from '../../workbench/common/editor.js';
 import { Extensions as ViewExtensions, IViewContainersRegistry, IViewsRegistry, ViewContainerLocation } from '../../workbench/common/views.js';
+import { InstantiationType, registerSingleton } from '../../platform/instantiation/common/extensions.js';
+import { ITriageCrossProbeService, TriageCrossProbeService } from '../common/eda/crossProbe.js';
 import { TRIAGE_CATEGORY, TRIAGE_OVERVIEW_VIEW_ID, TRIAGE_VIEW_CONTAINER_ID } from '../common/triage.js';
+import { registerEdaCommands } from './eda/edaCommands.js';
 import { OpenEngineeringLayoutAction, OpenEngineeringWindowsAction, PopOutViewAction } from './engineeringLayout.js';
 import { TriageOverviewView } from './triageOverviewView.js';
 import { TriageViewEditor, TriageViewInput, TriageViewInputSerializer } from './triageViewEditor.js';
@@ -67,6 +70,9 @@ Registry.as<IEditorPaneRegistry>(EditorExtensions.EditorPane).registerEditorPane
 	[new SyncDescriptor(TriageViewInput)],
 );
 Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEditorSerializer(TriageViewInput.ID, TriageViewInputSerializer);
+
+registerSingleton(ITriageCrossProbeService, TriageCrossProbeService, InstantiationType.Delayed);
+registerEdaCommands();
 
 registerAction2(OpenEngineeringLayoutAction);
 registerAction2(OpenEngineeringWindowsAction);

@@ -15,9 +15,12 @@ import { HELLO_ENGINE_COMMANDS, ITriageHelloEngineService } from '../common/hell
 import { TriageHelloEngineService } from './helloEngineService.js';
 import { ITriageProjectService } from '../common/projectModel.js';
 import { TriageProjectService } from './projectService.js';
+import { ITriageEdaEngineService } from '../common/eda/edaEngine.js';
+import { TriageEdaEngineService } from './edaEngineService.js';
 
 registerSingleton(ITriageHelloEngineService, TriageHelloEngineService, InstantiationType.Delayed);
 registerSingleton(ITriageProjectService, TriageProjectService, InstantiationType.Delayed);
+registerSingleton(ITriageEdaEngineService, TriageEdaEngineService, InstantiationType.Delayed);
 
 registerAction2(class extends Action2 {
 	constructor() {

@@ -21,6 +21,7 @@
 #include <pad.h>
 #include <pcb_draw_panel_gal.h>
 #include <pcb_display_options.h>
+#include <pcb_board_outline.h>
 #include <pcb_painter.h>
 #include <pcb_track.h>
 #include <pcb_view.h>
@@ -31,6 +32,7 @@
 #include <ratsnest/ratsnest_view_item.h>
 #include <settings/color_settings.h>
 #include <settings/settings_manager.h>
+#include <string_utils.h>
 #include <zone.h>
 
 #include <wx/filename.h>
@@ -170,11 +172,8 @@ void PCB_FACE::setupView( PCB_DOC& aDoc )
     if( cs )
         rs->LoadColors( cs );
 
+    // The board editor's default display options (filled pads, tracks and zones).
     PCB_DISPLAY_OPTIONS options;
-
-    if( cfg )
-        options = cfg->m_Display;
-
     aDoc.view->UpdateDisplayOptions( options );
 
     // A typical zoom (about 20 pixels per millimetre): a few painters size helper

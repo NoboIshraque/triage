@@ -11,7 +11,7 @@
 
 #include <gal/color4d.h>
 #include <math/box2.h>
-#include <painter.h>
+#include <gal/painter.h>
 #include <view/view.h>
 
 #include <triage/eda/v1/engine.pb.h>

@@ -78,7 +78,7 @@ message Layer {
   int32 id = 1;     // KiCad layer id (PCB_LAYER_ID, GAL_LAYER_ID or SCH_LAYER_ID)
   string name = 2;
   uint32 color = 3; // 0xRRGGBBAA from the colour theme
-  int32 order = 4;  // drawing order: higher draws later (on top)
+  int32 order = 4;  // KiCad rendering order: lower is nearer the viewer (drawn later)
   bool visible = 5;
   bool user = 6;    // a layer the user toggles (copper, silkscreen, ...), not a GAL helper
   int32 required = 7; // shown only while this layer is shown (itself for independent layers)
