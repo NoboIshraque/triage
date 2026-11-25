@@ -25,9 +25,11 @@ describe.skipIf(addon === undefined)('triage_model.node', () => {
       ['simulation', 'Simulation', 'simulation', true],
     ]);
     expect(project?.domains[0]?.detail).toBe('arduino-uno, arduino-cli');
+    // The KiCad project arrived with ROADMAP P1.
     expect(project?.domains[1]?.files).toEqual([
-      { path: 'electronics/smart-fan.kicad_pro', exists: false },
+      { path: 'electronics/smart-fan.kicad_pro', exists: true },
     ]);
+    expect(project?.board).toBe('arduino-uno');
   });
 
   it('returns null for a folder without triage.toml', () => {
@@ -47,5 +49,42 @@ describe.skipIf(addon === undefined)('triage_model.node', () => {
   it('exposes the JSON Schema and its version', () => {
     expect(JSON.parse(model.manifestSchema())).toHaveProperty('title');
     expect(model.version()).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+});
+
+describe.skipIf(addon === undefined)('pin map (ROADMAP P1-5)', () => {
+  const pinMap: NonNullable<typeof addon>['pinMap'] = (...args) => {
+    if (!addon) throw new Error('addon not built');
+    return addon.pinMap(...args);
+  };
+
+  it('writes board_pins.h and flags unconnected pins', () => {
+    const result = pinMap(
+      'arduino-uno',
+      'electronics/smart-fan.kicad_sch',
+      [
+        {
+          reference: 'A1',
+          libId: 'smart_fan:Arduino_UNO_R3',
+          footprint: 'smart_fan:Arduino_UNO_R3',
+          pins: [{ number: '24', name: 'D9', net: '/FAN_PWM' }],
+        },
+        {
+          reference: 'R2',
+          libId: 'smart_fan:R',
+          footprint: '',
+          pins: [{ number: '1', name: '~', net: '/FAN_PWM' }],
+        },
+      ],
+      [{ path: 'main.cpp', text: 'void loop() {\n  analogWrite(10, 128);\n}\n' }],
+    );
+    expect(result.header).toContain('constexpr uint8_t FAN_PWM =  9; // D9, PWM, net /FAN_PWM');
+    expect(result.diagnostics).toEqual([
+      expect.objectContaining({ line: 2, message: 'D10 is not connected to anything' }),
+    ]);
+  });
+
+  it('throws for an unknown board', () => {
+    expect(() => pinMap('esp32', 'x', [], [])).toThrow(/unknown board 'esp32'/);
   });
 });

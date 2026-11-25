@@ -11,7 +11,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
-import { stagedEnv, stagedProgram, stageDir } from '../build.mjs';
+import { stagedEnv, stagedProgram, stageDir } from '../stage.mjs';
 
 const testsDir = import.meta.dirname;
 const demosDir = path.resolve(testsDir, '..', 'upstream', 'demos');
@@ -58,8 +58,8 @@ function checkSchematic(file, out) {
   const netlist = path.join(out, 'netlist.net');
   cli(['sch', 'export', 'netlist', '--output', netlist, file]);
   const net = readFileSync(netlist, 'utf8');
-  const components = (net.match(/\(comp \(ref /g) ?? []).length;
-  const nets = (net.match(/\(net \(code /g) ?? []).length;
+  const components = (net.match(/\(comp\s+\(ref /g) ?? []).length;
+  const nets = (net.match(/\(net\s+\(code /g) ?? []).length;
 
   const ercFile = path.join(out, 'erc.json');
   cli(['sch', 'erc', '--format', 'json', '--output', ercFile, file]);

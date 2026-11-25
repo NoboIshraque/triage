@@ -20,10 +20,28 @@ export interface JsProject {
     files: { path: string; exists: boolean }[];
     detail?: string;
   }[];
+  board?: string;
+}
+
+export interface JsPinMap {
+  header: string;
+  pins: { pin: string; number: number; net: string; constant?: string; connected: boolean }[];
+  diagnostics: { path: string; severity: string; line: number; column: number; message: string }[];
 }
 
 export interface TriageModelAddon {
   loadProject(dir: string): JsProject | null;
+  pinMap(
+    board: string,
+    schematic: string,
+    components: {
+      reference: string;
+      libId: string;
+      footprint: string;
+      pins: { number: string; name: string; net: string }[];
+    }[],
+    sources: { path: string; text: string }[],
+  ): JsPinMap;
   manifestSchema(): string;
   version(): string;
 }

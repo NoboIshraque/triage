@@ -275,7 +275,7 @@ const PARTS = [
     symbol: 'Conn_01x02',
     value: 'Fan 12V',
     footprint: 'PinHeader_1x02_P2.54mm_Vertical',
-    at: [210.82, 63.5],
+    at: [228.6, 63.5],
     nets: { 1: '+12V', 2: 'FAN_NEG' },
   },
   {
@@ -315,16 +315,16 @@ const PARTS = [
 /** Board placement (mm, relative to the shield's origin, the Arduino footprint's pad 1). */
 const PLACEMENT = {
   A1: [0, 0, 0],
-  TH1: [8.89, 13.97, 0],
-  R1: [8.89, 19.05, 0],
-  R2: [8.89, 24.13, 0],
-  R3: [8.89, 29.21, 0],
-  Q1: [30.48, 13.97, 0],
-  D1: [24.13, 34.29, 0],
-  J1: [44.45, 31.75, 90],
-  J2: [-8.89, 41.91, 0],
-  J3: [27.94, 41.91, 90],
-  SW1: [40.64, 20.32, 0],
+  TH1: [-12.7, 6.35, 0],
+  R1: [-12.7, 11.43, 0],
+  R2: [-12.7, 16.51, 0],
+  R3: [-12.7, 21.59, 0],
+  D1: [-12.7, 26.67, 0],
+  Q1: [6.35, 10.16, 0],
+  SW1: [17.78, 6.35, 0],
+  J1: [30.48, 6.35, 0],
+  J3: [30.48, 17.78, 0],
+  J2: [16.51, 36.83, 0],
 };
 
 const GRID = 1.27;
@@ -343,6 +343,23 @@ function property(name, value, at, hidden = false) {
   const prop = ['property', q(name), q(value), ['at', fmt(at[0]), fmt(at[1]), 0], textEffects()];
   if (hidden) prop.push(['hide', 'yes']);
   return prop;
+}
+
+/** A field where the library symbol puts it (library y-up, schematic y-down). */
+function libraryField(symbol, name, value, x, y, hidden) {
+  const source = findAll(symbol, 'property').find((p) => atomText(p[1]) === name);
+  const at = source ? find(source, 'at') : ['at', 0, 0, 0];
+  const effects = source ? structuredClone(find(source, 'effects')) : textEffects();
+  if (source) restoreQ(effects, find(source, 'effects'));
+  const field = [
+    'property',
+    q(name),
+    q(value),
+    ['at', fmt(x + Number(at[1])), fmt(y - Number(at[2])), Number(at[3] ?? 0)],
+    effects,
+  ];
+  if (hidden) field.push(['hide', 'yes']);
+  return field;
 }
 
 function schematic(libs, rootUuid, symbolUuids) {
@@ -369,8 +386,15 @@ function schematic(libs, rootUuid, symbolUuids) {
       ['on_board', part.ref.startsWith('#') ? 'no' : 'yes'],
       ['dnp', 'no'],
       ['uuid', q(uuid)],
-      property('Reference', part.ref, [x + 2.54, y - 3.81], part.ref.startsWith('#')),
-      property('Value', part.value, [x + 2.54, y + 3.81]),
+      libraryField(
+        libs.symbols[part.symbol],
+        'Reference',
+        part.ref,
+        x,
+        y,
+        part.ref.startsWith('#'),
+      ),
+      libraryField(libs.symbols[part.symbol], 'Value', part.value, x, y, false),
       property('Footprint', part.footprint ? FP(part.footprint) : '', [x, y], true),
       property('Datasheet', '~', [x, y], true),
     ];
@@ -391,17 +415,23 @@ function schematic(libs, rootUuid, symbolUuids) {
           items.push(['no_connect', ['at', px, py], ['uuid', q(randomUUID())]]);
         continue;
       }
-      // The label's text points away from the symbol body.
-      const [angle, justify] = {
-        0: [180, ['right']],
-        180: [0, ['left']],
-        90: [270, ['right']],
-        270: [90, ['left']],
-      }[p.angle] ?? [0, ['left']];
+      // Horizontal pins get the label on the pin; vertical pins a short wire up or
+      // down first, so every label reads left to right and clears the part's text.
+      let [lx, ly] = [px, py];
+      if (p.angle === 90 || p.angle === 270) {
+        ly = fmt(py + (p.angle === 270 ? -2.54 : 2.54));
+        items.push([
+          'wire',
+          ['pts', ['xy', px, py], ['xy', lx, ly]],
+          ['stroke', ['width', 0], ['type', 'default']],
+          ['uuid', q(randomUUID())],
+        ]);
+      }
+      const [angle, justify] = p.angle === 0 ? [180, ['right']] : [0, ['left']];
       items.push([
         'label',
         q(net),
-        ['at', px, py, angle],
+        ['at', lx, ly, angle],
         ['fields_autoplaced', 'yes'],
         textEffects([...justify, 'bottom']),
         ['uuid', q(randomUUID())],
@@ -500,6 +530,14 @@ function board(libs, rootUuid, symbolUuids) {
       ['uuid', q(randomUUID())],
       ['at', fmt(origin[0] + dx), fmt(origin[1] + dy), ...(rot ? [rot] : [])],
     );
+    if (part.footprint === 'Arduino_UNO_R3') {
+      // The Uno sits under the shield: its courtyard (the whole board) would make
+      // every part on the shield "overlap" it.
+      for (let i = kept.length - 1; i >= 0; i--) {
+        const layer = Array.isArray(kept[i]) ? find(kept[i], 'layer') : undefined;
+        if (layer && atomText(layer[1]) === 'F.CrtYd') kept.splice(i, 1);
+      }
+    }
     for (const child of kept) {
       if (head(child) === 'property') {
         if (atomText(child[1]) === 'Reference') child[2] = q(part.ref);
@@ -579,7 +617,7 @@ function kicadCli(args) {
 }
 
 async function main() {
-  globalThis.__staged = await import(path.join(root, 'engines', 'eda', 'build.mjs'));
+  globalThis.__staged = await import(path.join(root, 'engines', 'eda', 'stage.mjs'));
   const libs = loadLibraries();
   mkdirSync(outDir, { recursive: true });
   const rootUuid = randomUUID();

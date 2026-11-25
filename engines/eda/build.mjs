@@ -31,6 +31,7 @@ import path from 'node:path';
 import process from 'node:process';
 import { fetchUpstream } from '../../scripts/forks/fetch.mjs';
 import { ForkError, isWindows, main, run } from '../../scripts/forks/lib.mjs';
+import { buildDir, stageDir } from './stage.mjs';
 import {
   applyPatches,
   checkPatches,
@@ -41,9 +42,6 @@ import {
 const edaDir = import.meta.dirname;
 const upstreamDir = path.join(edaDir, 'upstream');
 const triageDir = path.join(edaDir, 'triage');
-const osName = isWindows ? 'windows' : process.platform === 'darwin' ? 'macos' : 'linux';
-export const buildDir = path.join(edaDir, 'build', osName);
-export const stageDir = path.join(buildDir, 'stage', 'bin');
 
 const STEPS = ['fetch', 'prepare', 'configure', 'build', 'stage'];
 const COMMANDS = ['test', 'refresh-patches', 'check-patches'];
@@ -54,6 +52,8 @@ const TARGETS = [
   'kicad-cli',
   'pcbnew_kiface',
   'eeschema_kiface',
+  // kicad-cli's ERC asks the footprint-assignment kiface about footprint links.
+  'cvpcb_kiface',
   'pcbnew',
   'eeschema',
   'triage-eda-engine',
@@ -207,16 +207,6 @@ function stage() {
 async function test(options) {
   const { runCorpus } = await import('./tests/corpus.mjs');
   await runCorpus({ update: options.update });
-}
-
-/** The environment a staged engine runs with (the app's broker sets the same). */
-export function stagedEnv() {
-  if (isWindows) return { PATH: `${stageDir}${path.delimiter}${process.env.PATH ?? ''}` };
-  return { LD_LIBRARY_PATH: `${stageDir}${path.delimiter}${process.env.LD_LIBRARY_PATH ?? ''}` };
-}
-
-export function stagedProgram(name) {
-  return path.join(stageDir, `${name}${isWindows ? '.exe' : ''}`);
 }
 
 if (import.meta.filename === path.resolve(process.argv[1] ?? '')) {

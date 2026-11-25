@@ -37,3 +37,11 @@ pnpm-debug.log*
 /app/Triage/
 /engines/*/upstream/
 /engines/*/build/
+
+# KiCad's per-user and temporary files (projects keep .kicad_pro, _sch, _pcb, lib tables)
+*.kicad_prl
+*-backups/
+fp-info-cache
+_autosave-*
+~*.lck
+\#auto_saved_files#
