@@ -8,6 +8,7 @@
 #include "stream_gal.h"
 
 #include <bezier_curves.h>
+#include <bitmap_base.h>
 #include <eda_item.h>
 #include <font/glyph.h>
 #include <geometry/shape_line_chain.h>
@@ -17,6 +18,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 using KIGFX::COLOR4D;
 
@@ -35,6 +37,7 @@ size_t GROUP::PrimitiveCount() const
         case PRIM::SEGMENTS: n += run.data.size() / 5; break;
         case PRIM::CIRCLES: n += run.data.size() / 4; break;
         case PRIM::ARCS: n += run.data.size() / 6; break;
+        case PRIM::IMAGES: n += 1; break;
         }
     }
 
@@ -629,9 +632,62 @@ void STREAM_GAL::DrawCurve( const VECTOR2D& aStartPoint, const VECTOR2D& aContro
 
 void STREAM_GAL::DrawBitmap( const BITMAP_BASE& aBitmap, double alphaBlend )
 {
-    (void) aBitmap;
-    (void) alphaBlend;
     m_bitmaps++;
+    const wxImage* image = aBitmap.GetImageData();
+
+    if( !image || !image->IsOk() || aBitmap.GetPPI() <= 0 )
+        return;
+
+    // Size and placement as OPENGL_GAL::DrawBitmap: centred on the current origin,
+    // pixels / (PPI * world unit length) world units across.
+    const double scale = 1.0 / ( aBitmap.GetPPI() * m_worldUnitLength );
+    const int    width = image->GetWidth();
+    const int    height = image->GetHeight();
+    const double w = width * scale;
+    const double h = height * scale;
+
+    // OpenGL GAL turns the texture about its centre by the bitmap's rotation.
+    const double   angle = -aBitmap.Rotation().AsRadians();
+    const VECTOR2D ax( std::cos( angle ) * w, std::sin( angle ) * w );
+    const VECTOR2D ay( -std::sin( angle ) * h, std::cos( angle ) * h );
+    const VECTOR2D corner = m_xform.Apply( -( ax + ay ) / 2.0 );
+    const VECTOR2D u = m_xform.ApplyVector( ax );
+    const VECTOR2D v = m_xform.ApplyVector( ay );
+
+    // At most 2048 pixels on a side, sampled down (nearest pixel) beyond that.
+    const int step = std::max( 1, ( std::max( width, height ) + 2047 ) / 2048 );
+    const int outW = ( width + step - 1 ) / step;
+    const int outH = ( height + step - 1 ) / step;
+
+    COLOR4D tint = COLOR4D::WHITE;
+    tint.a = std::clamp( alphaBlend, 0.0, 1.0 );
+    PRIM_RUN& r = target().emplace_back( PRIM_RUN{ PRIM::IMAGES, packColor( tint ), {} } );
+    r.data = { float( corner.x ), float( corner.y ), float( u.x ), float( u.y ),
+               float( v.x ),      float( v.y ),      float( outW ), float( outH ) };
+    r.data.resize( 8 + size_t( outW ) * outH );
+
+    const unsigned char* rgb = image->GetData();
+    const unsigned char* alpha = image->HasAlpha() ? image->GetAlpha() : nullptr;
+    const bool           mask = image->HasMask();
+    const unsigned char  mr = mask ? image->GetMaskRed() : 0;
+    const unsigned char  mg = mask ? image->GetMaskGreen() : 0;
+    const unsigned char  mb = mask ? image->GetMaskBlue() : 0;
+    float*               out = r.data.data() + 8;
+
+    for( int y = 0; y < outH; y++ )
+    {
+        for( int x = 0; x < outW; x++ )
+        {
+            const size_t  i = size_t( y * step ) * width + size_t( x * step );
+            unsigned char px[4] = { rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2],
+                                    alpha ? alpha[i] : static_cast<unsigned char>( 255 ) };
+
+            if( mask && px[0] == mr && px[1] == mg && px[2] == mb )
+                px[3] = 0;
+
+            std::memcpy( out++, px, 4 ); // raw RGBA bytes, not a float
+        }
+    }
 }
 
 

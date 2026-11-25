@@ -9,7 +9,7 @@
  *  No VS Code imports beyond the display-list model: tested headless.
  *--------------------------------------------------------------------------------------------*/
 
-import { DisplayGroup, DisplayListModel, FLOATS_PER, PrimitiveKind } from '../../common/eda/displayList.js';
+import { DisplayGroup, DisplayListModel, FLOATS_PER, imagePixels, PrimitiveKind } from '../../common/eda/displayList.js';
 
 export interface Camera {
 	/** World coordinates (KiCad internal units) at the centre of the canvas. */
@@ -68,6 +68,37 @@ void main() { o_color = vec4(v_color.rgb * v_color.a, v_color.a); }`;
 
 // Quad corners for the instanced primitives.
 const CORNERS = new Float32Array([-1, -1, 1, -1, 1, 1, -1, -1, 1, 1, -1, 1]);
+
+// Bitmaps (KiCad's reference images): a textured parallelogram, one draw per image.
+const IMAGE_VS = COMMON + /* glsl */ `
+in vec2 a_corner;
+uniform vec2 u_origin;
+uniform vec2 u_u;
+uniform vec2 u_v;
+uniform float u_lod;
+out vec2 v_uv;
+void main() {
+	v_uv = (a_corner + 1.0) * 0.5;
+	gl_Position = u_lod < u_viewScale ? toClip(u_origin + u_u * v_uv.x + u_v * v_uv.y) : vec4(2.0, 2.0, 2.0, 1.0);
+}`;
+
+const IMAGE_FS = /* glsl */ `#version 300 es
+precision highp float;
+uniform sampler2D u_image;
+uniform vec4 u_tint;
+in vec2 v_uv;
+out vec4 color;
+void main() {
+	vec4 c = texture(u_image, v_uv) * u_tint;
+	color = vec4(c.rgb * c.a, c.a); // premultiplied, as the other primitives
+}`;
+
+interface LayerImage {
+	readonly texture: WebGLTexture;
+	readonly geometry: Float32Array; // x, y, ux, uy, vx, vy
+	readonly lod: number;
+	readonly tint: number;
+}
 
 const SEG_VS = COMMON + /* glsl */ `
 in vec2 a_corner;
@@ -226,6 +257,7 @@ interface LayerBuffers {
 	seg?: WebGLVertexArrayObject; segBuffer?: WebGLBuffer; segCount: number;
 	circle?: WebGLVertexArrayObject; circleBuffer?: WebGLBuffer; circleCount: number;
 	arc?: WebGLVertexArrayObject; arcBuffer?: WebGLBuffer; arcCount: number;
+	images?: LayerImage[];
 }
 
 function compile(gl: WebGL2RenderingContext, vs: string, fs: string, attributes: string[], uniforms: string[]): Program {
@@ -270,6 +302,8 @@ export class EdaRenderer {
 	private readonly seg: Program;
 	private readonly circle: Program;
 	private readonly arc: Program;
+	private readonly image: Program;
+	private readonly imageQuad: WebGLVertexArrayObject;
 	private readonly corners: WebGLBuffer;
 	private readonly layers = new Map<number, LayerBuffers>();
 	private styles = new Map<number, LayerStyle>();
@@ -287,9 +321,15 @@ export class EdaRenderer {
 		this.seg = compile(gl, SEG_VS, SEG_FS, ['a_corner', 'a_ends', 'a_width', 'a_lod', 'a_rgba'], UNIFORMS);
 		this.circle = compile(gl, CIRCLE_VS, CIRCLE_FS, ['a_corner', 'a_circle', 'a_width', 'a_lod', 'a_rgba'], UNIFORMS);
 		this.arc = compile(gl, ARC_VS, ARC_FS, ['a_corner', 'a_circle', 'a_angles', 'a_width', 'a_lod', 'a_rgba'], UNIFORMS);
+		this.image = compile(gl, IMAGE_VS, IMAGE_FS, ['a_corner'], [...UNIFORMS, 'u_origin', 'u_u', 'u_v', 'u_lod', 'u_image', 'u_tint']);
 		this.corners = gl.createBuffer()!;
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.corners);
 		gl.bufferData(gl.ARRAY_BUFFER, CORNERS, gl.STATIC_DRAW);
+		this.imageQuad = gl.createVertexArray()!;
+		gl.bindVertexArray(this.imageQuad);
+		gl.enableVertexAttribArray(this.image.attributes['a_corner']);
+		gl.vertexAttribPointer(this.image.attributes['a_corner'], 2, gl.FLOAT, false, 0, 0);
+		gl.bindVertexArray(null);
 	}
 
 	setBackground(rgba: number): void {
@@ -320,6 +360,9 @@ export class EdaRenderer {
 		let tris = 0, segs = 0, circles = 0, arcs = 0;
 		for (const group of groups) {
 			for (const run of group.runs) {
+				if (run.kind === PrimitiveKind.Images) {
+					continue;
+				}
 				const n = run.data.length / FLOATS_PER[run.kind];
 				switch (run.kind) {
 					case PrimitiveKind.Triangles: tris += n; break;
@@ -338,12 +381,20 @@ export class EdaRenderer {
 		const circU = new Uint32Array(circ.buffer);
 		const arcU = new Uint32Array(arc.buffer);
 		let ti = 0, si = 0, ci = 0, ai = 0;
+		const images: LayerImage[] = [];
 		for (const group of groups) {
 			const lod = group.lod;
 			for (const run of group.runs) {
 				const color = (group.overrideRgba ?? run.rgba) >>> 0;
 				const d = run.data;
 				switch (run.kind) {
+					case PrimitiveKind.Images: {
+						const texture = this.texture(d[6], d[7], imagePixels(run));
+						if (texture) {
+							images.push({ texture, geometry: d.slice(0, 6), lod, tint: run.rgba >>> 0 });
+						}
+						break;
+					}
 					case PrimitiveKind.Triangles:
 						for (let i = 0; i < d.length; i += 2) {
 							tri[ti++] = d[i]; tri[ti++] = d[i + 1]; tri[ti++] = lod; triU[ti++] = color;
@@ -375,7 +426,7 @@ export class EdaRenderer {
 		if (old) {
 			this.release(old);
 		}
-		const buffers: LayerBuffers = { triCount: tris, segCount: segs, circleCount: circles, arcCount: arcs };
+		const buffers: LayerBuffers = { triCount: tris, segCount: segs, circleCount: circles, arcCount: arcs, images: images.length ? images : undefined };
 		const f = 4;
 		if (tris > 0) {
 			[buffers.tri, buffers.triBuffer] = this.vao(this.tri, tri, false, TRI_STRIDE * f, [['a_pos', 2, 0], ['a_lod', 1, 2], ['a_rgba', 1, 3]]);
@@ -390,7 +441,7 @@ export class EdaRenderer {
 			[buffers.arc, buffers.arcBuffer] = this.vao(this.arc, arc, true, ARC_STRIDE * f, [['a_circle', 3, 0], ['a_angles', 2, 3], ['a_width', 1, 5], ['a_lod', 1, 6], ['a_rgba', 1, 7]]);
 		}
 		gl.bindVertexArray(null);
-		if (tris + segs + circles + arcs > 0) {
+		if (tris + segs + circles + arcs + images.length > 0) {
 			this.layers.set(layer, buffers);
 		} else {
 			this.layers.delete(layer);
@@ -428,8 +479,28 @@ export class EdaRenderer {
 		return [vao, buffer];
 	}
 
+	private texture(width: number, height: number, pixels: Uint8Array): WebGLTexture | undefined {
+		const gl = this.gl;
+		if (!(width > 0 && height > 0) || pixels.length < width * height * 4) {
+			return undefined;
+		}
+		const texture = gl.createTexture()!;
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+		gl.pixelStorei(gl.UNPACK_ALIGNMENT, 1);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, pixels.subarray(0, width * height * 4));
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+		gl.bindTexture(gl.TEXTURE_2D, null);
+		return texture;
+	}
+
 	private release(buffers: LayerBuffers): void {
 		const gl = this.gl;
+		for (const image of buffers.images ?? []) {
+			gl.deleteTexture(image.texture);
+		}
 		for (const vao of [buffers.tri, buffers.seg, buffers.circle, buffers.arc]) {
 			if (vao) {
 				gl.deleteVertexArray(vao);
@@ -467,7 +538,7 @@ export class EdaRenderer {
 
 		const viewScale = camera.scale / this.pixelsPerIuAtScale1;
 		const minWidth = 1 / (camera.scale * ratio);
-		const programs = [this.tri, this.seg, this.circle, this.arc];
+		const programs = [this.tri, this.seg, this.circle, this.arc, this.image];
 		for (const program of programs) {
 			gl.useProgram(program.program);
 			gl.uniform2f(program.uniforms['u_center'], camera.cx, camera.cy);
@@ -507,6 +578,26 @@ export class EdaRenderer {
 					primitives += count;
 				}
 			}
+			if (buffers.images) {
+				const u = this.image.uniforms;
+				gl.useProgram(this.image.program);
+				gl.bindVertexArray(this.imageQuad);
+				gl.activeTexture(gl.TEXTURE0);
+				gl.uniform1i(u['u_image'], 0);
+				for (const image of buffers.images) {
+					const g = image.geometry, t = image.tint;
+					gl.uniform2f(u['u_origin'], g[0], g[1]);
+					gl.uniform2f(u['u_u'], g[2], g[3]);
+					gl.uniform2f(u['u_v'], g[4], g[5]);
+					gl.uniform1f(u['u_lod'], image.lod);
+					gl.uniform4f(u['u_tint'], ((t >>> 24) & 255) / 255, ((t >>> 16) & 255) / 255, ((t >>> 8) & 255) / 255, (t & 255) / 255);
+					gl.bindTexture(gl.TEXTURE_2D, image.texture);
+					gl.drawArrays(gl.TRIANGLES, 0, 6);
+					drawCalls++;
+					primitives++;
+				}
+				gl.bindTexture(gl.TEXTURE_2D, null);
+			}
 		}
 		gl.bindVertexArray(null);
 		return { milliseconds: performance.now() - started, drawCalls, primitives };
@@ -516,7 +607,8 @@ export class EdaRenderer {
 		this.clear();
 		const gl = this.gl;
 		gl.deleteBuffer(this.corners);
-		for (const program of [this.tri, this.seg, this.circle, this.arc]) {
+		gl.deleteVertexArray(this.imageQuad);
+		for (const program of [this.tri, this.seg, this.circle, this.arc, this.image]) {
 			gl.deleteProgram(program.program);
 		}
 	}

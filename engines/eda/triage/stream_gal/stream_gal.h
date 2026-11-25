@@ -39,6 +39,7 @@ enum class PRIM : uint8_t
     SEGMENTS = 2,
     CIRCLES = 3,
     ARCS = 4,
+    IMAGES = 5,
 };
 
 /// One run of primitives of the same kind and colour.
@@ -47,7 +48,11 @@ struct PRIM_RUN
     PRIM               kind;
     uint32_t           rgba;
     std::vector<float> data; // TRIANGLES: x,y per vertex; SEGMENTS: x1,y1,x2,y2,w;
-                             // CIRCLES: cx,cy,r,w; ARCS: cx,cy,r,a0,a1,w
+                             // CIRCLES: cx,cy,r,w; ARCS: cx,cy,r,a0,a1,w;
+                             // IMAGES (one per run): x,y of pixel (0,0)'s corner,
+                             // ux,uy and vx,vy (the image's width and height as
+                             // world vectors), width, height, then width*height
+                             // RGBA pixels as raw 4-byte words (not floats)
 };
 
 /// A cached group: what one item draws on one layer.
@@ -137,7 +142,7 @@ public:
     void DeleteGroup( int aGroupNumber ) override;
     void ClearCache() override;
 
-    /// Bitmaps drawn so far (not streamed yet: P1-4 draws their outline).
+    /// Bitmaps drawn so far.
     int BitmapCount() const { return m_bitmaps; }
 
 private:

@@ -3,6 +3,7 @@ import {
   DISPLAY_LIST_MAGIC,
   DisplayListError,
   DisplayListModel,
+  imagePixels,
   PrimitiveKind,
   readChunkHeader,
 } from '../../src/vs/triage/common/eda/displayList.js';
@@ -70,6 +71,27 @@ class ChunkWriter {
 const UUID = '6b0a1c0e-2d3f-4a5b-8c7d-9e0f1a2b3c4d';
 
 describe('Stream GAL display lists', () => {
+  it('reads a bitmap run: placement floats, then raw RGBA pixels', () => {
+    const writer = new ChunkWriter(1, 1, 3);
+    // A group by hand: the pixels are raw words, not floats.
+    writer.u32(1).u32(20).u32(5).u32(0).u32(0).f32(0).u32(0).u32(0).u32(1);
+    writer
+      .u32(PrimitiveKind.Images)
+      .u32(0xffffff80)
+      .u32(8 + 2);
+    for (const value of [10, 20, 300, 0, 0, 150, 2, 1]) writer.f32(value);
+    // Pixels (2 x 1): opaque red, then transparent; bytes R, G, B, A in memory.
+    writer.u32(0xff0000ff).u32(0x00000000);
+    const model = new DisplayListModel();
+    model.apply(writer.bytes());
+    const run = model.groups.get(20)?.runs[0];
+    if (!run) throw new Error('no run');
+    expect(run.kind).toBe(PrimitiveKind.Images);
+    expect([...run.data.subarray(0, 8)]).toEqual([10, 20, 300, 0, 0, 150, 2, 1]);
+    expect([...imagePixels(run)]).toEqual([255, 0, 0, 255, 0, 0, 0, 0]);
+    expect(model.stats().images).toBe(1);
+  });
+
   it('reads groups, item ids and primitive runs', () => {
     const chunk = new ChunkWriter(2 ** 33 + 5, 7, 3)
       .item(0, UUID)
@@ -94,7 +116,14 @@ describe('Stream GAL display lists', () => {
     expect(model.groups.get(11)?.item).toBeUndefined();
     expect(model.groups.get(11)?.lod).toBe(Infinity);
     expect([...(model.byItem.get(UUID) ?? [])]).toEqual([10]);
-    expect(model.stats()).toEqual({ groups: 2, triangles: 1, segments: 1, circles: 2, arcs: 0 });
+    expect(model.stats()).toEqual({
+      groups: 2,
+      triangles: 1,
+      segments: 1,
+      circles: 2,
+      arcs: 0,
+      images: 0,
+    });
     expect([...(model.groups.get(10)?.runs[1].data ?? [])]).toEqual([50, 50, 20, 0, 60, 60, 5, 2]);
   });
 

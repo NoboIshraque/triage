@@ -2,11 +2,61 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-24 · **Phase P0 Foundations: P0-1 … P0-7 done** (the owner ran
-the Windows build on 2026-11-24). **Next:** **P0-8, Triage's own GitHub sign-in**
-(added at the owner's request; the app is registered and patched in, the
-owner's sign-in test is next, steps below) and **P0-9, the branding sweep**, then **P1 Electronics engine + views** in a new session (P1-1, KiCad
-fork builds).
+**Last updated:** 2026-11-25 · **Phase P1 Electronics engine + views: built and
+checked on Linux; Windows blocked** because GitHub Actions stopped running jobs at
+about 12:03 UTC today (see "CI is down" below), so the Windows engine has never
+been built. **Next:** the owner gets Actions running again; then the EDA
+workflow builds KiCad on Windows (it continues from its caches over several
+runs), and the owner runs the M1 demo on Windows (steps below). P1 is done when
+both pass. P0-8 (the owner's Copilot sign-in test) and P0-9 stay open.
+
+### P1 in one paragraph
+
+Triage now opens KiCad projects in its own **Schematic** and **Board** tabs. A
+hidden engine built from KiCad 10.0.8 (`triage-eda-engine`, loading KiCad's
+pcbnew and eeschema code) records what KiCad's renderer would draw (the Stream
+GAL), and Triage draws it with its own WebGL2 renderer. Its drawings match
+kicad-cli's own plots of 10 demo files pixel for pixel within 2 px (coverage 1.0,
+precision 0.98–1.0). In the tabs you can select, cross-probe a part between
+schematic and board, move, rotate, delete, edit values and references, draw a
+wire or a track, undo, redo and save. Files saved by Triage open in kicad-cli.
+Renaming a net rewrites `firmware/generated/board_pins.h` in 280 ms, and the
+code editor shows pin diagnostics and hovers. "Edit in KiCad" opens the stock
+editor as a fallback, and Triage reloads a file saved elsewhere within 2 s.
+KiCad's push-and-shove router runs inside the engine at 0.15–0.18 ms per
+cursor move (the frame budget is 16 ms). That spike led to the editing path
+proposed in [ADR 0004](adr/0004-editing-path.md).
+
+### CI is down (since 2026-11-25 about 12:03 UTC)
+
+Every workflow run since then fails within 2–3 seconds, on every job (Linux and
+Windows, even the plain CI workflow), and GitHub keeps **no log** for those jobs
+(observed: the job log download returns 404). Runs before 12:00 ran normally.
+This pattern usually means GitHub refused to start the jobs, most often
+because the account's **Actions minutes or spending limit** ran out (inferred: the
+KiCad builds use long 2-core runner jobs, and Windows minutes count double on
+private repositories). Claude's session can't see the reason. **The owner's
+step:** open the repository's **Actions** tab, open any failed run, and read the
+message at the top of the page (or GitHub **Settings → Billing and licensing**).
+Then either raise the limit or wait for the monthly reset, and re-run the EDA
+workflow. Until then nothing new is checked on Windows.
+
+### Try P1 on Windows (the M1 owner check, once CI builds it)
+
+1. **Actions → App →** the newest green run → artifact **triage-Windows** (it
+   carries the EDA engine when the EDA workflow passed for this branch).
+2. Install or unzip as for P0, open `examples/smart-fan` from a clone, click the
+   Triage icon, then **Open Engineering Layout**: the Schematic and Board tabs
+   show the Smart Fan.
+3. Click a part (Q1), then look at the other tab: the same part is selected.
+   Drag it, press **R** to rotate it, **Ctrl+S** to save.
+4. **F1 → Triage: Rename Net in the Schematic**, `FAN_PWM` → `MOTOR_SPEED`:
+   `firmware/generated/board_pins.h` and the diagnostics in `main.cpp` update.
+5. **F1 → Triage: Benchmark Schematic and Board Views**: tell Claude the frame
+   rates (the 60 fps check, DV-22).
+6. **F1 → Triage: Edit in KiCad (Fallback Window)**: KiCad's editor opens the
+   same file; save there and Triage's tab updates.
+7. Open the saved files in your own KiCad 10 if you have it.
 
 ### P0 in one paragraph
 
@@ -139,7 +189,7 @@ The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt
 ## Deviations from the plan
 
 Every place the build differs from the plan is logged in
-[DEVIATIONS.md](DEVIATIONS.md) (16 entries, DV-01 … DV-16, plus choices the plan left open), so the
+[DEVIATIONS.md](DEVIATIONS.md) (22 entries, DV-01 … DV-22, plus choices the plan left open), so the
 owner can compare the final build with the plan.
 
 ## Open questions
@@ -153,7 +203,8 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
 | Windows code-signing certificate (avoids SmartScreen warnings) | unsigned nightlies; decide before P8-2 | P8 |
-| KiCad editing path (remote tools vs direct hosting) | decided by the P1-6 spike, ADR 0004 | P1 |
+| **KiCad editing path: accept [ADR 0004](adr/0004-editing-path.md)?** The P1-6 spike proposes **direct hosting**: KiCad's router, commits and connectivity run inside the engine (they work headless today), and Triage draws the interactive tools itself. Running KiCad's own tools would need a hidden KiCad editor window inside the engine | Proposed; P1's simple edits stand either way | before P5 |
+| **CI is down** (jobs refused since 2026-11-25 12:03 UTC; section above) | the owner checks the Actions page or billing | now: Windows for P1 |
 | **Phone companion: accept [ADR 0005](adr/0005-phone-companion.md)?** (Show on phone, QR pairing, a web app; PLAN §4.16, ROADMAP phase PC.) Choices with it: **(1)** where the phone app is hosted (GitHub Pages, which needs a public repository or GitHub Pro, or the owner's own domain); **(2)** a relay for phones on other networks: none at first, a small one the owner hosts (traffic costs), or decide after PC-1; **(3)** iOS 26.4+ for the direct path (older iPhones only through a relay); **(4)** phase PC beside P4 in its own sessions, or between P3 and P4; **(5)** new phones view-only by default | Proposed, nothing built. If accepted: same Wi-Fi only (no relay), hosting decided in PC-1, PC beside P4, view-only by default | before PC-1 (after M2; PC-1 could run during P2) |
 
 ## Work packages
@@ -161,7 +212,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Phase | WP | Status |
 |---|---|---|
 | P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | P0-1 … P0-7 **done**; **P0-8 in progress** (app registered, patch 0004 in; the owner's sign-in test next); **P0-9 in progress** |
-| P1 Electronics engine + views (M1) | P1-1 … P1-7 | not started |
+| P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **all built and checked on Linux** (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 proposed); **Windows not built yet** (CI down); the owner's M1 run on Windows next |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
 | P4 ESP32 + Raspberry Pi (M3) | P4-1 … P4-6 | not started |
@@ -311,3 +362,24 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   the QR, an optional relay elsewhere, a six-digit code plus **Allow** on the
   laptop, per-phone keys and view or edit permission. Added PLAN §4.16, ROADMAP
   phase PC (PC-1 to PC-7) and DV-20. Waiting for the owner (open question above).
+- **2026-11-25 (P1, first session).** All of P1 built, checked on Linux:
+
+  | WP | Done when | Evidence |
+  |---|---|---|
+  | P1-1 | kicad-cli from our tree passes the demos corpus on both OSes | Linux: all 54 root schematics and boards of KiCad's 36 demos (netlist, ERC, DRC, SVG), golden `engines/eda/tests/golden/corpus.json`. **Windows: not built** (CI down) |
+  | P1-2 | The engine loads all demos and answers API queries | Linux: the same 54 files through `--load-all`; the largest (Jetson) 548,549 groups in 12 s; engine integration tests 8/8 (open, display lists, queries, selection, edits, undo, save, reload, router, restart) |
+  | P1-3 | Display lists match OpenGL GAL (DV-21) | compared with kicad-cli's plots instead: 10 files, coverage 1.0, precision 0.98–1.0 (`compare.mjs`); bitmaps included |
+  | P1-4 | 60 fps; pixel compare against kicad-cli | pixel compare as P1-3; frame rates recorded under software GL only (9.7 and 11.8 fps, DV-22): the owner's GPU run decides |
+  | P1-5 | Net rename updates the header and diagnostics within 2 s | 280 ms in the packaged app (smoke test) |
+  | P1-6 | Saved files open in stock KiCad; spike + ADR 0004 | kicad-cli reads Triage's saved board and schematic (smoke and engine tests); router 0.15–0.18 ms per move; [ADR 0004](adr/0004-editing-path.md) proposed |
+  | P1-7 | A KiCad save shows in Triage within 2 s | the smoke test saves with kicad-cli and times the reload |
+
+  Found along the way: VS Code's IPC turned nested buffers into JSON (replies
+  are now packed); a command used VS Code's service accessor after an `await`
+  (cross-probe did nothing); our own save hid an external save made within 3 s
+  (the views now compare the file's modification time). GitHub Actions stopped
+  starting jobs at about 12:03 UTC (above). Known issues: KiCad's share data
+  (libraries, schemas) isn't staged yet, so the fallback editors start without
+  libraries; `LayerName()` has no names for a few virtual layers ("In559.Cu" for
+  LAYER_DANGLING); the P1 `Route` request takes all cursor moves in one call
+  (P6 makes it a session, ADR 0004).

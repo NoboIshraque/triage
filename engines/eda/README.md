@@ -9,12 +9,13 @@ KiCad fork run headless as Triage's EDA engine ([ADR 0002](../../docs/adr/0002-a
 | `upstream/` | KiCad's source at that commit (git-ignored; `build.mjs fetch`) |
 | `patches/` | small changes to KiCad's files (GUIDELINES §6): `0001` build hooks for Triage's code, `0002` view layer setup without a wx panel, `0003` vcpkg manifest without wxPython |
 | `triage/` | Triage's code, built inside KiCad's CMake tree: the engine host `triage-eda-engine` (`engine/`), the board and schematic faces compiled into KiCad's kifaces (`pcb/`, `sch/`), **Stream GAL** (`stream_gal/`) and the `triage.eda.v1` protobuf API (`api/proto/`) |
-| `tests/` | the kicad-demos corpus checks and their golden file |
+| `tests/` | the kicad-demos corpus checks, the renderer harness (`render.mjs`) and the pixel comparison with kicad-cli's plots (`compare.mjs`), with their golden files |
 | `build/<os>/` | the CMake build and `stage/bin/` (git-ignored) |
 
 ```sh
 node engines/eda/build.mjs            # fetch, prepare, configure, build, stage
 node engines/eda/build.mjs test       # kicad-cli and the engine on KiCad's 36 demo projects
+node engines/eda/tests/compare.mjs    # Triage's drawings vs kicad-cli's SVG plots (Playwright)
 ```
 
 Linux: `scripts/dev/setup.sh --eda` installs KiCad's build dependencies from
@@ -32,7 +33,7 @@ KiCad's editor builds around its canvas, minus the window: a `PCB_VIEW` or
 `SCH_VIEW` with the editor's layer setup, KiCad's own painter, and the Stream GAL
 in place of the OpenGL GAL. The Stream GAL records every cached group the view
 creates (one per item per layer) as a display list of triangles, capsule
-segments, circles and arcs; Triage's canvas draws those on the GPU.
+segments, circles, arcs and bitmaps; Triage's canvas draws those on the GPU.
 
 The engine talks to its broker over the P0-4 engine connection (`--connect
 <endpoint>`): `triage.eda.v1.Request` frames in, `Response` frames out, and

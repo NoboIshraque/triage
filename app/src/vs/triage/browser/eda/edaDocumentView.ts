@@ -66,7 +66,10 @@ export class EdaDocumentView extends Disposable {
 	private selection: Message[] = [];
 	private wire: number[] | undefined;
 	private cursorWorld: [number, number] = [0, 0];
-	private savingUntil = 0;
+	/** True while the engine writes our own save. */
+	private saving = false;
+	/** The file as our last save left it: a change event that still matches it is our own write. */
+	private ownSave: { mtime: number; size: number } | undefined;
 	private loadGeneration = 0;
 	private lastFrameMs = 0;
 	/** Whether the camera was fitted to the document since it opened. */
@@ -291,12 +294,17 @@ export class EdaDocumentView extends Disposable {
 			if (!event.contains(resource, FileChangeType.UPDATED, FileChangeType.ADDED)) {
 				return;
 			}
-			if (Date.now() < this.savingUntil) {
-				return; // our own save
+			if (this.saving) {
+				return; // our own save, still being written
 			}
-			// Saved elsewhere (stock KiCad, ROADMAP P1-7): reload, keeping the view.
-			this.logService.info(`[triage] ${path} changed on disk, reloading`);
-			void this.reload();
+			void this.fileService.stat(resource).then(stat => {
+				if (this.ownSave && stat.mtime === this.ownSave.mtime && stat.size === this.ownSave.size) {
+					return; // our own save, reported late
+				}
+				// Saved elsewhere (stock KiCad, ROADMAP P1-7): reload, keeping the view.
+				this.logService.info(`[triage] ${path} changed on disk, reloading`);
+				return this.reload();
+			}).catch(error => this.reportError(error));
 		}));
 	}
 
@@ -679,8 +687,16 @@ export class EdaDocumentView extends Disposable {
 		}
 		try {
 			// Our own write must not trigger a reload (see watch()).
-			this.savingUntil = Date.now() + 3000;
-			await this.engine.call('save', { document: this.document });
+			this.saving = true;
+			try {
+				await this.engine.call('save', { document: this.document });
+				if (this.path) {
+					const stat = await this.fileService.stat(URI.file(this.path));
+					this.ownSave = { mtime: stat.mtime, size: stat.size };
+				}
+			} finally {
+				this.saving = false;
+			}
 			this.markModified(false);
 			this.setStatus(localize('triage.eda.saved', "Saved {0}", basename(this.path ?? '')));
 			this.element.dataset['saves'] = String(Number(this.element.dataset['saves'] ?? '0') + 1);

@@ -18,6 +18,12 @@ export const enum PrimitiveKind {
 	Circles = 3,
 	/** Stroked arcs with round ends: cx, cy, r, start angle, end angle, width. */
 	Arcs = 4,
+	/**
+	 * One bitmap per run: x, y of pixel (0, 0)'s corner, the image's width and height
+	 * as world vectors (ux, uy, vx, vy), its size in pixels (w, h), then w * h RGBA
+	 * pixels as raw bytes (read them with {@link imagePixels}, not as floats).
+	 */
+	Images = 5,
 }
 
 /** Floats per primitive (per vertex for triangles). */
@@ -26,7 +32,14 @@ export const FLOATS_PER: Record<PrimitiveKind, number> = {
 	[PrimitiveKind.Segments]: 5,
 	[PrimitiveKind.Circles]: 4,
 	[PrimitiveKind.Arcs]: 6,
+	[PrimitiveKind.Images]: 0,
 };
+
+/** The pixels of an {@link PrimitiveKind.Images} run, as RGBA bytes. */
+export function imagePixels(run: PrimitiveRun): Uint8Array {
+	const d = run.data;
+	return new Uint8Array(d.buffer, d.byteOffset + 8 * 4, (d.length - 8) * 4);
+}
 
 export interface PrimitiveRun {
 	readonly kind: PrimitiveKind;
@@ -206,10 +219,14 @@ export class DisplayListModel {
 	}
 
 	/** Primitive counts, for tests and the status line. */
-	stats(): { groups: number; triangles: number; segments: number; circles: number; arcs: number } {
-		let triangles = 0, segments = 0, circles = 0, arcs = 0;
+	stats(): { groups: number; triangles: number; segments: number; circles: number; arcs: number; images: number } {
+		let triangles = 0, segments = 0, circles = 0, arcs = 0, images = 0;
 		for (const group of this.groups.values()) {
 			for (const run of group.runs) {
+				if (run.kind === PrimitiveKind.Images) {
+					images++;
+					continue;
+				}
 				const n = run.data.length / FLOATS_PER[run.kind];
 				switch (run.kind) {
 					case PrimitiveKind.Triangles: triangles += n / 3; break;
@@ -219,6 +236,6 @@ export class DisplayListModel {
 				}
 			}
 		}
-		return { groups: this.groups.size, triangles, segments, circles, arcs };
+		return { groups: this.groups.size, triangles, segments, circles, arcs, images };
 	}
 }

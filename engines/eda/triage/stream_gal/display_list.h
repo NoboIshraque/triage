@@ -17,7 +17,7 @@
  *                        override), u32 override rgba, u32 run count, runs
  *     u32 op = 2 DELETE  u32 group id
  *     u32 op = 3 ITEM    u32 index, u32 byte length, UTF-8 KIID (padded to 4 bytes)
- *   run: u32 kind (1 triangles, 2 segments, 3 circles, 4 arcs), u32 rgba,
+ *   run: u32 kind (1 triangles, 2 segments, 3 circles, 4 arcs, 5 image), u32 rgba,
  *        u32 float count, floats (see stream_gal.h for each kind's layout)
  */
 

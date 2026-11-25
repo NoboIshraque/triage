@@ -1,9 +1,9 @@
 // Smart Fan firmware (Arduino Uno). The pins come from the schematic:
 // Triage writes ../generated/board_pins.h from electronics/smart-fan.kicad_sch
 // (ROADMAP P1-5), so renaming a net there renames the constant here.
-#include <Arduino.h>
-
 #include "../generated/board_pins.h"
+
+#include <Arduino.h>
 
 void setup() {
   pinMode(FAN_PWM, OUTPUT);

@@ -63,13 +63,15 @@ window.render = async (name, width, height, options = {}) => {
   renderer.setBackground(options.background ?? doc.background ?? 0x000000ff);
   renderer.pixelsPerIuAtScale1 = doc.pixels_per_iu_at_scale_1 || 1;
   const only = options.layers ? new Set(options.layers) : undefined;
-  renderer.setLayers((doc.layers ?? []).map((l) => ({ id: l.id, order: l.order ?? 0,
+  // Protobuf's JSON leaves out zero values (layer 0 is F.Cu).
+  renderer.setLayers((doc.layers ?? []).map((l) => ({ id: l.id ?? 0, order: l.order ?? 0,
     visible: only ? only.has(l.id) : (l.visible ?? false) })));
   renderer.updateLayers(model, layers);
   const b = options.bbox ?? doc.bbox;
   const x0 = b.x0 ?? 0, y0 = b.y0 ?? 0, x1 = b.x1 ?? 0, y1 = b.y1 ?? 0;
+  const margin = options.margin ?? 1.02;
   const camera = { cx: (x0 + x1) / 2, cy: (y0 + y1) / 2,
-    scale: Math.min(width / ((x1 - x0) * 1.02), height / ((y1 - y0) * 1.02)) };
+    scale: Math.min(width / ((x1 - x0) * margin), height / ((y1 - y0) * margin)) };
   const first = renderer.draw(camera, width, height, 1);
   // Frame times while panning and zooming (the 60 fps budget, ROADMAP P1-4).
   const times = [];
