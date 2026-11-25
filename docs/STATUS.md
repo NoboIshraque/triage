@@ -29,19 +29,21 @@ KiCad's push-and-shove router runs inside the engine at 0.15–0.18 ms per
 cursor move (the frame budget is 16 ms). That spike led to the editing path in
 [ADR 0004](adr/0004-editing-path.md) (accepted).
 
-### CI is down (since 2026-11-25 about 12:03 UTC)
+### CI is down (since 2026-11-25 about 12:03 UTC): Actions billing
 
-Every workflow run since then fails within 2–3 seconds, on every job (Linux and
-Windows, even the plain CI workflow), and GitHub keeps **no log** for those jobs
-(observed: the job log download returns 404). Runs before 12:00 ran normally.
-This pattern usually means GitHub refused to start the jobs, most often
-because the account's **Actions minutes or spending limit** ran out (inferred: the
-KiCad builds use long 2-core runner jobs, and Windows minutes count double on
-private repositories). Claude's session can't see the reason. **The owner's
-step:** open the repository's **Actions** tab, open any failed run, and read the
-message at the top of the page (or GitHub **Settings → Billing and licensing**).
-Then either raise the limit or wait for the monthly reset, and re-run the EDA
-workflow. Until then nothing new is checked on Windows.
+Every job since then is refused with **"The job was not started because recent
+account payments have failed or your spending limit needs to be increased.
+Please check the 'Billing & plans' section in your settings"** (observed: the
+run's annotations, the owner's screenshot, 2026-11-25). So the account's
+included Actions minutes for private repositories are used up for this billing
+period, or a payment failed. The KiCad builds are the likely cause: one uncached
+EDA run can take up to ~6 hours on Linux and ~10 hours on Windows, where minutes
+count double on private repositories (inferred from the job time limits; the
+owner's **Billing → Usage** page has the real numbers). This also means the
+earlier decision "minutes are no concern" no longer holds. **The owner's choice:**
+(A) raise the Actions spending limit; (B) make the repository public (standard
+runners are free for public repositories); (C) wait for the monthly reset while
+Claude cuts CI's minutes. Until then nothing new is checked on Windows.
 
 ### Try P1 on Windows (the M1 owner check, once CI builds it)
 
@@ -207,7 +209,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
 | Windows code-signing certificate (avoids SmartScreen warnings) | unsigned nightlies; decide before P8-2 | P8 |
-| **CI is down** (jobs refused since 2026-11-25 12:03 UTC; section above) | the owner checks the Actions page or billing | now: Windows for P1 |
+| **CI is down: Actions billing** (spending limit or failed payment; section above). Choose (A) raise the spending limit, (B) make the repository public, or (C) wait for the monthly reset while Claude cuts CI's minutes | nothing runs in CI until then | now: Windows for P1 |
 
 ## Work packages
 
