@@ -100,6 +100,9 @@
 
 .triage-eda-view .triage-eda-toolbar {
 	display: flex;
+	flex-wrap: nowrap;
+	overflow: hidden;
+	white-space: nowrap;
 	align-items: center;
 	gap: 6px;
 	padding: 3px 8px;
@@ -112,6 +115,13 @@
 .triage-eda-view .triage-eda-title {
 	font-weight: 600;
 	margin-right: auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.triage-eda-view .triage-eda-button {
+	flex: none;
 }
 
 .triage-eda-view .triage-eda-button,

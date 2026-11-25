@@ -16,7 +16,7 @@ import { INativeWorkbenchEnvironmentService } from '../../workbench/services/env
 import { IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment } from '../../workbench/services/statusbar/browser/statusbar.js';
 import { IUtilityProcessWorkerWorkbenchService } from '../../workbench/services/utilityProcess/electron-browser/utilityProcessWorkerWorkbenchService.js';
 import * as api from '../common/eda/engineApi.generated.js';
-import { EDA_ENGINE_BROKER_MODULE, EDA_ENGINE_CHANNEL, EDA_ENGINE_FOLDER, EDA_ENGINE_STATUS_ID, EdaEngineError, IEdaEngineBroker, IEdaResult, ITriageEdaEngineService } from '../common/eda/edaEngine.js';
+import { EDA_ENGINE_BROKER_MODULE, EDA_ENGINE_CHANNEL, EDA_ENGINE_FOLDER, EDA_ENGINE_STATUS_ID, EdaEngineError, IEdaEngineBroker, IEdaResult, ITriageEdaEngineService, unpackReply } from '../common/eda/edaEngine.js';
 import { decodeMessage, encodeMessage, Message } from '../common/eda/protobuf.js';
 import { EngineState } from '../common/engineProtocol.js';
 import { describeEngineState } from '../common/helloEngine.js';
@@ -58,14 +58,14 @@ export class TriageEdaEngineService extends Disposable implements ITriageEdaEngi
 		const id = this.nextId++;
 		const request = encodeMessage(api.Request, { id, [command]: body });
 		const started = performance.now();
-		const reply = await broker.request(VSBuffer.wrap(request));
-		const response = decodeMessage(api.Response, reply.response.buffer);
+		const reply = unpackReply((await broker.request(VSBuffer.wrap(request))).buffer);
+		const response = decodeMessage(api.Response, reply.response);
 		this.logService.trace(`[triage] eda ${command}: ${(performance.now() - started).toFixed(1)} ms, ${reply.chunks.length} chunk(s)`);
 		if (!response.ok) {
 			throw new EdaEngineError(response.error || `${command} failed`);
 		}
 		this.track(command, body, response);
-		return { response, chunks: reply.chunks.map(chunk => chunk.buffer) };
+		return { response, chunks: reply.chunks };
 	}
 
 	documentFor(path: string): number | undefined {

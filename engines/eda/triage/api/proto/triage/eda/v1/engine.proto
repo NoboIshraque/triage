@@ -37,10 +37,12 @@ message Response {
   string error = 3;
   // GetDisplayList on a schematic: the document again, with the shown sheet's layers.
   DocumentInfo document_info = 4;
+  // The display-list chunks this request sent (GetDisplayList, and the updates
+  // that selection, highlight, edits, undo and redo send).
+  DisplayListInfo display_list = 5;
   oneof result {
     Version version = 10;
     DocumentInfo document = 11;
-    DisplayListInfo display_list = 12;
     HitTestResult hit_test = 13;
     Netlist netlist = 14;
     EditResult edit = 15;
@@ -108,6 +110,7 @@ message DocumentInfo {
   // LOD: a group is visible while its lod < VIEW scale, and
   // VIEW scale = (screen pixels per world unit) / pixels_per_iu_at_scale_1.
   double pixels_per_iu_at_scale_1 = 10;
+  Box content = 11;          // what the view fits to: the board, or the sheet's items
 }
 
 message GetDisplayList {
@@ -320,6 +323,7 @@ message RouteResult {
   uint32 added = 5;       // board items the route added
   uint32 removed = 6;     // board items it replaced (shoved tracks)
   string mode = 7;
+  string note = 8;        // the router's failure reason, if any
 }
 
 // Engine -> broker, unsolicited (frame type 0x23).

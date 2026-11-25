@@ -25,6 +25,7 @@
 #include <sch_symbol.h>
 #include <sch_view.h>
 #include <schematic.h>
+#include <sch_commit.h>
 
 #include <wx/filename.h>
 
@@ -74,8 +75,16 @@ SCH_ITEM* topLevel( SCH_ITEM* aItem )
 
 void SCH_FACE::refreshConnectivity( SCH_DOC& aDoc )
 {
+    // As EESCHEMA_HELPERS::LoadSchematic does after loading.
+    SCH_COMMIT dummyCommit( aDoc.toolManager.get() );
     aDoc.schematic->RefreshHierarchy();
-    aDoc.schematic->RecalculateConnections( nullptr, NO_CLEANUP, nullptr );
+    aDoc.schematic->RecalculateConnections( &dummyCommit, NO_CLEANUP, aDoc.toolManager.get() );
+
+    SCH_SHEET_LIST sheets = aDoc.schematic->Hierarchy();
+
+    for( SCH_SHEET_PATH& sheet : sheets )
+        sheet.LastScreen()->TestDanglingEnds( nullptr, nullptr );
+
     aDoc.view->UpdateItems();
 }
 

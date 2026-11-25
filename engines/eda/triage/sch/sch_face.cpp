@@ -33,6 +33,8 @@
 #include <schematic.h>
 #include <settings/color_settings.h>
 #include <settings/settings_manager.h>
+#include <kiface_base.h>
+#include <tool/tool_manager.h>
 
 #include <wx/filename.h>
 
@@ -53,6 +55,7 @@ SCH_DOC::~SCH_DOC()
     gal.reset();
     undo.clear();
     redo.clear();
+    toolManager.reset();
     schematic.reset();
 }
 
@@ -190,7 +193,15 @@ void SCH_FACE::fillInfo( SCH_DOC& aDoc, pb::DocumentInfo* aInfo )
     if( SCH_SCREEN* screen = aDoc.sheet.LastScreen() )
     {
         const VECTOR2I size = screen->GetPageSettings().GetSizeIU( schIUScale.IU_PER_MILS );
-        SetBox( aInfo->mutable_bbox(), BOX2I( VECTOR2I( 0, 0 ), size ) );
+        const BOX2I    page( VECTOR2I( 0, 0 ), size );
+        SetBox( aInfo->mutable_bbox(), page );
+
+        BOX2I content;
+
+        for( SCH_ITEM* item : screen->Items() )
+            content.Merge( item->GetBoundingBox() );
+
+        SetBox( aInfo->mutable_content(), content.GetWidth() > 0 ? content : page );
     }
 
     std::set<int> layers;
@@ -257,6 +268,8 @@ void SCH_FACE::Open( uint32_t aDocument, const std::string& aPath, pb::Response&
     doc->id = aDocument;
     doc->path = aPath;
     doc->schematic.reset( sch );
+    doc->toolManager = std::make_unique<TOOL_MANAGER>();
+    doc->toolManager->SetEnvironment( sch, nullptr, nullptr, Kiface().KifaceSettings(), nullptr );
     setupView( *doc );
 
     if( !showSheet( *doc, "" ) )

@@ -69,6 +69,8 @@ export class EdaDocumentView extends Disposable {
 	private savingUntil = 0;
 	private loadGeneration = 0;
 	private lastFrameMs = 0;
+	/** Whether the camera was fitted to the document since it opened. */
+	private fitted = false;
 
 	private readonly _onDidSelect = this._register(new Emitter<readonly Message[]>());
 	readonly onDidSelect = this._onDidSelect.event;
@@ -145,9 +147,12 @@ export class EdaDocumentView extends Disposable {
 			if (generation !== this.loadGeneration) {
 				return;
 			}
+			this.fitted = false;
 			this.fit();
 			this.watch(path);
-			this.element.dataset['state'] = 'ready';
+			if (this.renderer) {
+				this.element.dataset['state'] = 'ready';
+			}
 		} catch (error) {
 			if (generation === this.loadGeneration) {
 				this.showError(error instanceof Error ? error.message : String(error));
@@ -320,15 +325,20 @@ export class EdaDocumentView extends Disposable {
 			canvas.style.width = `${this.width}px`;
 			canvas.style.height = `${this.height}px`;
 		}
+		// The document may have loaded before the tab had a size.
+		if (!this.fitted && this.info) {
+			this.fit();
+		}
 		this.requestFrame();
 	}
 
 	fit(): void {
-		const box = this.info?.bbox as Message | undefined;
+		const box = (this.info?.content ?? this.info?.bbox) as Message | undefined;
 		if (!box || box.x1 <= box.x0 || this.width <= 1) {
 			return;
 		}
 		const margin = 1.05;
+		this.fitted = true;
 		this.camera = {
 			cx: (box.x0 + box.x1) / 2,
 			cy: (box.y0 + box.y1) / 2,

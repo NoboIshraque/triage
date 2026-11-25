@@ -544,8 +544,10 @@ function board(libs, rootUuid, symbolUuids) {
         if (atomText(child[1]) === 'Value') child[2] = q(part.value);
       }
       if (head(child) === 'pad') {
+        // Net names as KiCad's "Update PCB from Schematic" writes them: local
+        // labels on the root sheet are "/NAME".
         const net = part.nets[atomText(child[1])];
-        if (net) child.push(['net', q(net)]);
+        if (net) child.push(['net', q(`/${net}`)]);
       }
     }
     kept.push(

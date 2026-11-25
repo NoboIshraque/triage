@@ -224,6 +224,8 @@ void PCB_FACE::fillInfo( PCB_DOC& aDoc, pb::DocumentInfo* aInfo )
     if( bbox.GetWidth() == 0 || bbox.GetHeight() == 0 )
         bbox = board->GetBoundingBox();
 
+    SetBox( aInfo->mutable_content(), bbox );
+
     if( aDoc.drawingSheet )
         bbox.Merge( aDoc.drawingSheet->ViewBBox() );
 

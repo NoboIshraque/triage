@@ -120,6 +120,11 @@ describe('packaged Triage app', () => {
         '--disable-updates',
         '--disable-workspace-trust',
         '--no-cached-data',
+        // CI machines have no GPU: let Chromium draw WebGL2 in software (SwiftShader),
+        // which the Schematic and Board tabs need (ROADMAP P1-4).
+        '--enable-unsafe-swiftshader',
+        '--use-gl=angle',
+        '--use-angle=swiftshader',
         `--user-data-dir=${path.join(profile, 'user-data')}`,
         `--extensions-dir=${path.join(profile, 'extensions')}`,
         `--logsPath=${path.join(outputDir, `logs-${process.platform}`)}`,

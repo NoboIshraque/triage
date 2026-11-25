@@ -78,9 +78,9 @@ export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 	{ name: 'ok', number: 2, type: 'bool' },
 	{ name: 'error', number: 3, type: 'string' },
 	{ name: 'documentInfo', number: 4, type: DocumentInfo },
+	{ name: 'displayList', number: 5, type: DisplayListInfo },
 	{ name: 'version', number: 10, type: Version },
 	{ name: 'document', number: 11, type: DocumentInfo },
-	{ name: 'displayList', number: 12, type: DisplayListInfo },
 	{ name: 'hitTest', number: 13, type: HitTestResult },
 	{ name: 'netlist', number: 14, type: Netlist },
 	{ name: 'edit', number: 15, type: EditResult },
@@ -132,6 +132,7 @@ export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 	{ name: 'iuPerMm', number: 8, type: 'double' },
 	{ name: 'modified', number: 9, type: 'bool' },
 	{ name: 'pixelsPerIuAtScale_1', number: 10, type: 'double' },
+	{ name: 'content', number: 11, type: Box },
 );
 (GetDisplayList.fields as unknown[]).push(
 	{ name: 'document', number: 1, type: 'uint32' },
@@ -308,6 +309,7 @@ export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 	{ name: 'added', number: 5, type: 'uint32' },
 	{ name: 'removed', number: 6, type: 'uint32' },
 	{ name: 'mode', number: 7, type: 'string' },
+	{ name: 'note', number: 8, type: 'string' },
 );
 (Event.fields as unknown[]).push(
 	{ name: 'log', number: 1, type: 'string' },

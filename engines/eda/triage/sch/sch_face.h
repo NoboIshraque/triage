@@ -21,6 +21,7 @@
 #include <vector>
 
 class SCHEMATIC;
+class TOOL_MANAGER;
 class SCH_ITEM;
 class SCH_SCREEN;
 
@@ -64,6 +65,9 @@ struct SCH_DOC
     std::string                 path;
     bool                        modified = false;
     std::unique_ptr<SCHEMATIC>  schematic;
+    /// A tool manager without view or frame, as EESCHEMA_HELPERS::LoadSchematic
+    /// gives KiCad's own headless connectivity code (SCH_COMMIT needs one).
+    std::unique_ptr<TOOL_MANAGER> toolManager;
     SCH_SHEET_PATH              sheet;  ///< the sheet the view shows
     KIGFX::GAL_DISPLAY_OPTIONS  galOptions;
     std::unique_ptr<STREAM_GAL> gal;

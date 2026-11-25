@@ -16,7 +16,7 @@ import { ProxyChannel } from '../../base/parts/ipc/common/ipc.js';
 import { Server as UtilityProcessServer } from '../../base/parts/ipc/node/ipc.mp.js';
 import { isUtilityProcess } from '../../base/parts/sandbox/node/electronTypes.js';
 import { readChunkHeader } from '../common/eda/displayList.js';
-import { EDA_ENGINE_CHANNEL, EdaFrame, IEdaEngineBroker, IEdaReply } from '../common/eda/edaEngine.js';
+import { EDA_ENGINE_CHANNEL, EdaFrame, IEdaEngineBroker, IEdaReply, packReply } from '../common/eda/edaEngine.js';
 import { peekId } from '../common/eda/protobuf.js';
 import { EngineState, frameText, FrameType } from '../common/engineProtocol.js';
 import { EngineSupervisor } from './engineSupervisor.js';
@@ -24,7 +24,7 @@ import { EngineSupervisor } from './engineSupervisor.js';
 interface Pending {
 	readonly resolve: (reply: IEdaReply) => void;
 	readonly reject: (error: Error) => void;
-	readonly chunks: VSBuffer[];
+	readonly chunks: Uint8Array[];
 }
 
 export class EdaEngineBroker implements IEdaEngineBroker {
@@ -70,7 +70,11 @@ export class EdaEngineBroker implements IEdaEngineBroker {
 		return this.supervisor?.state ?? { kind: 'stopped', reason: 'not started' };
 	}
 
-	request(request: VSBuffer): Promise<IEdaReply> {
+	async request(request: VSBuffer): Promise<VSBuffer> {
+		return packReply(await this.send(request));
+	}
+
+	private send(request: VSBuffer): Promise<IEdaReply> {
 		const supervisor = this.supervisor;
 		if (!supervisor) {
 			return Promise.reject(new Error('EDA engine not started'));
@@ -128,13 +132,13 @@ export class EdaEngineBroker implements IEdaEngineBroker {
 		if (type === EdaFrame.DisplayList) {
 			const pending = this.pending.get(readChunkHeader(payload).requestId);
 			// Copy: the frame's bytes belong to the socket's buffer.
-			pending?.chunks.push(VSBuffer.wrap(payload.slice()));
+			pending?.chunks.push(payload.slice());
 		} else if (type === EdaFrame.Response) {
 			const id = peekId(payload);
 			const pending = this.pending.get(id);
 			if (pending) {
 				this.pending.delete(id);
-				pending.resolve({ response: VSBuffer.wrap(payload.slice()), chunks: pending.chunks });
+				pending.resolve({ response: payload.slice(), chunks: pending.chunks });
 			}
 		} else if (type === FrameType.Error) {
 			this.failPending(`EDA engine error: ${frameText({ type, payload })}`);

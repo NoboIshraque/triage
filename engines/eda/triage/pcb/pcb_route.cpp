@@ -248,12 +248,13 @@ void PCB_FACE::route( PCB_DOC& aDoc, const pb::Route& aReq, pb::Response& aRespo
     double           total = 0;
     double           worst = 0;
     VECTOR2I         last = start;
+    int              movedOk = 0;
 
     for( int i = 0; i + 1 < aReq.moves_size(); i += 2 )
     {
         last = VECTOR2I( KiROUND( aReq.moves( i ) ), KiROUND( aReq.moves( i + 1 ) ) );
         const auto began = std::chrono::steady_clock::now();
-        router.Move( last, nullptr );
+        movedOk += router.Move( last, nullptr ) ? 1 : 0;
         const double ms = msSince( began );
         total += ms;
         worst = std::max( worst, ms );
@@ -265,12 +266,20 @@ void PCB_FACE::route( PCB_DOC& aDoc, const pb::Route& aReq, pb::Response& aRespo
 
     result->set_worst_ms( worst );
     result->set_mode( aReq.shove() ? "shove" : "walkaround" );
+    result->set_note( "start item " + std::string( startItem ? startItem->KindStr() : "none" )
+                      + ", layer " + std::to_string( pnsLayer ) + ", track width "
+                      + std::to_string( sizes.TrackWidth() ) + ", moves ok "
+                      + std::to_string( movedOk ) + ( router.FailureReason().IsEmpty() ? "" : ": " )
+                      + router.FailureReason().ToStdString() );
 
     if( aReq.commit() )
     {
         // As ROUTER_TOOL on a double click: fix the route at the cursor, then commit.
-        router.FixRoute( last, nullptr, true, true );
-        result->set_committed( true );
+        const bool fixed = router.FixRoute( last, nullptr, true, true );
+
+        // ROUTER_TOOL commits what was placed when the route ends.
+        router.CommitRouting();
+        result->set_committed( fixed );
     }
 
     router.StopRouting();
