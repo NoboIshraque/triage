@@ -55,6 +55,15 @@ in its setup step: Chocolatey's server answered 504 while installing ccache
 engine built for its own OS, so Linux's app build carries the engine and its
 smoke test runs the EDA checks in CI.
 
+App run 44 (21:23 UTC): the Windows app passed; on Linux the engine could not
+start (`libwx_gtk3u_core-3.2.so.0` missing): the Linux engine uses KiCad's
+system libraries (wxWidgets, OpenCascade, libgit2, Python 3.13 …), which the
+App machine lacked. The App workflow now installs them before the smoke test.
+**Known issue for Linux users:** the Linux app's KiCad engine needs those
+packages installed; the Linux installer must declare or bundle them (P8-2).
+The Windows engine carries its DLLs. EDA run 12's Windows job got past setup
+and configure and is compiling KiCad.
+
 ### Try P1 on Windows (the M1 owner check, once CI builds it)
 
 1. **Actions → App →** the newest green run → artifact **triage-Windows** (it

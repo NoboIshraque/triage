@@ -141,6 +141,14 @@ jobs:
           ls "engines/eda/build/$os/stage/bin" | head -20
           echo "run=$run_id" >> "$GITHUB_OUTPUT"
 
+      # The Linux engine uses KiCad's system libraries (wxWidgets, OpenCascade,
+      # libgit2, Python …), as KiCad's own Linux packages do; the Windows engine
+      # carries its DLLs. Linux installers declare or bundle them (ROADMAP P8-2).
+      - name: KiCad's libraries for the Linux engine
+        if: runner.os == 'Linux' && steps.eda.outcome == 'success'
+        timeout-minutes: 15
+        run: scripts/dev/setup.sh --eda
+
       - name: Build the engines into the app (CMake, Ninja, Cargo)
         run: node app/build.mjs engines
 
