@@ -207,6 +207,10 @@ describe('rebrandPackagedApp', () => {
       );
       for (const name of ['grunt', 'copilot']) {
         mkdirSync(path.join(root, 'extensions', name, 'dist'), { recursive: true });
+        writeFileSync(
+          path.join(root, 'extensions', name, 'package.nls.json'),
+          JSON.stringify({ setting: 'Requires VS Code reload.' }),
+        );
         mkdirSync(path.join(root, 'extensions', name, 'node_modules'), { recursive: true });
         writeFileSync(
           path.join(root, 'extensions', name, 'package.json'),
@@ -222,7 +226,7 @@ describe('rebrandPackagedApp', () => {
         );
       }
 
-      assert.deepEqual(rebrandPackagedApp(root, 'Triage'), { files: 4, strings: 3 });
+      assert.deepEqual(rebrandPackagedApp(root, 'Triage'), { files: 6, strings: 5 });
       const read = (...parts) => readFileSync(path.join(root, ...parts), 'utf8');
       assert.equal(
         read('out', 'vs', 'workbench', 'workbench.desktop.main.js'),
@@ -233,7 +237,14 @@ describe('rebrandPackagedApp', () => {
         'Support for Triage',
       );
       assert.equal(read('extensions', 'grunt', 'dist', 'main.js'), 'a.l10n.t("Restart Triage");');
-      // node_modules and GitHub's Copilot extension keep their texts.
+      // Every extension's package.nls.json, Copilot's too, is interface text.
+      for (const name of ['grunt', 'copilot']) {
+        assert.equal(
+          JSON.parse(read('extensions', name, 'package.nls.json')).setting,
+          'Requires Triage reload.',
+        );
+      }
+      // node_modules and Copilot's own literals and runtime messages keep their texts.
       assert.equal(
         read('extensions', 'grunt', 'node_modules', 'lib.js'),
         'a.l10n.t("Restart VS Code");',

@@ -16,8 +16,9 @@
 //   resources/app/extensions/*/**.js               their runtime messages: the text of
 //                                                  every localized message (`l10n.t("…")`
 //                                                  and js-debug's own `t("…")`)
-// GitHub's Copilot extension (hidden by default) keeps its texts: most are prompts
-// for the language model, not interface text.
+// GitHub's Copilot extension (hidden by default) keeps its manifest's literals and its
+// runtime messages: most are prompts for the language model, not interface text. Its
+// package.nls.json (settings, commands) is rewritten like every other extension's.
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -233,7 +234,7 @@ export function rebrandPackagedApp(appRoot, name) {
 
   const extensions = path.join(appRoot, 'extensions');
   for (const entry of readdirSync(extensions, { withFileTypes: true })) {
-    if (!entry.isDirectory() || EXTENSIONS_KEPT.has(entry.name)) continue;
+    if (!entry.isDirectory()) continue;
     const dir = path.join(extensions, entry.name);
 
     const nls = path.join(dir, 'package.nls.json');
@@ -245,6 +246,10 @@ export function rebrandPackagedApp(appRoot, name) {
         files++;
       }
     }
+
+    // Copilot's settings and commands (package.nls.json, above) are interface text;
+    // its manifest's own literals and its runtime messages are mostly prompts.
+    if (EXTENSIONS_KEPT.has(entry.name)) continue;
 
     const manifest = path.join(dir, 'package.json');
     if (existsSync(manifest)) {
