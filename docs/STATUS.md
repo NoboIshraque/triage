@@ -2,11 +2,112 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-24 · **Phase P0 Foundations: P0-1 … P0-7 done** (the owner ran
-the Windows build on 2026-11-24). **Next:** **P0-8, Triage's own GitHub sign-in**
-(added at the owner's request; the app is registered and patched in, the
-owner's sign-in test is next, steps below) and **P0-9, the branding sweep**, then **P1 Electronics engine + views** in a new session (P1-1, KiCad
-fork builds).
+**Last updated:** 2026-11-26 · **Phase P1 Electronics engine + views: done.**
+Every P1 work package passes its checks in CI on **Windows and Linux**: the
+KiCad engine passes all 54 KiCad demo files and its integration tests on both
+(EDA run 13), and the packaged app passes all 22 smoke checks with the engine
+on both (App run 48), including cross-probe, edit and save read by stock KiCad,
+net rename → `board_pins.h` (443 ms Windows, 329 ms Linux) and a KiCad save →
+reload (105 ms, 141 ms). **The owner's checks:** the M1 demo on the Windows
+laptop, and the 60 fps check on a real GPU (DV-22); steps below. P0-8 is done;
+P0-9 stays open. ADR 0004 and ADR 0005 accepted. **Next:** P2 (3D engine and
+enclosure from board) in a new session.
+
+### P1 in one paragraph
+
+Triage now opens KiCad projects in its own **Schematic** and **Board** tabs. A
+hidden engine built from KiCad 10.0.8 (`triage-eda-engine`, loading KiCad's
+pcbnew and eeschema code) records what KiCad's renderer would draw (the Stream
+GAL), and Triage draws it with its own WebGL2 renderer. Its drawings match
+kicad-cli's own plots of 10 demo files pixel for pixel within 2 px (coverage 1.0,
+precision 0.98–1.0). In the tabs you can select, cross-probe a part between
+schematic and board, move, rotate, delete, edit values and references, draw a
+wire or a track, undo, redo and save. Files saved by Triage open in kicad-cli.
+Renaming a net rewrites `firmware/generated/board_pins.h` in 280–305 ms, and the
+code editor shows pin diagnostics and hovers. "Edit in KiCad" opens the stock
+editor as a fallback, and Triage reloads a file saved elsewhere within 2 s.
+KiCad's push-and-shove router runs inside the engine at 0.15–0.18 ms per
+cursor move (the frame budget is 16 ms). That spike led to the editing path in
+[ADR 0004](adr/0004-editing-path.md) (accepted).
+
+### CI: back on (the repository is public since 2026-11-25)
+
+From about 12:03 UTC on 2026-11-25 every job was refused: "The job was not
+started because recent account payments have failed or your spending limit
+needs to be increased" (observed: the run's annotations, the owner's
+screenshot). The KiCad builds had used up the private repository's Actions
+minutes (inferred). The owner made the repository **public** the same day;
+Actions is free for public repositories, whose runners also have 4 cores (the
+EDA build now uses them all). Anyone can now read the code and download CI's
+builds (DV-24).
+
+First runs after that (2026-11-25 18:30 UTC): CI and App green. The EDA workflow
+failed twice, both fixed: on Linux the corpus found 665 rules violations on
+tiny_tapeout where the golden file says 664 (the board uses system fonts the
+runner lacks, so violation counts now get 1% leeway); on Windows CMake was
+started through a shell, which split the vcpkg path "C:\Program Files\…" at its
+space (the fork scripts now start programs directly). KiCad's dependencies are
+cached for Windows (vcpkg); KiCad itself has not compiled on Windows yet.
+
+EDA run 11 (19:50 UTC): **Linux passed everything** (build, the 54-file corpus,
+the engine integration tests) and uploaded `triage-eda-linux`. Windows stopped
+in its setup step: Chocolatey's server answered 504 while installing ccache
+(the setup script now retries installs). The App workflow now takes the newest
+engine built for its own OS, so Linux's app build carries the engine and its
+smoke test runs the EDA checks in CI.
+
+App run 44 (21:23 UTC): the Windows app passed; on Linux the engine could not
+start (`libwx_gtk3u_core-3.2.so.0` missing): the Linux engine uses KiCad's
+system libraries (wxWidgets, OpenCascade, libgit2, Python 3.13 …), which the
+App machine lacked. The App workflow now installs them before the smoke test.
+**Known issue for Linux users:** the Linux app's KiCad engine needs those
+packages installed; the Linux installer must declare or bundle them (P8-2).
+The Windows engine carries its DLLs.
+
+App run 45 (22:26 UTC): **all 22 smoke checks pass on Linux in CI with the KiCad
+engine** (rename → header 329 ms, a KiCad save → reload 141 ms, cross-probe,
+edit and save read by kicad-cli, engine restart; 17 and 20 fps in software).
+EDA run 12: **KiCad compiled on Windows (MSVC) for the first time**, in 70
+minutes, and kicad-cli passed all 54 demo files on Windows; the engine's
+`--load-all` report then broke on Windows paths (backslashes written into JSON
+by hand). It now writes the lines with a JSON library.
+
+The Windows compiler cache was empty: all 1,953 MSVC compiles were
+"uncacheable" (EDA run 12), because KiCad forces `/Zi` debug info unless its own
+`USE_CCACHE` switch is on, and only then uses `/Z7`, which ccache can cache.
+The build script now turns on KiCad's switch instead of setting the launcher
+itself, so later Windows builds reuse the cache instead of taking 70 minutes.
+
+**EDA run 13 (2026-11-26 00:46 UTC) passed on both OSes.** Windows: KiCad built
+with MSVC, kicad-cli and the engine passed all 54 demo files, the engine
+integration tests passed (open, display lists, edits, undo, save, reload,
+router, kill and restart), and `triage-eda-windows` was uploaded. **P1-1 and
+P1-2 are done on Windows and Linux.** The App workflow was started by hand so
+the Windows app build carries the engine and its smoke test runs the EDA
+checks on Windows.
+
+### Try P1 on Windows (the M1 owner check)
+
+1. Download artifact **triage-Windows** from App run 48
+   (<https://github.com/NoboIshraque/triage/actions/runs/45732478696>, kept
+   until 2026-11-27 01:14 UTC; after that, **Actions → App → Run workflow** on
+   this branch builds a fresh one in about 20 minutes). It carries the KiCad
+   engine.
+2. Install or unzip as for P0, open `examples/smart-fan` from a clone, click the
+   Triage icon, then **Open Engineering Layout**: the Schematic and Board tabs
+   show the Smart Fan.
+3. Click a part (Q1), then look at the other tab: the same part is selected.
+   Drag it, press **R** to rotate it, **Ctrl+S** to save.
+4. **F1 → Triage: Rename Net in the Schematic**, `FAN_PWM` → `MOTOR_SPEED`:
+   `firmware/generated/board_pins.h` and the diagnostics in `main.cpp` update.
+5. **F1 → Triage: Benchmark Schematic and Board Views**: tell Claude the frame
+   rates (the 60 fps check, DV-22).
+6. **F1 → Triage: Edit in KiCad (Fallback Window)**: KiCad's editor opens the
+   same file; save there and Triage's tab updates. KiCad's own library and
+   template files aren't bundled yet, so KiCad may first ask how to set up its
+   global library tables: choose the empty table (the Smart Fan carries its own
+   libraries).
+7. Open the saved files in your own KiCad 10 if you have it.
 
 ### P0 in one paragraph
 
@@ -83,6 +184,12 @@ is the likely cause (**inferred**). Patches 0005 and 0006 drop the label, so
 the runtime identifies as an SDK host and Copilot authorizes against the
 user's own entitlement. The owner's Windows test decides.
 
+**Result (2026-11-25): it works.** The owner reports that Copilot now works with
+Triage's own sign-in ("the copilot signup works now"), on a Windows build with
+patches 0005 and 0006. Dropping VS Code's integration label was the fix
+(inferred: it was the only change since the failing tests). **P0-8 is done.**
+P8-7 item (2) still needs GitHub's terms for Copilot in Triage checked.
+
 If that still fails, documented routes remain: a **GitHub App** instead of the
 OAuth App (GitHub calls it "recommended for new projects"); a **fine-grained
 personal access token** with the "Copilot Requests" permission, which the
@@ -93,7 +200,7 @@ runtime supports it); or AI models with the user's **own API key**.
 **Unknown:** whether GitHub Copilot
 accepts a sign-in from an app other than VS Code. Other unofficial Copilot
 clients reuse official GitHub app IDs rather than their own, which hints it may
-not (inferred). The P0-8 test settles it.
+not (inferred). The P0-8 test settled it: it does (result above).
 
 ### Try it on Windows (the P0-7 owner check)
 
@@ -135,11 +242,14 @@ The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt
 | — | Triage's logo: the owner's T in **K3 Slate**; Triage's dark themes show it **reversed** (light T, slate traces; option C) | `scripts/branding/icons.py`, `docs/brand/`, [choices](DEVIATIONS.md#choices-the-plan-left-open) |
 | — | **No VS Code name or logo** in Triage now (P0-9), and a **public release checklist** before builds are shared (P8-7) | ROADMAP P0-9, P8-7, [DV-16](DEVIATIONS.md) |
 | — | GitHub Actions **minutes are no concern** (the owner's GitHub student account): the App workflow runs on every push except documentation-only ones | [DV-08](DEVIATIONS.md) |
+| D10 (2026-11-25) | **Editing path: direct hosting.** KiCad's code does the routing, checks and saving inside the engine; Triage draws the tools (owner: "I'm guessing the proposed one is better") | [ADR 0004](adr/0004-editing-path.md) (Accepted) |
+| — (2026-11-25) | The repository is **public** (Actions had stopped for billing; public repositories run Actions free) | [DV-24](DEVIATIONS.md) |
+| D11 (2026-11-25) | **Phone and tablet companion accepted**: a relay, "whichever is the most secure" (end-to-end sealed, holds no keys); the phone app on **GitHub Pages**, the owner's domain later; **iOS 26.4+** for the direct path; phase **PC between P3 and P4**; **View only or View and edit asked each time**, and a view-only phone can be given edit permission during the session | [ADR 0005](adr/0005-phone-companion.md) (Accepted), PLAN §4.16, ROADMAP PC, [DV-23](DEVIATIONS.md) |
 
 ## Deviations from the plan
 
 Every place the build differs from the plan is logged in
-[DEVIATIONS.md](DEVIATIONS.md) (16 entries, DV-01 … DV-16, plus choices the plan left open), so the
+[DEVIATIONS.md](DEVIATIONS.md) (24 entries, DV-01 … DV-24, plus choices the plan left open), so the
 owner can compare the final build with the plan.
 
 ## Open questions
@@ -148,21 +258,20 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Topic | Default | Needed by |
 |---|---|---|
-| GitHub Copilot **doesn't accept Triage's own sign-in** (P0-8). Choose: **(A)** AI models with the user's own API key (Anthropic, OpenAI, Google, or a local model through Ollama) in the same chat panel, no GitHub needed; **(B)** the owner's personal builds sign in as VS Code, so Copilot works for the owner, while shared builds stay Triage; **(C)** both (Claude's recommendation); **(D)** drop Copilot | Triage's own sign-in, Copilot unavailable, until the owner decides | P0-8 |
 | Remove the hidden Copilot extension from builds entirely? It is 56 MB of the app; hidden and disabled, it does nothing | kept (one setting turns VS Code's AI features back on) | P8 (installer size) |
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
 | Windows code-signing certificate (avoids SmartScreen warnings) | unsigned nightlies; decide before P8-2 | P8 |
-| KiCad editing path (remote tools vs direct hosting) | decided by the P1-6 spike, ADR 0004 | P1 |
 
 ## Work packages
 
 | Phase | WP | Status |
 |---|---|---|
-| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | P0-1 … P0-7 **done**; **P0-8 in progress** (app registered, patch 0004 in; the owner's sign-in test next); **P0-9 in progress** |
-| P1 Electronics engine + views (M1) | P1-1 … P1-7 | not started |
+| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | P0-1 … P0-7 **done**; **P0-8 done** 2026-11-25 (Copilot works with Triage's own sign-in); **P0-9 in progress** |
+| P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **done** 2026-11-26 on Windows and Linux in CI (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 accepted); **the owner's M1 run on Windows and the GPU 60 fps check next** |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
+| PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | not started (after P3, before P4) |
 | P4 ESP32 + Raspberry Pi (M3) | P4-1 … P4-6 | not started |
 | P5 In-app electronics editing | P5-1 … P5-7 | not started |
 | P6 In-app 3D design (M4) | P6-1 … P6-5 | not started |
@@ -300,3 +409,60 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   - The "workflow run failed" notifications the owner saw come from App runs
     2, 8, 9 and 10 and CI run 7, the failures this session fixed (DV-11, DV-13,
     the swap-file disk issue).
+- **2026-11-25 (phone companion planned, the owner's request; docs only):**
+  researched how WhatsApp, Signal (source plus a REA breakdown of Signal Desktop
+  8.36.0), VS Code tunnels, KDE Connect and Sunshine link a second device, and
+  what phone browsers can do ([companion.md](research/companion.md), ledger
+  round 4). Proposed [ADR 0005](adr/0005-phone-companion.md): an installable web
+  app that draws Triage's own data (display lists, tessellations, simulation
+  state), WebTransport on the same Wi-Fi with the laptop's certificate pinned by
+  the QR, an optional relay elsewhere, a six-digit code plus **Allow** on the
+  laptop, per-phone keys and view or edit permission. Added PLAN §4.16, ROADMAP
+  phase PC (PC-1 to PC-7) and DV-20. Waiting for the owner (open question above).
+- **2026-11-25 (P1, first session).** All of P1 built, checked on Linux:
+
+  | WP | Done when | Evidence |
+  |---|---|---|
+  | P1-1 | kicad-cli from our tree passes the demos corpus on both OSes | Linux: all 54 root schematics and boards of KiCad's 36 demos (netlist, ERC, DRC, SVG), golden `engines/eda/tests/golden/corpus.json`. **Windows: the same 54 files pass (EDA run 13, 2026-11-26)** |
+  | P1-2 | The engine loads all demos and answers API queries | Linux: the same 54 files through `--load-all`; the largest (Jetson) 548,549 groups in 12 s; engine integration tests 8/8 (open, display lists, queries, selection, edits, undo, save, reload, router, restart) |
+  | P1-3 | Display lists match OpenGL GAL (DV-21) | compared with kicad-cli's plots instead: 10 files, coverage 1.0, precision 0.98–1.0 (`compare.mjs`); bitmaps included |
+  | P1-4 | 60 fps; pixel compare against kicad-cli | pixel compare as P1-3; frame rates recorded under software GL only (9.7 and 11.8 fps, DV-22): the owner's GPU run decides |
+  | P1-5 | Net rename updates the header and diagnostics within 2 s | 280–305 ms in the packaged app (smoke test, 22/22 checks pass on Linux) |
+  | P1-6 | Saved files open in stock KiCad; spike + ADR 0004 | kicad-cli reads Triage's saved board and schematic (smoke and engine tests); router 0.15–0.18 ms per move; [ADR 0004](adr/0004-editing-path.md) proposed |
+  | P1-7 | A KiCad save shows in Triage within 2 s | the smoke test saves with kicad-cli and times the reload |
+
+  Found along the way: VS Code's IPC turned nested buffers into JSON (replies
+  are now packed); a command used VS Code's service accessor after an `await`
+  (cross-probe did nothing); our own save hid an external save made within 3 s
+  (the views now compare the file's modification time). GitHub Actions stopped
+  starting jobs at about 12:03 UTC (above). Known issues: KiCad's share data
+  (libraries, schemas) isn't staged yet, so the fallback editors start without
+  libraries; `LayerName()` has no names for a few virtual layers ("In559.Cu" for
+  LAYER_DANGLING); the P1 `Route` request takes all cursor moves in one call
+  (P6 makes it a session, ADR 0004).
+- **2026-11-25 (owner's decisions).** ADR 0004 accepted (direct hosting), after a
+  plain-words comparison of the two paths. ADR 0005 accepted with a relay (the
+  most secure design: sealed end to end, no keys on the relay), GitHub Pages then
+  the owner's domain, iOS 26.4+, phase PC between P3 and P4 (DV-23), and the
+  permission asked each time the laptop shares, changeable during a session.
+  The owner runs the P0-8 Copilot test on 2026-11-26.
+- **2026-11-25 (CI billing).** Actions refused every job for billing (the owner's
+  screenshot of the annotations). The owner made the repository public; the EDA
+  workflow now uses the public runners' 4 cores (DV-24).
+- **2026-11-25 (P0-8 done).** The owner reports Copilot works with Triage's own
+  GitHub sign-in on Windows (patches 0004–0006). The open question on Copilot
+  fallbacks is closed.
+- **2026-11-26 (P1 done in CI on both OSes).** EDA run 13: KiCad built with
+  MSVC; kicad-cli and the engine passed all 54 demo files and the integration
+  tests on Windows. App run 48: 22/22 smoke checks with the engine on Windows
+  and Linux. Fixed on the way: the Windows command runner split paths with
+  spaces; Chocolatey's 504 (installs retry); the engine's load-all report wasn't
+  valid JSON with Windows paths; the Windows compiler cache cached nothing (KiCad
+  forces /Zi unless its own USE_CCACHE is on); the Linux app machine lacked
+  KiCad's libraries; DRC counts depend on installed fonts (1% leeway). Known
+  issues: Linux users need KiCad's libraries installed (P8-2); KiCad's share data
+  isn't staged (the fallback editor starts without global libraries);
+  `LayerName()` misnames a few virtual layers; `Route` takes all moves in one
+  call (sessions in P6). EDA run 14 (KiCad's USE_CCACHE switch) passed on both OSes
+  and confirmed the Windows compiler cache: 1,953 of 1,953 MSVC compiles
+  cacheable (none before), 1.8 GB saved for the next run.

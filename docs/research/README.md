@@ -14,6 +14,7 @@ shipped Linux builds with **REA (Reverse Engineer Anything)**. Round 2 used REA'
 | [blender.md](blender.md) | Monolithic binary with embedded CPython, bundled engines, module map from 970 embedded source paths, Python UI layer counts |
 | [simulators.md](simulators.md) | ngspice co-sim API, simavr, avr8js/rp2040js, **Renode complete (1,248 peripheral models, time framework)**, MuJoCo C API, **Wokwi 4.1.0**, **board emulation for ESP32, Arduino and Raspberry Pi** (§7) |
 | [market-and-standards.md](market-and-standards.md) | Competitors, the gap Triage fills, simulator-game lessons, standards, sources |
+| [companion.md](companion.md) | **Phone companion** (2026-11-25): how WhatsApp, Signal, VS Code tunnels, KDE Connect and Sunshine link a second device (Signal Desktop 8.36.0 with REA); what phone browsers can do; what Triage can reuse ([ADR 0005](../adr/0005-phone-companion.md)) |
 | [evidence-ledger.md](evidence-ledger.md) | Every REA Evidence ID and artifact SHA-256 for both rounds |
 
 ## Method
@@ -32,6 +33,7 @@ shipped Linux builds with **REA (Reverse Engineer Anything)**. Round 2 used REA'
    | MuJoCo | 4.0.1 |
    | npm packages | avr8js 0.21.1, rp2040js 1.4.2, eecircuit-engine 1.9.0 |
    | Wokwi for VS Code | 4.1.0 (Open VSX) |
+   | Signal Desktop (phone companion research, 2026-11-25) | 8.36.0 (`.deb` from Signal's apt repository) |
 2. **Static analysis.** REA read export tables, ELF notes, complete symbol tables,
    Electron fuses, JavaScript module graphs, preload/IPC facts and .NET metadata.
    `addr2line`, `readelf` and `strings` filled in source-file placement, dynamic

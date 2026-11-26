@@ -1,0 +1,4 @@
+(fp_lib_table
+	(version 7)
+	(lib (name "smart_fan")(type "KiCad")(uri "${KIPRJMOD}/libraries/smart_fan.pretty")(options "")(descr "Smart Fan footprints, from KiCad 10.0.8's libraries"))
+)

@@ -47,7 +47,7 @@ export const ENGINEERING_VIEWS: readonly ITriageView[] = [
 		label: localize('triage.view.code', "Code"),
 		icon: Codicon.code,
 		summary: localize('triage.view.code.summary', "Firmware and scripts open in this group, beside the circuit and the 3D model."),
-		arrives: localize('triage.view.code.arrives', "Pin-map diagnostics and board build tasks arrive in P1-5."),
+		arrives: localize('triage.view.code.arrives', "Open a file from firmware/: pins come from the schematic (generated/board_pins.h), with diagnostics and Triage: Build Firmware."),
 	},
 	{
 		kind: TriageViewKind.Schematic,

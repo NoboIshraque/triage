@@ -1,20 +1,21 @@
-// Smart Fan firmware (Arduino Uno). P1-5 generates board_pins.h from the
-// schematic; until then the pins are written here.
+// Smart Fan firmware (Arduino Uno). The pins come from the schematic:
+// Triage writes ../generated/board_pins.h from electronics/smart-fan.kicad_sch
+// (ROADMAP P1-5), so renaming a net there renames the constant here.
+#include "../generated/board_pins.h"
+
 #include <Arduino.h>
 
-constexpr uint8_t THERMISTOR_PIN = A0;
-constexpr uint8_t FAN_PWM_PIN = 9;
-
 void setup() {
-  pinMode(FAN_PWM_PIN, OUTPUT);
+  pinMode(FAN_PWM, OUTPUT);
+  pinMode(BUTTON, INPUT_PULLUP);
   Serial.begin(115200);
 }
 
 void loop() {
-  const int reading = analogRead(THERMISTOR_PIN);
+  const int reading = analogRead(TEMP_SENSE);
   // Warmer room -> lower NTC resistance -> higher reading -> faster fan.
   const int duty = constrain(map(reading, 400, 700, 0, 255), 0, 255);
-  analogWrite(FAN_PWM_PIN, duty);
+  analogWrite(FAN_PWM, duty);
   Serial.print("reading=");
   Serial.print(reading);
   Serial.print(" duty=");

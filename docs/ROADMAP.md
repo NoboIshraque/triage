@@ -8,7 +8,7 @@ session works, and [STATUS.md](STATUS.md) tracks where we are.
 **Order of attack: inside one window from the start.** Everything the user does
 happens in Triage's own tabs. Each engine first shows up as an **in-app view with
 simple edits** (electronics in P1, 3D in P2), then the simulation joins them (P3),
-then your other boards (P4), then **full in-app editing** (P5, P6). The stock KiCad
+then the phone and tablet companion (PC), then your other boards (P4), then **full in-app editing** (P5, P6). The stock KiCad
 and FreeCAD windows are only a temporary fallback for edits Triage can't do yet
 (PLAN §4.3). **Windows is first-class from P0**, because it's the owner's laptop.
 
@@ -22,8 +22,10 @@ gantt
   P1 Electronics engine, views (M1)   :p1, after p0, 9w
   P2 3D engine, enclosure from board  :p2, after p1, 7w
   P3 Simulation on Arduino (M2)       :p3, after p2, 6w
+  section Phone companion
+  PC Phone and tablet companion       :pc, after p3, 6w
   section Your boards
-  P4 ESP32 and Raspberry Pi (M3)      :p4, after p3, 8w
+  P4 ESP32 and Raspberry Pi (M3)      :p4, after pc, 8w
   section Full design tools
   P5 In-app electronics editing       :p5, after p4, 10w
   P6 In-app 3D design (M4)            :p6, after p5, 8w
@@ -36,9 +38,10 @@ gantt
 |---|---|---|
 | **M1 "Circuit inside"** | end of P1, ~3 months | Open a KiCad project in Triage and see its **schematic and PCB in tabs**, drawn by KiCad's own engine. Make simple edits (move, rotate, change values, place a part, draw a wire). The code knows the pin map. The files still open in stock KiCad |
 | **M2 "One window"** | end of P3, ~6 months | **The whole Smart Fan in one window:** circuit, board, a 3D enclosure generated from the board, and Arduino code. **Run** the whole device, or simulate **just the circuit, just the code or just the mechanism**. A scenario test passes |
-| **M3 "Your boards"** | end of P4, ~8 months | The same on **ESP32** (with simulated Wi-Fi), **Raspberry Pi Pico**, and **Raspberry Pi** Python projects. A breakpoint freezes the whole simulated world |
-| **M4 "Full design tools"** | end of P6, ~12 months | Draw any schematic and route a 2–4 layer board in Triage (push-and-shove router, zones, DRC). Model enclosures and mechanisms from scratch (sketches, features, assemblies that drive the physics) |
-| **M5 "v1.0"** | end of P8, ~15 months | SPICE accuracy, more boards (Uno R4, Nano 33 BLE, STM32), ~100 smart parts, product renders, a polished Windows installer (Linux and macOS too) |
+| **PC "On your phone"** ([ADR 0005](adr/0005-phone-companion.md)) | after M2, ~7.5 months (6 weeks, before P4) | Pick **Show on phone** beside a tab, scan the QR, confirm the code: the **schematic, PCB, 3D model and simulation** show on a phone or tablet (Android, iOS 26.4+), with simple edits and the simulation's controls. The laptop does the work |
+| **M3 "Your boards"** | end of P4, ~9.5 months | The same on **ESP32** (with simulated Wi-Fi), **Raspberry Pi Pico**, and **Raspberry Pi** Python projects. A breakpoint freezes the whole simulated world |
+| **M4 "Full design tools"** | end of P6, ~13.5 months | Draw any schematic and route a 2–4 layer board in Triage (push-and-shove router, zones, DRC). Model enclosures and mechanisms from scratch (sketches, features, assemblies that drive the physics) |
+| **M5 "v1.0"** | end of P8, ~16.5 months | SPICE accuracy, more boards (Uno R4, Nano 33 BLE, STM32), ~100 smart parts, product renders, a polished Windows installer (Linux and macOS too) |
 
 **What's inside the one window at each milestone**
 
@@ -116,6 +119,30 @@ Windows.
 
 **M2 exit demo:** PLAN §3 steps 1–6 and 9 inside Triage. The board uses simple
 tracks (push-and-shove routing arrives in P5). The owner runs it on Windows.
+
+## PC · Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md), accepted 2026-11-25; added at the owner's request, DV-20, DV-23)
+
+Any Triage tab on a paired phone or tablet, through an installable web app
+(PLAN §4.16). It comes **after M2 and before P4** (the owner's choice), when the
+schematic, board, 3D model and simulation all exist to show; P4 onward move by
+about 6 weeks. The phone app is hosted on **GitHub Pages** first and on the
+owner's own domain later; phones on other networks connect through a **relay**
+that sees only sealed frames.
+
+| WP | Deliverable | Done when |
+|---|---|---|
+| **PC-1** Spike: a phone reaches the laptop | A throwaway spike: a small Rust WebTransport server in a utility process (built from source), a test page at a temporary HTTPS origin that draws one Smart Fan display list with `edaRenderer.ts`, on the owner's phones: direct WebTransport to the LAN address with the certificate hash pinned from a QR, the camera scan inside the installed web app, and the relay path. Measures first-view time, throughput and frame rate; checks what Windows Defender Firewall asks for a per-user install. Puts the relay's hosting options and costs to the owner before any account is made. ADR 0005 updated with the results | **Owner check:** the owner scans the QR from the Windows build and sees the board drawn on their phone over the LAN. The numbers are in STATUS. WebTransport or the WebRTC fallback is settled, and the owner has picked where the relay runs |
+| **PC-2** Companion broker and pairing | `crates/triage-companion` (QUIC and WebTransport, certificates renewed every 13 days with the next hashes handed out, Noise `IKpsk2` and `IK`, QR payloads) and `companionBrokerMain.ts`; pairing with a rotating QR, the six-digit code, **Allow** with **View only** or **View and edit** asked every time the laptop shares; a phone that reconnects by itself starts view only, with **Allow editing** in the notification; the permission switchable during a session from the status bar item and the Phones list; paired phones with keys in secret storage, **Remove**; the **Show on phone** dropdown on Triage's tabs, the QR dialog, the Phones section of the Triage sidebar, a status bar item; settings; off by default | A test on Windows and Linux pairs a scripted phone (the phone app in a second Electron window with mobile emulation, so no extra browser download) with the packaged app, and checks that an expired or reused QR, a wrong code, a removed phone and an edit from a view-only phone are all refused, and that the same edit goes through once the laptop allows editing during the session. Fuzz tests of the protocol parser run in CI. Security review notes in STATUS |
+| **PC-3** Phone app shell | `companion/web/`: web app manifest, service worker (offline shell), Install and Add to Home Screen guidance, in-app QR scanner and typed-code entry, pairing screens, **Unlink**, reconnect, tab switcher and **Follow laptop**; CI builds it and publishes it to the companion origin (GitHub Pages first; the owner's domain later); the laptop refuses an incompatible app version with a clear message | Chrome's installability check passes in CI. **Owner check:** the owner installs the app on their phone, pairs it with the Windows nightly, restarts both, and it reconnects without a QR |
+| **PC-4** Schematic and board on the phone | The WebGL2 display-list renderer in the phone app; touch pan, pinch zoom, layers and sheets; tap → engine hit test → item card; cross-probe both ways; with edit permission: value and reference, move, rotate, delete, undo, redo, save through the engine; every view of the document refreshes after an edit from either side | The Smart Fan board and schematic draw at ≥ 30 fps on the owner's phone. A value changed on the phone shows in the laptop's tab within 1 s, is in the saved file and opens in stock KiCad. A scripted-phone test runs in CI on both OSes |
+| **PC-5** 3D on the phone | The 3D view's drawing code (P2-3) in the phone app; tessellations and transforms streamed; touch orbit, pan and zoom; outliner; fit-check highlights; with edit permission: enclosure parameters (P2-4) | Board and enclosure at ≥ 30 fps on the owner's phone; changing the wall thickness on the phone recomputes and updates both screens |
+| **PC-6** Simulation on the phone | Run, Pause, Step, Speed and the scope picker; virtual I/O and environment panels; serial monitor and plots (P3-5's drawing code); 3D playback; state at up to 30 Hz with backpressure; the phone's tilt as an optional sensor input | **Owner check:** the owner starts the Smart Fan simulation from the phone, moves the room-temperature slider there, and the fan speeds up in the 3D views on both screens; the overheat scenario's result shows on the phone |
+| **PC-7** Away from the desk + security review | `companion/relay/` and its deployment where the owner chose in PC-1, used when the LAN path fails; pairing with the 8-character code through it; reconnect after network changes; frame-size, rate and idle limits. Either way: a threat model and security review of PC-2 to PC-7 (a QR on a projector, someone on the same Wi-Fi, the relay operator, a lost phone, the app's host), and a list of edits made from phones | A phone on mobile data reaches the laptop on home Wi-Fi, and a test shows the relay sees only ciphertext. The security review is in STATUS with every item fixed or accepted by the owner |
+
+**PC exit demo:** on the owner's Windows laptop, **Show on phone** on the Board tab,
+pair a phone with the QR and the six-digit code, change a resistor's value on the
+phone, then run the Smart Fan simulation from the phone and watch the fan spin in
+3D on both screens. The files still open in stock KiCad.
 
 ## P4 · ESP32 and Raspberry Pi → **M3**
 

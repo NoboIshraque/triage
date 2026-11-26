@@ -1,0 +1,72 @@
+{
+  "pic_programmer-pcb": {
+    "file": "engines/eda/upstream/demos/pic_programmer/pic_programmer.kicad_pcb",
+    "coverage": 1,
+    "precision": 1,
+    "kicadInk": 25047,
+    "ourInk": 33623
+  },
+  "pic_programmer-sch": {
+    "file": "engines/eda/upstream/demos/pic_programmer/pic_programmer.kicad_sch",
+    "coverage": 1,
+    "precision": 0.9894,
+    "kicadInk": 59511,
+    "ourInk": 71409
+  },
+  "video-pcb": {
+    "file": "engines/eda/upstream/demos/video/video.kicad_pcb",
+    "coverage": 1,
+    "precision": 1,
+    "kicadInk": 35700,
+    "ourInk": 41322
+  },
+  "video-sch": {
+    "file": "engines/eda/upstream/demos/video/video.kicad_sch",
+    "coverage": 1,
+    "precision": 1,
+    "kicadInk": 63876,
+    "ourInk": 92715
+  },
+  "ecc83-pp-pcb": {
+    "file": "engines/eda/upstream/demos/ecc83/ecc83-pp.kicad_pcb",
+    "coverage": 1,
+    "precision": 1,
+    "kicadInk": 5476,
+    "ourInk": 7329
+  },
+  "ecc83-pp-sch": {
+    "file": "engines/eda/upstream/demos/ecc83/ecc83-pp.kicad_sch",
+    "coverage": 1,
+    "precision": 0.9796,
+    "kicadInk": 13439,
+    "ourInk": 17139
+  },
+  "interf_u-sch": {
+    "file": "engines/eda/upstream/demos/interf_u/interf_u.kicad_sch",
+    "coverage": 1,
+    "precision": 0.9988,
+    "kicadInk": 96584,
+    "ourInk": 126703
+  },
+  "sonde_xilinx-pcb": {
+    "file": "engines/eda/upstream/demos/sonde xilinx/sonde xilinx.kicad_pcb",
+    "coverage": 1,
+    "precision": 1,
+    "kicadInk": 6848,
+    "ourInk": 8579
+  },
+  "smart-fan-pcb": {
+    "file": "examples/smart-fan/electronics/smart-fan.kicad_pcb",
+    "coverage": 1,
+    "precision": 1,
+    "kicadInk": 5161,
+    "ourInk": 6298
+  },
+  "smart-fan-sch": {
+    "file": "examples/smart-fan/electronics/smart-fan.kicad_sch",
+    "coverage": 1,
+    "precision": 1,
+    "kicadInk": 16535,
+    "ourInk": 20390
+  }
+}

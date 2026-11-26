@@ -5,6 +5,8 @@
 .DESCRIPTION
   scripts\dev\setup.ps1             install what is missing (winget, or Chocolatey if winget is absent)
   scripts\dev\setup.ps1 -App        also what the VS Code fork (app\) needs: Spectre-mitigated libraries
+  scripts\dev\setup.ps1 -Eda        also what the KiCad fork (engines\eda\) needs: vcpkg (VCPKG_ROOT,
+                                    cloned and bootstrapped if unset) and ccache 4 (ROADMAP P1-1)
   scripts\dev\setup.ps1 -DevShell   load the Visual Studio C++ environment into this shell
                                     (and, on GitHub Actions, into the later steps of the job)
   scripts\dev\setup.ps1 -Check      only report what is missing; exit 1 if anything is
@@ -14,7 +16,7 @@
   workload; rustup and the toolchain pinned in rust-toolchain.toml (MSVC); CMake 3.25+
   and Ninja. Linux: scripts/dev/setup.sh.
 #>
-param([switch]$Check, [switch]$App, [switch]$DevShell)
+param([switch]$Check, [switch]$App, [switch]$Eda, [switch]$DevShell)
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -57,9 +59,13 @@ function Install-Tool([string]$Tool, [string]$WingetId, [string]$ChocoId, [strin
 function Require([string]$Tool, [scriptblock]$Test, [scriptblock]$Install) {
   if (& $Test) { return $true }
   if ($Check) { Say $Tool 'missing'; $Missing.Add($Tool); return $false }
-  # Installer output must not become part of this function's return value.
-  & $Install | Out-Host
-  if (& $Test) { return $true }
+  # Package servers fail now and then (Chocolatey answered 504 on 2026-11-25), so
+  # try three times. Installer output must not become this function's return value.
+  foreach ($wait in 0, 20, 60) {
+    if ($wait) { Say $Tool "retrying in $wait s"; Start-Sleep -Seconds $wait }
+    & $Install | Out-Host
+    if (& $Test) { return $true }
+  }
   Say $Tool 'still missing after installing'
   $Missing.Add($Tool)
   return $false
@@ -172,6 +178,35 @@ if (Require 'cmake' { Test-CMake } { Install-Tool 'cmake' 'Kitware.CMake' 'cmake
   Say 'cmake' "$((cmake --version | Select-Object -First 1)) ok"
 }
 if (Require 'ninja' { Have 'ninja' } { Install-Tool 'ninja' 'Ninja-build.Ninja' 'ninja' }) { Say 'ninja' 'ok' }
+
+# --- KiCad fork: vcpkg and ccache ------------------------------------------------------
+if ($Eda) {
+  # KiCad builds its dependencies from its vcpkg.json; GitHub's runners carry a vcpkg.
+  if (-not $env:VCPKG_ROOT -and $env:VCPKG_INSTALLATION_ROOT) { $env:VCPKG_ROOT = $env:VCPKG_INSTALLATION_ROOT }
+  if (-not $env:VCPKG_ROOT) { $env:VCPKG_ROOT = Join-Path $Tools 'vcpkg' }
+  if (Require 'vcpkg' { Test-Path (Join-Path $env:VCPKG_ROOT 'vcpkg.exe') } {
+      if (-not (Test-Path (Join-Path $env:VCPKG_ROOT '.git'))) {
+        git clone --quiet https://github.com/microsoft/vcpkg.git $env:VCPKG_ROOT
+      }
+      & (Join-Path $env:VCPKG_ROOT 'bootstrap-vcpkg.bat') -disableMetrics
+    }) {
+    Say 'vcpkg' "$env:VCPKG_ROOT ok"
+    if ($env:GITHUB_ENV) { Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_ROOT=$env:VCPKG_ROOT" }
+    else { [Environment]::SetEnvironmentVariable('VCPKG_ROOT', $env:VCPKG_ROOT, 'User') }
+  }
+  # Strawberry Perl's old ccache on the runners can't cache MSVC; ccache 4 can.
+  function Test-Ccache {
+    $exe = Get-Command ccache -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch 'Strawberry' } | Select-Object -First 1
+    if (-not $exe) { return $false }
+    $env:CCACHE_EXE = $exe.Source
+    return ((& $exe.Source --version | Select-Object -First 1) -match 'version 4\.')
+  }
+  if (Require 'ccache' { Test-Ccache } { Install-Tool 'ccache' 'Ccache.Ccache' 'ccache' }) {
+    [void](Test-Ccache)
+    Say 'ccache' "$env:CCACHE_EXE ok"
+    if ($env:GITHUB_ENV) { Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_EXE=$env:CCACHE_EXE" }
+  }
+}
 
 # --- Visual Studio developer environment ----------------------------------------------
 if ($DevShell -and $vs) {

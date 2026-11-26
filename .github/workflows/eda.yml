@@ -1,0 +1,265 @@
+# Builds Triage's EDA engine from the pinned KiCad release on Linux (GCC) and
+# Windows (MSVC + vcpkg), then runs the kicad-demos corpus checks (ROADMAP P1-1,
+# P1-2). The staged engine is uploaded for the App workflow to package.
+#
+# KiCad is large for CI runners (4 cores for a public repository; the build uses
+# them all), so the compiler cache (ccache) is saved even
+# when a build step runs out of time: the next run continues where it stopped.
+# On Windows, KiCad's dependencies (vcpkg) build in a job of their own and are
+# cached as vcpkg binary packages.
+name: EDA
+
+on:
+  push:
+    paths:
+      - engines/eda/**
+      - engines/hello/**
+      - scripts/forks/**
+      - scripts/dev/**
+      - .github/workflows/eda.yml
+  pull_request:
+    paths:
+      - engines/eda/**
+      - engines/hello/**
+      - scripts/forks/**
+      - scripts/dev/**
+      - .github/workflows/eda.yml
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: eda-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CCACHE_MAXSIZE: 5G
+  CCACHE_COMPRESS: 'true'
+  CCACHE_SLOPPINESS: pch_defines,time_macros,include_file_mtime,include_file_ctime
+
+jobs:
+  linux:
+    name: KiCad engine (ubuntu-24.04)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 355
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Set up the build machine (scripts/dev/setup.sh --eda)
+        timeout-minutes: 20
+        run: |
+          df -h / && free -h
+          scripts/dev/setup.sh --eda
+
+      - name: Fetch KiCad and apply Triage's patches
+        run: node engines/eda/build.mjs fetch prepare
+
+      - name: Cache key
+        id: key
+        run: |
+          pin=$(node -p "require('./engines/eda/upstream.json').commit")
+          echo "prefix=eda-ccache-linux-$pin-" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the compiler cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ccache
+          key: ${{ steps.key.outputs.prefix }}${{ github.run_id }}
+          restore-keys: |
+            ${{ steps.key.outputs.prefix }}
+            eda-ccache-linux-
+
+      - name: Configure
+        run: node engines/eda/build.mjs configure --ccache
+
+      - name: Build
+        timeout-minutes: 300
+        run: |
+          ccache --zero-stats
+          node engines/eda/build.mjs build --ccache
+          ccache --show-stats -v
+
+      - name: Save the compiler cache
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ccache
+          key: ${{ steps.key.outputs.prefix }}${{ github.run_id }}
+
+      - name: Stage
+        run: node engines/eda/build.mjs stage
+
+      - name: kicad-demos corpus (kicad-cli and the engine)
+        timeout-minutes: 60
+        run: node engines/eda/build.mjs test
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - name: Engine integration tests (open, display lists, edits, router, restart)
+        run: |
+          pnpm install --frozen-lockfile --filter @triage/engine-tests
+          pnpm --filter @triage/engine-tests exec vitest run src/edaEngine.test.ts
+        env:
+          TRIAGE_REQUIRE_EDA: '1'
+
+      - name: Upload the staged engine
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: triage-eda-linux
+          path: engines/eda/build/linux/stage/
+          retention-days: 7
+
+  windows-deps:
+    name: KiCad dependencies (windows-2022, vcpkg)
+    runs-on: windows-2022
+    timeout-minutes: 355
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}\vcpkg-cache,readwrite
+    outputs:
+      key: ${{ steps.key.outputs.key }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Set up the build machine (scripts/dev/setup.ps1 -Eda -DevShell)
+        run: ./scripts/dev/setup.ps1 -Eda -DevShell
+
+      - name: Fetch KiCad and apply Triage's patches
+        run: node engines/eda/build.mjs fetch prepare
+
+      - name: Cache key (the vcpkg manifest)
+        id: key
+        run: |
+          $files = 'engines/eda/upstream/vcpkg.json', 'engines/eda/upstream/vcpkg-configuration.json'
+          $hash = ($files | ForEach-Object { (Get-FileHash $_).Hash }) -join ''
+          "key=eda-vcpkg-windows-$($hash.Substring(0, 12))$($hash.Substring(64, 12))" >> $env:GITHUB_OUTPUT
+
+      - name: Restore vcpkg's binary packages
+        id: restore
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: vcpkg-cache
+          key: ${{ steps.key.outputs.key }}
+          restore-keys: |
+            ${{ steps.key.outputs.key }}-partial-
+
+      - name: Build KiCad's dependencies (vcpkg install, manifest mode)
+        if: steps.restore.outputs.cache-hit != 'true'
+        timeout-minutes: 330
+        run: |
+          New-Item -ItemType Directory -Force vcpkg-cache | Out-Null
+          & "$env:VCPKG_ROOT\vcpkg.exe" install --triplet x64-windows `
+            --x-manifest-root=engines/eda/upstream `
+            --x-install-root=engines/eda/build/windows/vcpkg_installed `
+            --clean-buildtrees-after-build --clean-packages-after-build
+
+      - name: Save vcpkg's binary packages
+        if: success() && steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: vcpkg-cache
+          key: ${{ steps.key.outputs.key }}
+
+      # A timed-out or failed run keeps the packages it finished.
+      - name: Save the finished packages
+        if: failure() && steps.restore.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: vcpkg-cache
+          key: ${{ steps.key.outputs.key }}-partial-${{ github.run_id }}
+
+  windows:
+    name: KiCad engine (windows-2022, MSVC)
+    needs: windows-deps
+    runs-on: windows-2022
+    timeout-minutes: 355
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}\vcpkg-cache,read
+      CCACHE_DIR: ${{ github.workspace }}\.ccache
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Set up the build machine (scripts/dev/setup.ps1 -Eda -DevShell)
+        run: ./scripts/dev/setup.ps1 -Eda -DevShell
+
+      - name: Fetch KiCad and apply Triage's patches
+        run: node engines/eda/build.mjs fetch prepare
+
+      - name: Restore vcpkg's binary packages
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: vcpkg-cache
+          key: ${{ needs.windows-deps.outputs.key }}
+          fail-on-cache-miss: true
+
+      - name: Cache key
+        id: key
+        run: |
+          $pin = node -p "require('./engines/eda/upstream.json').commit"
+          "prefix=eda-ccache-windows-$pin-" >> $env:GITHUB_OUTPUT
+
+      - name: Restore the compiler cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ccache
+          key: ${{ steps.key.outputs.prefix }}${{ github.run_id }}
+          restore-keys: |
+            ${{ steps.key.outputs.prefix }}
+            eda-ccache-windows-
+
+      - name: Configure (restores the dependencies from vcpkg's cache)
+        timeout-minutes: 60
+        run: node engines/eda/build.mjs configure --ccache
+
+      - name: Build
+        timeout-minutes: 270
+        run: |
+          & $env:CCACHE_EXE --zero-stats
+          node engines/eda/build.mjs build --ccache
+          & $env:CCACHE_EXE --show-stats -v
+
+      - name: Save the compiler cache
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ccache
+          key: ${{ steps.key.outputs.prefix }}${{ github.run_id }}
+
+      - name: Stage
+        run: node engines/eda/build.mjs stage
+
+      - name: kicad-demos corpus (kicad-cli and the engine)
+        timeout-minutes: 60
+        run: node engines/eda/build.mjs test
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - name: Engine integration tests (open, display lists, edits, router, restart)
+        run: |
+          pnpm install --frozen-lockfile --filter @triage/engine-tests
+          pnpm --filter @triage/engine-tests exec vitest run src/edaEngine.test.ts
+        env:
+          TRIAGE_REQUIRE_EDA: '1'
+
+      - name: Upload the staged engine
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: triage-eda-windows
+          path: engines/eda/build/windows/stage/
+          retention-days: 7

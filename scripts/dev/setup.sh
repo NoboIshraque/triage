@@ -3,6 +3,7 @@
 #
 #   scripts/dev/setup.sh           install what is missing (apt needs sudo or root)
 #   scripts/dev/setup.sh --app     also the libraries the VS Code fork needs (app/)
+#   scripts/dev/setup.sh --eda     also what the KiCad fork needs (engines/eda/, ROADMAP P1-1)
 #   scripts/dev/setup.sh --check   only report what is missing; exit 1 if anything is
 #
 # Installs: build tools (GCC, CMake >= 3.25, Ninja, pkg-config, Python 3,
@@ -17,17 +18,27 @@ CMAKE_MIN="3.25"
 
 CHECK=0
 APP=0
+EDA=0
 for arg in "$@"; do
   case "$arg" in
     --check) CHECK=1 ;;
     --app) APP=1 ;;
-    *) echo "usage: scripts/dev/setup.sh [--check] [--app]" >&2; exit 2 ;;
+    --eda) EDA=1 ;;
+    *) echo "usage: scripts/dev/setup.sh [--check] [--app] [--eda]" >&2; exit 2 ;;
   esac
 done
 
 APT_PACKAGES=(ca-certificates curl git xz-utils build-essential python3 cmake ninja-build pkg-config clang-format-18)
 # What VS Code's own Linux CI installs (app/upstream/.github/actions/install-linux-packages).
 APP_PACKAGES=(libxkbfile-dev libkrb5-dev libgbm1 libgtk-3-0 xvfb)
+# KiCad 10's build dependencies from Ubuntu 24.04's archive (engines/eda/upstream/CMakeLists.txt).
+EDA_PACKAGES=(ccache gettext swig python3-dev libwxgtk3.2-dev libwxgtk-webview3.2-dev libgtk-3-dev
+  libglm-dev zlib1g-dev libzstd-dev libcurl4-openssl-dev libspnav-dev libcairo2-dev libpixman-1-dev
+  libgit2-dev libboost-dev libboost-locale-dev libboost-test-dev libboost-filesystem-dev
+  libfreetype-dev libharfbuzz-dev libfontconfig-dev libngspice0-dev libocct-data-exchange-dev
+  libocct-modeling-algorithms-dev libocct-modeling-data-dev libocct-foundation-dev
+  libocct-visualization-dev libocct-ocaf-dev libprotobuf-dev protobuf-compiler libgl-dev
+  libglu1-mesa-dev libnng-dev libsecret-1-dev libpoppler-glib-dev unixodbc-dev)
 
 missing=()
 say() { printf '%-14s %s\n' "$1" "$2"; }
@@ -43,6 +54,7 @@ if [ "$(id -u)" -ne 0 ]; then SUDO="sudo"; fi
 # --- System packages -----------------------------------------------------------
 packages=("${APT_PACKAGES[@]}")
 if [ "$APP" = 1 ]; then packages+=("${APP_PACKAGES[@]}"); fi
+if [ "$EDA" = 1 ]; then packages+=("${EDA_PACKAGES[@]}"); fi
 if have dpkg-query; then
   absent=()
   for package in "${packages[@]}"; do

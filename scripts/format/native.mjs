@@ -13,7 +13,14 @@ import process from 'node:process';
 
 const REQUIRED_MAJOR = 18;
 const EXTENSIONS = ['c', 'cc', 'cpp', 'cxx', 'h', 'hh', 'hpp', 'hxx'];
-const SKIP = [/^app\//, /(^|\/)upstream\//, /(^|\/)patches\//, /^engines\/(eda|cad|qemu-esp32)\//];
+// Generated files (firmware/generated/board_pins.h) are rewritten by Triage, not by hand.
+const SKIP = [
+  /^app\//,
+  /(^|\/)generated\//,
+  /(^|\/)upstream\//,
+  /(^|\/)patches\//,
+  /^engines\/(eda|cad|qemu-esp32)\//,
+];
 const BATCH = 50;
 
 const mode = process.argv[2];

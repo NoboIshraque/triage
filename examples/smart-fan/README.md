@@ -7,7 +7,7 @@ fan sits in a printed enclosure.
 | Folder | Domain | Filled in by |
 |---|---|---|
 | `firmware/` | Code | the sketch is here now |
-| `electronics/` | Electronics | the KiCad project arrives with ROADMAP P1 |
+| `electronics/` | Electronics | the KiCad project (schematic and board, Arduino Uno shield) |
 | `mechanical/` | Mechanical | the FreeCAD enclosure arrives with P2-4 |
 | `simulation/` | Simulation | scopes and scenarios arrive with P3 |
 

@@ -88,3 +88,122 @@
 .monaco-workbench.hc-black .onboarding-a-signin-brand-icon {
 	background-image: url('./triage-logo-dark.svg');
 }
+
+/* Schematic and Board tabs: KiCad's engine on Triage's canvas (ROADMAP P1-4). */
+.triage-view-editor .triage-eda-view {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	outline: none;
+}
+
+.triage-eda-view .triage-eda-toolbar {
+	display: flex;
+	flex-wrap: nowrap;
+	overflow: hidden;
+	white-space: nowrap;
+	align-items: center;
+	gap: 6px;
+	padding: 3px 8px;
+	min-height: 26px;
+	border-bottom: 1px solid var(--vscode-editorGroup-border);
+	background: var(--vscode-editorGroupHeader-tabsBackground);
+	font-size: 12px;
+}
+
+.triage-eda-view .triage-eda-title {
+	font-weight: 600;
+	margin-right: auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.triage-eda-view .triage-eda-button {
+	flex: none;
+}
+
+.triage-eda-view .triage-eda-button,
+.triage-eda-view .triage-eda-sheets {
+	color: var(--vscode-button-secondaryForeground);
+	background: var(--vscode-button-secondaryBackground);
+	border: none;
+	border-radius: 2px;
+	padding: 2px 8px;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.triage-eda-view .triage-eda-button:hover {
+	background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.triage-eda-view .triage-eda-modified {
+	color: var(--vscode-editorWarning-foreground);
+}
+
+.triage-eda-view .triage-eda-stage {
+	position: relative;
+	flex: 1 1 auto;
+	overflow: hidden;
+}
+
+.triage-eda-view .triage-eda-canvas,
+.triage-eda-view .triage-eda-overlay {
+	position: absolute;
+	left: 0;
+	top: 0;
+}
+
+.triage-eda-view .triage-eda-overlay {
+	cursor: crosshair;
+	touch-action: none;
+}
+
+.triage-eda-view .triage-eda-layers {
+	display: none;
+	position: absolute;
+	right: 6px;
+	top: 6px;
+	max-height: calc(100% - 12px);
+	overflow-y: auto;
+	padding: 4px 8px;
+	background: var(--vscode-editorWidget-background);
+	border: 1px solid var(--vscode-editorWidget-border);
+	font-size: 12px;
+}
+
+.triage-eda-view .triage-eda-layers.open {
+	display: block;
+}
+
+.triage-eda-view .triage-eda-layer {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	white-space: nowrap;
+}
+
+.triage-eda-view .triage-eda-swatch {
+	width: 10px;
+	height: 10px;
+	border: 1px solid var(--vscode-editorWidget-border);
+}
+
+.triage-eda-view .triage-eda-status {
+	padding: 2px 8px;
+	min-height: 18px;
+	font-size: 12px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	border-top: 1px solid var(--vscode-editorGroup-border);
+	color: var(--vscode-descriptionForeground);
+}
+
+/* A net picked in the schematic or board, in the code (ROADMAP P1-5). */
+.monaco-editor .triage-net-highlight {
+	background-color: var(--vscode-editor-wordHighlightStrongBackground);
+	outline: 1px solid var(--vscode-editor-wordHighlightStrongBorder, transparent);
+}

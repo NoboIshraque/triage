@@ -121,3 +121,22 @@ the 12 largest of 61 libraries (all 61 were inspected).
 ² Requested and effective, after the launcher fix.
 
 All batches select files from the same `extensions/` directory (one inventory, 927 files). Round 3 is summarized in [vscode.md](vscode.md) §5, and recorded per file, with Evidence IDs, in [data/vscode-round3.tsv](data/vscode-round3.tsv).
+
+## Round 4: phone companion research (2026-11-25)
+
+REA 6.7.0 built from `NoboIshraque/rea` @ `84e2b99` with `REA_UNBOUNDED=1`, parent heap
+640–1,536 MiB and worker heaps of 2–3 GiB, so that REA stayed under 4 GB while another
+build shared the machine. Target: **Signal Desktop 8.36.0** for Linux
+(`signal-desktop_8.36.0_amd64.deb`, SHA-256
+`45381fe0d4872770fbc68e1fadecff1c77549ec91af6d17cee69b8b5859a4a14`, as listed in Signal's
+apt index), extracted with `dpkg-deb -x` and never run. Findings are in
+[companion.md](companion.md) §1.2 and §5.
+
+| Target | REA operation | Evidence ID | Parent Evidence ID | Artifact SHA-256 | Finding |
+|---|---|---|---|---|---|
+| Signal Desktop `resources/app.asar` (41 MB) | extract_artifact | `ev_64ce11c3f0cca8aa42b75fd70c7ceca331e2c2108853fbf7c04446c72ea53ecd` | – | `58f628ad3b3d436ec4ffe94ca1b74bf4eef539647f099ccdbb1929e87e7bd0e0` | 1,752 nodes, 1,885 occurrences; bundles `bundles/main.js`, `bundles/preload/main.js` (6.9 MB), `bundles/chunks/` (observed) |
+| Signal Desktop `signal-desktop` ELF | inspect_electron_fuses | `ev_d3f4a300881080d2df036af8a4906450740343526f70cda31b0affc1321c4712` | – | `c2e108c2f26b35b1020895230280460c86154c5420d8af29aad9fcef675b599e` | RunAsNode, NodeOptions and NodeCliInspect off; OnlyLoadAppFromAsar on; cookie encryption on; asar integrity off (observed) |
+| Signal Desktop install dir `opt/Signal` | inspect_desktop_application → summary view | `ev_7ad0845041c7d59aab98bc1d79a4507f7f3183d095bf91e7048a536ded0205a6` | `ev_6e9529bfda25f73b4ceda8b33211dd4cbf78cd0d052ee10354efd54f09e567dc` | `9162f6f97a073593043de27064546178db5d5c5c9b7bc764a237754cc1894abf` (directory) | 135 files; one Electron candidate (inferred by REA) |
+| Signal Desktop `bundles/main.js` + `bundles/preload/main.js` | analyze_javascript_application (worker 2048 MiB, parent 1,536 MiB) → summary view | `ev_25703e007fc886970b993a82150d50dfe00bab2791e26f5e24d73d7812b794e5` | `ev_813e47320506b714c5903dcd9834d7a3e0a9748b7002a8a75da38047921a9e19` | `58f628ad3b3d436ec4ffe94ca1b74bf4eef539647f099ccdbb1929e87e7bd0e0` | partial: `main.js` parsed (187,269 AST nodes, 368 findings, static facts kept, semantic graph over the parent's result budget); `preload/main.js` exhausted the 2 GiB worker heap (limitation observed) |
+| Signal Desktop `bundles/preload/main.js` (6.9 MB) alone | analyze_javascript_application (worker 3072 MiB, parent 640 MiB) → summary view | `ev_a5d8390eb5885ff3fffd2adbe906e3a2ca24178f638321d55d068fbcf32b3152` | `ev_c9e280dfd77f805047b0a63000986077cc50aa879e143ddcc142f11750a3a312` | `58f628ad3b3d436ec4ffe94ca1b74bf4eef539647f099ccdbb1929e87e7bd0e0` | **not completed:** exhausted the 3 GiB worker heap. Its provisioning facts (cipher label, rotation constants) were read from the shipped bytes instead (`bundles/preload/main.js` SHA-256 `8db5af6c…406423`) |
+| libsignal addon `@signalapp+libsignal-client.node` (23 MB) | inspect_native_exports | `ev_9ef19f02d092b256b865b856e9fc94aae2e64804a55417ec30cc3ca0ce3586f8` | – | `36badb8d7d142e9c27b9993861a9f5b8e2a557ef559fb4162e088672de1971c9` | complete: 852 exports, including `ProvisioningChatConnection_connect`, `RecvProvisionCiphertextState_*`, `Provisioning_EncryptProvisionMessage` (observed); the `/v1/websocket/provisioning/` path from strings (observed) |
