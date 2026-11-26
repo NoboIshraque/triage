@@ -14,6 +14,9 @@
 
 **Current build branch:** `claude/busy-ptolemy-ijnsz7` (the branch the newest
 work is on; Claude updates this line when a session works on another branch).
+Everything on it up to P2 is also **merged into the default branch**
+(`claude/unified-engineering-platform-jn5rmk`, 2026-11-26), so the default
+branch's nightly build and ZIP download have it too.
 
 ## At a glance
 
@@ -36,6 +39,14 @@ project**, both from the current build branch (above).
 
 **A. The Windows build** (about 5 minutes, or 35 if you have to start a build)
 
+**Shortcut, the nightly:** open
+<https://github.com/NoboIshraque/triage/actions/workflows/nightly.yml>
+(**Actions** → **Nightly**), click the newest run with a green check mark and
+download **triage-Windows-nightly** under **Artifacts** (kept 3 days). It is
+built from the default branch at 03:17 UTC on days something was merged into
+it. Then continue at step 5. If there is no green nightly yet, or the work you
+want isn't merged, use the steps:
+
 1. Open <https://github.com/NoboIshraque/triage/actions/workflows/app.yml>
    (the repository → **Actions** tab → workflow **App** in the left list).
 2. Click the **Branch** filter above the list of runs and pick the current build
@@ -57,8 +68,10 @@ project**, both from the current build branch (above).
 
 **B. The example project**
 
-1. Open <https://github.com/NoboIshraque/triage>, click the branch menu (it
-   shows the default branch's name) and pick the current build branch.
+1. Open <https://github.com/NoboIshraque/triage>. If the line at the top of
+   this file says the work is merged into the default branch, keep the branch
+   GitHub shows; otherwise click the branch menu and pick the current build
+   branch.
 2. Click the green **Code** button → **Download ZIP**, and unzip it. If you use
    git instead: `git clone https://github.com/NoboIshraque/triage` then
    `git checkout <current build branch>`.
