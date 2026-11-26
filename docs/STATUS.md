@@ -3,11 +3,9 @@
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
 **Last updated:** 2026-11-25 · **Phase P1 Electronics engine + views: built and
-checked on Linux; Windows not built yet**: GitHub Actions refused jobs for
-billing from about 12:03 UTC until the owner made the repository public the
-same day (see "CI" below). **Next:** the EDA workflow builds KiCad on Windows (Actions runs again since
-the repository went public; the build continues from its caches over several
-runs), then the owner runs the M1 demo on Windows (steps below). P1 is done when
+checked on Linux and, in CI, on Windows** (the KiCad engine passed its corpus
+and integration tests on Windows on 2026-11-26; see "CI" below). **Next:** the App workflow's Windows build with the engine, then the owner
+runs the M1 demo on Windows (steps below). P1 is done when
 both pass. **P0-8 is done** (Copilot works with Triage's own sign-in, the owner's
 test, 2026-11-25); P0-9 stays open. ADR 0004 and ADR 0005 were accepted on 2026-11-25 (decisions
 below); phase PC now runs between P3 and P4.
@@ -76,6 +74,14 @@ The Windows compiler cache was empty: all 1,953 MSVC compiles were
 `USE_CCACHE` switch is on, and only then uses `/Z7`, which ccache can cache.
 The build script now turns on KiCad's switch instead of setting the launcher
 itself, so later Windows builds reuse the cache instead of taking 70 minutes.
+
+**EDA run 13 (2026-11-26 00:46 UTC) passed on both OSes.** Windows: KiCad built
+with MSVC, kicad-cli and the engine passed all 54 demo files, the engine
+integration tests passed (open, display lists, edits, undo, save, reload,
+router, kill and restart), and `triage-eda-windows` was uploaded. **P1-1 and
+P1-2 are done on Windows and Linux.** The App workflow was started by hand so
+the Windows app build carries the engine and its smoke test runs the EDA
+checks on Windows.
 
 ### Try P1 on Windows (the M1 owner check, once CI builds it)
 
@@ -253,7 +259,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Phase | WP | Status |
 |---|---|---|
 | P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | P0-1 … P0-7 **done**; **P0-8 done** 2026-11-25 (Copilot works with Triage's own sign-in); **P0-9 in progress** |
-| P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **all built and checked on Linux** (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 proposed); **Windows not built yet** (CI down); the owner's M1 run on Windows next |
+| P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **all built and checked on Linux; the engine passes its corpus and integration tests on Windows in CI** (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 accepted); the owner's M1 run on Windows next |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
 | PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | not started (after P3, before P4) |
@@ -408,7 +414,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
   | WP | Done when | Evidence |
   |---|---|---|
-  | P1-1 | kicad-cli from our tree passes the demos corpus on both OSes | Linux: all 54 root schematics and boards of KiCad's 36 demos (netlist, ERC, DRC, SVG), golden `engines/eda/tests/golden/corpus.json`. **Windows: not built** (CI down) |
+  | P1-1 | kicad-cli from our tree passes the demos corpus on both OSes | Linux: all 54 root schematics and boards of KiCad's 36 demos (netlist, ERC, DRC, SVG), golden `engines/eda/tests/golden/corpus.json`. **Windows: the same 54 files pass (EDA run 13, 2026-11-26)** |
   | P1-2 | The engine loads all demos and answers API queries | Linux: the same 54 files through `--load-all`; the largest (Jetson) 548,549 groups in 12 s; engine integration tests 8/8 (open, display lists, queries, selection, edits, undo, save, reload, router, restart) |
   | P1-3 | Display lists match OpenGL GAL (DV-21) | compared with kicad-cli's plots instead: 10 files, coverage 1.0, precision 0.98–1.0 (`compare.mjs`); bitmaps included |
   | P1-4 | 60 fps; pixel compare against kicad-cli | pixel compare as P1-3; frame rates recorded under software GL only (9.7 and 11.8 fps, DV-22): the owner's GPU run decides |
