@@ -200,16 +200,30 @@ void PCB_FACE::edit( PCB_DOC& aDoc, const pb::Edit& aReq, pb::Response& aRespons
             return;
         }
 
-        PCB_FIELD* field = fp->GetField( wxString::FromUTF8( req.field() ) );
+        const wxString name = wxString::FromUTF8( req.field() );
 
-        if( !field )
+        if( name.IsEmpty() )
         {
-            Fail( aResponse, "footprint " + fp->GetReference().ToStdString() + " has no field "
-                                     + req.field() );
+            Fail( aResponse, "set_field needs a field name" );
             return;
         }
 
         snapshot( changes, fp );
+        PCB_FIELD* field = fp->GetField( name );
+
+        if( !field )
+        {
+            // A user field (a part's "Height" for the 3D view, ROADMAP P2-5), added as
+            // KiCad's netlist update adds one: hidden, on the fabrication layer.
+            field = new PCB_FIELD( fp, FIELD_T::USER );
+            fp->Add( field );
+            field->SetName( name );
+            field->SetVisible( false );
+            field->SetLayer( fp->GetLayer() == F_Cu ? F_Fab : B_Fab );
+            field->SetPosition( fp->GetPosition() );
+            field->Rotate( fp->GetPosition(), fp->GetOrientation() );
+        }
+
         field->SetText( wxString::FromUTF8( req.text() ) );
         break;
     }

@@ -28,7 +28,7 @@
   "darwinProfilePayloadUUID": "4CCC7EEA-10FE-4F6F-848C-A0D571FA5256",
   "linuxDesktopName": "io.github.noboishraque.Triage",
   "linuxIconName": "triage",
-  "reportIssueUrl": "https://github.com/NoboIshraque/engineering-solution-/issues/new",
+  "reportIssueUrl": "https://github.com/NoboIshraque/triage/issues/new",
   "urlProtocol": "triage",
   "extensionsGallery": {
     "serviceUrl": "https://open-vsx.org/vscode/gallery",

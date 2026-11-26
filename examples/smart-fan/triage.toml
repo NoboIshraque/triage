@@ -12,6 +12,6 @@ build = "arduino-cli"
 kicad_project = "smart-fan.kicad_pro"
 
 [mechanical]
-documents = ["enclosure.FCStd"]
+documents = ["fan.FCStd", "enclosure.FCStd"]
 
 [simulation]

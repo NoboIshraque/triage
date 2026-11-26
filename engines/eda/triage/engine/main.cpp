@@ -12,6 +12,7 @@
  *   triage-eda-engine --connect <endpoint>
  *   triage-eda-engine --load-all <dir>                    every board and schematic under dir
  *   triage-eda-engine --dump <file> --out <prefix>        display list + info, for goldens
+ *                                                         (boards: + <prefix>.board3d.json)
  */
 
 #include "host.h"

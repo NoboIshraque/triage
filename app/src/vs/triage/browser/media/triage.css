@@ -207,3 +207,178 @@
 	background-color: var(--vscode-editor-wordHighlightStrongBackground);
 	outline: 1px solid var(--vscode-editor-wordHighlightStrongBorder, transparent);
 }
+
+/* 3D tab: the CAD engine's meshes on Triage's canvas (ROADMAP P2-3). */
+.triage-view-editor .triage-cad-view {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	outline: none;
+}
+
+.triage-cad-view .triage-cad-toolbar {
+	display: flex;
+	flex-wrap: nowrap;
+	overflow: hidden;
+	white-space: nowrap;
+	align-items: center;
+	gap: 6px;
+	padding: 3px 8px;
+	min-height: 26px;
+	border-bottom: 1px solid var(--vscode-editorGroup-border);
+	background: var(--vscode-editorGroupHeader-tabsBackground);
+	font-size: 12px;
+}
+
+.triage-cad-view .triage-cad-title {
+	font-weight: 600;
+	margin-right: auto;
+}
+
+.triage-cad-view .triage-cad-button {
+	flex: none;
+	color: var(--vscode-button-secondaryForeground);
+	background: var(--vscode-button-secondaryBackground);
+	border: none;
+	border-radius: 2px;
+	padding: 2px 8px;
+	font-size: 12px;
+	cursor: pointer;
+}
+
+.triage-cad-view .triage-cad-button:hover {
+	background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.triage-cad-view .triage-cad-body {
+	display: flex;
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+.triage-cad-view .triage-cad-stage {
+	position: relative;
+	flex: 1 1 auto;
+	min-width: 0;
+	overflow: hidden;
+}
+
+.triage-cad-view .triage-cad-canvas {
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 100%;
+	height: 100%;
+	touch-action: none;
+}
+
+.triage-cad-view .triage-cad-side {
+	flex: 0 0 240px;
+	overflow-y: auto;
+	border-left: 1px solid var(--vscode-editorGroup-border);
+	background: var(--vscode-sideBar-background);
+	font-size: 12px;
+}
+
+.triage-cad-view .triage-cad-heading {
+	padding: 4px 8px;
+	font-weight: 600;
+	text-transform: uppercase;
+	font-size: 11px;
+	color: var(--vscode-sideBarSectionHeader-foreground);
+	background: var(--vscode-sideBarSectionHeader-background);
+}
+
+.triage-cad-view .triage-cad-doc {
+	padding: 2px 8px;
+	font-weight: 600;
+}
+
+.triage-cad-view .triage-cad-item {
+	padding: 1px 8px 1px 20px;
+	cursor: pointer;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.triage-cad-view .triage-cad-item:hover {
+	background: var(--vscode-list-hoverBackground);
+}
+
+.triage-cad-view .triage-cad-item.selected {
+	background: var(--vscode-list-activeSelectionBackground);
+	color: var(--vscode-list-activeSelectionForeground);
+}
+
+.triage-cad-view .triage-cad-item.invalid,
+.triage-cad-view .triage-cad-item.problem {
+	color: var(--vscode-errorForeground);
+}
+
+.triage-cad-view .triage-cad-object,
+.triage-cad-view .triage-cad-hint {
+	padding: 4px 8px;
+	color: var(--vscode-descriptionForeground);
+}
+
+.triage-cad-view .triage-cad-property {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 1px 8px;
+}
+
+.triage-cad-view .triage-cad-name {
+	flex: 0 0 45%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.triage-cad-view .triage-cad-property input[type='text'],
+.triage-cad-view .triage-cad-property select {
+	flex: 1 1 auto;
+	min-width: 0;
+	color: var(--vscode-input-foreground);
+	background: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, transparent);
+	font-size: 12px;
+}
+
+.triage-cad-view .triage-cad-status {
+	padding: 2px 8px;
+	min-height: 18px;
+	font-size: 12px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	border-top: 1px solid var(--vscode-editorGroup-border);
+}
+
+.triage-cad-view.narrow .triage-cad-side,
+.triage-cad-view.panel-closed .triage-cad-side {
+	display: none;
+}
+
+.triage-cad-view.narrow.panel-open .triage-cad-side {
+	display: block;
+	flex-basis: 200px;
+}
+
+.triage-cad-view .triage-cad-eye {
+	margin-right: 6px;
+	cursor: pointer;
+	opacity: 0.8;
+	font-size: 12px;
+	vertical-align: middle;
+}
+
+.triage-cad-view .triage-cad-eye.codicon-eye-closed {
+	opacity: 0.45;
+}
+
+.triage-cad-view .triage-cad-doc {
+	display: flex;
+	align-items: center;
+}

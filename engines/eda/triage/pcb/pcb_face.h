@@ -109,6 +109,9 @@ private:
     void undoRedo( PCB_DOC& aDoc, bool aUndo, pb::Response& aResponse, uint64_t aRequestId,
                    const BULK_SINK& aBulk );
     void save( PCB_DOC& aDoc, const pb::Save& aReq, pb::Response& aResponse );
+
+    /// The board for the 3D view and the enclosure (pcb_board3d.cpp, ROADMAP P2-3).
+    void board3D( PCB_DOC& aDoc, pb::Response& aResponse );
     void refreshConnectivity( PCB_DOC& aDoc );
 
     // pcb_route.cpp: KiCad's router hosted in the engine (P1-6 spike).
