@@ -1,7 +1,8 @@
 # Builds Triage's CAD engine from the pinned FreeCAD release (its App layer, no GUI)
 # on Linux (GCC, Ubuntu's libraries) and Windows (MSVC, FreeCAD's LibPack), then runs
 # FreeCAD's Part, Sketcher and PartDesign tests through the staged FreeCADCmd
-# (ROADMAP P2-1). The staged engine is uploaded for the App workflow to package.
+# (ROADMAP P2-1) and the engine's JSON-RPC tests (P2-2). The staged engine is uploaded
+# for the App workflow to package.
 #
 # The compiler cache (ccache) is saved even when the build runs out of time, so the
 # next run continues where it stopped.
@@ -11,12 +12,20 @@ on:
   push:
     paths:
       - engines/cad/**
+      - examples/smart-fan/mechanical/**
+      - app/engine-tests/src/cadEngine.test.ts
+      - app/src/vs/triage/common/cad/**
+      - app/src/vs/triage/node/engineSupervisor.ts
       - scripts/forks/**
       - scripts/dev/**
       - .github/workflows/cad.yml
   pull_request:
     paths:
       - engines/cad/**
+      - examples/smart-fan/mechanical/**
+      - app/engine-tests/src/cadEngine.test.ts
+      - app/src/vs/triage/common/cad/**
+      - app/src/vs/triage/node/engineSupervisor.ts
       - scripts/forks/**
       - scripts/dev/**
       - .github/workflows/cad.yml
@@ -109,6 +118,14 @@ jobs:
       - name: FreeCAD's Part, Sketcher and PartDesign tests (staged FreeCADCmd)
         timeout-minutes: 45
         run: node engines/cad/build.mjs test
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - name: Engine integration tests (JSON-RPC, every Smart Fan document, meshes, edits, restart)
+        run: |
+          pnpm install --frozen-lockfile --filter @triage/engine-tests
+          pnpm --filter @triage/engine-tests exec vitest run src/cadEngine.test.ts
+        env:
+          TRIAGE_REQUIRE_CAD: '1'
 
       - name: Upload the staged engine
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

@@ -12,6 +12,12 @@ export const buildDir = path.join(cadDir, 'build', osName);
 /** FreeCAD installed into one relocatable folder: bin/, lib/, Mod/, Ext/, data/. */
 export const stageDir = path.join(buildDir, 'stage');
 
+/** Triage's engine host (engines/cad/triage/engine/), staged beside FreeCAD. */
+export const stagedEngineDir = path.join(stageDir, 'triage');
+
+/** The script FreeCADCmd runs as Triage's CAD engine (ROADMAP P2-2). */
+export const engineScript = path.join(stagedEngineDir, 'triage_cad_engine.py');
+
 /** The path of a staged program (`FreeCADCmd`). */
 export function stagedProgram(name) {
   return path.join(stageDir, 'bin', `${name}${isWindows ? '.exe' : ''}`);

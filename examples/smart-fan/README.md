@@ -8,7 +8,7 @@ fan sits in a printed enclosure.
 |---|---|---|
 | `firmware/` | Code | the sketch is here now |
 | `electronics/` | Electronics | the KiCad project (schematic and board, Arduino Uno shield) |
-| `mechanical/` | Mechanical | the FreeCAD enclosure arrives with P2-4 |
+| `mechanical/` | Mechanical | the fan's rotor (`fan.FCStd`, P2-2); the enclosure from the board arrives with P2-4 |
 | `simulation/` | Simulation | scopes and scenarios arrive with P3 |
 
 Open this folder in Triage: the Triage sidebar shows the four domains.

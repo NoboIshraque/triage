@@ -16,8 +16,9 @@
 //              (scripts/dev/setup.ps1 -Cad), and this must run in a Visual Studio
 //              developer shell
 //   build      FreeCADCmd and the modules' libraries
-//   stage      install into build/<os>/stage/ (bin/, lib/, Mod/, Ext/, data/): one
-//              relocatable folder, which the app ships as resources/app/engines/cad/
+//   stage      install into build/<os>/stage/ (bin/, lib/, Mod/, Ext/, data/) and add
+//              Triage's engine host (triage/engine/ as stage/triage/): one relocatable
+//              folder, which the app ships as resources/app/engines/cad/
 //
 // Commands:
 //   test [--update]                    tests/run.mjs: the module tests, against the golden
@@ -25,7 +26,7 @@
 //   check-patches                      apply every patch onto a fresh checkout
 //
 // Options: --ccache (compiler cache), --debug, --jobs N.
-import { existsSync, mkdirSync, realpathSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, realpathSync, rmSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -37,10 +38,11 @@ import {
   refreshPatches,
   resetUpstream,
 } from '../../scripts/forks/patches.mjs';
-import { buildDir, stageDir, stagedProgram } from './stage.mjs';
+import { buildDir, stagedEngineDir, stageDir, stagedProgram } from './stage.mjs';
 
 const cadDir = import.meta.dirname;
 const upstreamDir = path.join(cadDir, 'upstream');
+const engineDir = path.join(cadDir, 'triage', 'engine');
 
 const STEPS = ['fetch', 'prepare', 'configure', 'build', 'stage'];
 const COMMANDS = ['test', 'refresh-patches', 'check-patches'];
@@ -211,7 +213,12 @@ function stage() {
   if (!existsSync(stagedProgram('FreeCADCmd'))) {
     throw new ForkError(`FreeCADCmd was not installed into ${stageDir}`);
   }
-  console.log(`Staged FreeCAD in ${path.relative(process.cwd(), stageDir)}.`);
+  // Triage's engine host (P2-2), which FreeCADCmd runs: stage/triage/.
+  cpSync(engineDir, stagedEngineDir, {
+    recursive: true,
+    filter: (source) => !source.includes('__pycache__'),
+  });
+  console.log(`Staged FreeCAD and Triage's engine in ${path.relative(process.cwd(), stageDir)}.`);
 }
 
 async function test(options) {

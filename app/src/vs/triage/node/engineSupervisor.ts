@@ -27,6 +27,11 @@ export interface EngineSupervisorOptions {
 	readonly helloTimeoutMs?: number;
 	/** Extra environment for the engine process (library paths). */
 	readonly env?: Readonly<Record<string, string>>;
+	/**
+	 * Arguments before `--connect <endpoint>`: a script for an engine that runs
+	 * inside another program (the CAD engine: `FreeCADCmd <script> --pass`).
+	 */
+	readonly args?: readonly string[];
 }
 
 type Listener<T> = (value: T) => void;
@@ -212,7 +217,7 @@ export class EngineSupervisor {
 	}
 
 	private launch(): void {
-		const child = spawn(this.options.executable, ['--connect', this.endpoint], {
+		const child = spawn(this.options.executable, [...(this.options.args ?? []), '--connect', this.endpoint], {
 			stdio: ['ignore', 'ignore', 'pipe'],
 			windowsHide: true,
 			env: this.options.env ? { ...process.env, ...this.options.env } : process.env,

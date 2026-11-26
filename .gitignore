@@ -45,3 +45,7 @@ fp-info-cache
 _autosave-*
 ~*.lck
 \#auto_saved_files#
+
+# Python caches and FreeCAD backup files (FreeCAD writes one when it saves over a file)
+__pycache__/
+*.FCBak
