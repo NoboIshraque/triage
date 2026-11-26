@@ -452,7 +452,6 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 - **2026-11-25 (P0-8 done).** The owner reports Copilot works with Triage's own
   GitHub sign-in on Windows (patches 0004–0006). The open question on Copilot
   fallbacks is closed.
-
 - **2026-11-26 (P1 done in CI on both OSes).** EDA run 13: KiCad built with
   MSVC; kicad-cli and the engine passed all 54 demo files and the integration
   tests on Windows. App run 48: 22/22 smoke checks with the engine on Windows
