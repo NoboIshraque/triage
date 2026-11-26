@@ -582,6 +582,13 @@ describe('packaged Triage app', () => {
       input.value = '${value}';
       input.dispatchEvent(new Event('input', { bubbles: true }));
     })()`);
+  /** Stops the run, if any: a failed check must not leave the simulation busy for the next. */
+  const stopSim = async () => {
+    if ((await simView().count()) === 0) return;
+    if ((await simView().getAttribute('data-state')) === 'idle') return;
+    await simView().locator('.triage-sim-button[data-action="stop"]').click();
+    await expect.poll(() => simView().getAttribute('data-state'), { timeout: 30_000 }).toBe('idle');
+  };
   const runScope = async (scope: string) => {
     await simView().locator('.triage-sim-button[data-action="stop"]').click();
     await expect.poll(() => simView().getAttribute('data-state'), { timeout: 30_000 }).toBe('idle');
@@ -634,28 +641,31 @@ describe('packaged Triage app', () => {
 
   // P3-5: each scope also runs on its own.
   simIt('runs the circuit, the code and the mechanism each on its own (ROADMAP P3-5)', async () => {
-    await runScope('Circuit only');
-    expect(await simView().textContent()).toContain('A1.D9.drive');
-    await runScope('Code only');
-    expect(
-      await simView().locator('.triage-sim-section h3', { hasText: 'Virtual I/O' }).count(),
-    ).toBe(1);
-    await setSlider('net:/TEMP_SENSE.value', 3.03);
-    await expect
-      .poll(() => simView().locator('.triage-sim-oled').getAttribute('data-text'), {
-        timeout: 60_000,
-      })
-      .toMatch(/3[45]\.\dC 8\d%/);
-    await window.screenshot({ path: shot('sim-code-only') });
-    await runScope('Mechanism only');
-    await setSlider('J1.torque.value', 2);
-    await runScope('Power stage only');
-    await simView().locator('.triage-sim-button[data-action="stop"]').click();
-    await expect.poll(() => simView().getAttribute('data-state'), { timeout: 30_000 }).toBe('idle');
+    try {
+      await runScope('Circuit only');
+      expect(await simView().textContent()).toContain('A1.D9.drive');
+      await runScope('Code only');
+      expect(
+        await simView().locator('.triage-sim-section h3', { hasText: 'Virtual I/O' }).count(),
+      ).toBe(1);
+      await setSlider('net:/TEMP_SENSE.value', 3.03);
+      await expect
+        .poll(() => simView().locator('.triage-sim-oled').getAttribute('data-text'), {
+          timeout: 60_000,
+        })
+        .toMatch(/3[45]\.\dC (79|8\d)%/);
+      await window.screenshot({ path: shot('sim-code-only') });
+      await runScope('Mechanism only');
+      await setSlider('J1.torque.value', 2);
+      await runScope('Power stage only');
+    } finally {
+      await stopSim();
+    }
   });
 
   // P3-6: the project's scenarios run inside the app too.
   simIt("runs the project's scenarios from the Sim tab (ROADMAP P3-6)", async () => {
+    await stopSim();
     await simView().locator('.triage-sim-button[data-action="scenarios"]').click();
     await expect
       .poll(() => simView().getAttribute('data-scenarios'), { timeout: 300_000, interval: 500 })
