@@ -2,13 +2,16 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-25 · **Phase P1 Electronics engine + views: built and
-checked on Linux and, in CI, on Windows** (the KiCad engine passed its corpus
-and integration tests on Windows on 2026-11-26; see "CI" below). **Next:** the App workflow's Windows build with the engine, then the owner
-runs the M1 demo on Windows (steps below). P1 is done when
-both pass. **P0-8 is done** (Copilot works with Triage's own sign-in, the owner's
-test, 2026-11-25); P0-9 stays open. ADR 0004 and ADR 0005 were accepted on 2026-11-25 (decisions
-below); phase PC now runs between P3 and P4.
+**Last updated:** 2026-11-26 · **Phase P1 Electronics engine + views: done.**
+Every P1 work package passes its checks in CI on **Windows and Linux**: the
+KiCad engine passes all 54 KiCad demo files and its integration tests on both
+(EDA run 13), and the packaged app passes all 22 smoke checks with the engine
+on both (App run 48), including cross-probe, edit and save read by stock KiCad,
+net rename → `board_pins.h` (443 ms Windows, 329 ms Linux) and a KiCad save →
+reload (105 ms, 141 ms). **The owner's checks:** the M1 demo on the Windows
+laptop, and the 60 fps check on a real GPU (DV-22); steps below. P0-8 is done;
+P0-9 stays open. ADR 0004 and ADR 0005 accepted. **Next:** P2 (3D engine and
+enclosure from board) in a new session.
 
 ### P1 in one paragraph
 
@@ -83,10 +86,13 @@ P1-2 are done on Windows and Linux.** The App workflow was started by hand so
 the Windows app build carries the engine and its smoke test runs the EDA
 checks on Windows.
 
-### Try P1 on Windows (the M1 owner check, once CI builds it)
+### Try P1 on Windows (the M1 owner check)
 
-1. **Actions → App →** the newest green run → artifact **triage-Windows** (it
-   carries the EDA engine when the EDA workflow passed for this branch).
+1. Download artifact **triage-Windows** from App run 48
+   (<https://github.com/NoboIshraque/triage/actions/runs/45732478696>, kept
+   until 2026-11-27 01:14 UTC; after that, **Actions → App → Run workflow** on
+   this branch builds a fresh one in about 20 minutes). It carries the KiCad
+   engine.
 2. Install or unzip as for P0, open `examples/smart-fan` from a clone, click the
    Triage icon, then **Open Engineering Layout**: the Schematic and Board tabs
    show the Smart Fan.
@@ -97,7 +103,10 @@ checks on Windows.
 5. **F1 → Triage: Benchmark Schematic and Board Views**: tell Claude the frame
    rates (the 60 fps check, DV-22).
 6. **F1 → Triage: Edit in KiCad (Fallback Window)**: KiCad's editor opens the
-   same file; save there and Triage's tab updates.
+   same file; save there and Triage's tab updates. KiCad's own library and
+   template files aren't bundled yet, so KiCad may first ask how to set up its
+   global library tables: choose the empty table (the Smart Fan carries its own
+   libraries).
 7. Open the saved files in your own KiCad 10 if you have it.
 
 ### P0 in one paragraph
@@ -259,7 +268,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Phase | WP | Status |
 |---|---|---|
 | P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | P0-1 … P0-7 **done**; **P0-8 done** 2026-11-25 (Copilot works with Triage's own sign-in); **P0-9 in progress** |
-| P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **all built and checked on Linux; the engine passes its corpus and integration tests on Windows in CI** (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 accepted); the owner's M1 run on Windows next |
+| P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **done** 2026-11-26 on Windows and Linux in CI (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 accepted); **the owner's M1 run on Windows and the GPU 60 fps check next** |
 | P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
 | PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | not started (after P3, before P4) |
@@ -443,3 +452,16 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 - **2026-11-25 (P0-8 done).** The owner reports Copilot works with Triage's own
   GitHub sign-in on Windows (patches 0004–0006). The open question on Copilot
   fallbacks is closed.
+
+- **2026-11-26 (P1 done in CI on both OSes).** EDA run 13: KiCad built with
+  MSVC; kicad-cli and the engine passed all 54 demo files and the integration
+  tests on Windows. App run 48: 22/22 smoke checks with the engine on Windows
+  and Linux. Fixed on the way: the Windows command runner split paths with
+  spaces; Chocolatey's 504 (installs retry); the engine's load-all report wasn't
+  valid JSON with Windows paths; the Windows compiler cache cached nothing (KiCad
+  forces /Zi unless its own USE_CCACHE is on); the Linux app machine lacked
+  KiCad's libraries; DRC counts depend on installed fonts (1% leeway). Known
+  issues: Linux users need KiCad's libraries installed (P8-2); KiCad's share data
+  isn't staged (the fallback editor starts without global libraries);
+  `LayerName()` misnames a few virtual layers; `Route` takes all moves in one
+  call (sessions in P6). Pending: EDA run 14 confirms the Windows compiler cache.
