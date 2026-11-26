@@ -102,6 +102,8 @@ export class CadView extends Disposable {
 	private readonly docDisposables = this._register(new DisposableStore());
 	/** The outliner rows' listeners, replaced at each render. */
 	private readonly outlinerDisposables = this._register(new DisposableStore());
+	/** The properties panel's listeners, replaced at each render. */
+	private readonly propertyDisposables = this._register(new DisposableStore());
 
 	private readonly documents = new Map<string, LoadedDocument>();
 	private mechanicalPaths: readonly string[] = [];
@@ -673,6 +675,7 @@ export class CadView extends Disposable {
 
 	private async renderProperties(): Promise<void> {
 		clearNode(this.propertiesPanel);
+		this.propertyDisposables.clear();
 		const key = this.selection;
 		if (!key) {
 			append(this.propertiesPanel, $('.triage-cad-hint', undefined, localize('triage.cad.selectHint', "Select an object to see its properties.")));
@@ -683,6 +686,9 @@ export class CadView extends Disposable {
 		if (this.selection !== key) {
 			return;
 		}
+		// Another render may have started while this one waited for the engine.
+		clearNode(this.propertiesPanel);
+		this.propertyDisposables.clear();
 		append(this.propertiesPanel, $('.triage-cad-object', undefined, `${result.label} · ${result.type}`));
 		const editable = doc !== BOARD_DOCUMENT;
 		for (const property of result.properties) {
@@ -703,7 +709,7 @@ export class CadView extends Disposable {
 			const box = $('input', { type: 'checkbox' }) as HTMLInputElement;
 			box.checked = value;
 			box.disabled = !editable;
-			this._register(addDisposableListener(box, EventType.CHANGE, () => set(box.checked)));
+			this.propertyDisposables.add(addDisposableListener(box, EventType.CHANGE, () => set(box.checked)));
 			return box;
 		}
 		if (typeof value === 'object' && value !== null && 'options' in value) {
@@ -714,7 +720,7 @@ export class CadView extends Disposable {
 				element.selected = option === choice.value;
 			}
 			select.disabled = !editable;
-			this._register(addDisposableListener(select, EventType.CHANGE, () => set(select.value)));
+			this.propertyDisposables.add(addDisposableListener(select, EventType.CHANGE, () => set(select.value)));
 			return select;
 		}
 		const isQuantity = typeof value === 'object' && value !== null && 'text' in value;
@@ -722,17 +728,21 @@ export class CadView extends Disposable {
 			const input = $('input', { type: 'text' }) as HTMLInputElement;
 			input.value = isQuantity ? (value as { text: string }).text : String(value);
 			input.readOnly = !editable;
-			this._register(addDisposableListener(input, EventType.KEY_DOWN, (event: KeyboardEvent) => {
+			input.dataset['property'] = property.name;
+			// Enter or leaving the field sends the edit, once per new text.
+			let sent = input.value;
+			const commit = () => {
+				if (editable && input.value !== sent) {
+					sent = input.value;
+					set(typeof value === 'number' ? Number(input.value) : input.value);
+				}
+			};
+			this.propertyDisposables.add(addDisposableListener(input, EventType.KEY_DOWN, (event: KeyboardEvent) => {
 				if (event.key === 'Enter') {
-					set(typeof value === 'number' ? Number(input.value) : input.value);
+					commit();
 				}
 			}));
-			this._register(addDisposableListener(input, EventType.BLUR, () => {
-				const before = isQuantity ? (value as { text: string }).text : String(value);
-				if (input.value !== before) {
-					set(typeof value === 'number' ? Number(input.value) : input.value);
-				}
-			}));
+			this.propertyDisposables.add(addDisposableListener(input, EventType.BLUR, commit));
 			return input;
 		}
 		return $('span.triage-cad-value', undefined, JSON.stringify(value));
@@ -749,6 +759,7 @@ export class CadView extends Disposable {
 			}
 			await this.tessellate(doc);
 			await this.checkFit();
+			this.element.dataset['edits'] = String((Number(this.element.dataset['edits']) || 0) + 1);
 			this.updateDataset();
 			this.setStatus(localize('triage.cad.edited', "{0}.{1} changed; recomputed and redrawn in {2} ms", object, property, (performance.now() - started).toFixed(0)));
 			this.renderOutliner();

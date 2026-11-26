@@ -345,6 +345,39 @@ describe('packaged Triage app', () => {
     await window.screenshot({ path: shot('cad-view') });
   });
 
+  // ROADMAP P2-4: the enclosure's parameters are edited in the 3D tab's properties
+  // panel and it recomputes live; lifting its lid shows the board inside (P2-3).
+  cadIt("edits the enclosure's wall thickness in the properties panel", async () => {
+    const view = cadView();
+    const classes = (await view.getAttribute('class')) ?? '';
+    if (classes.includes('narrow') && !classes.includes('panel-open')) {
+      // The toolbar may be clipped in a narrow tab; the button still answers.
+      await view.locator('.triage-cad-button', { hasText: 'Panel' }).dispatchEvent('click');
+    }
+    await view.locator('.triage-cad-item', { hasText: 'Enclosure' }).first().click();
+    const edits = async () => Number((await view.getAttribute('data-edits')) ?? 0);
+    const edit = async (property: string, text: string) => {
+      const input = view.locator(`.triage-cad-property input[data-property="${property}"]`);
+      await input.waitFor({ state: 'visible', timeout: 30_000 });
+      const before = await edits();
+      await input.fill(text);
+      await input.press('Enter');
+      const started = Date.now();
+      await expect.poll(edits, { timeout: 30_000, interval: 25 }).toBe(before + 1);
+      return Date.now() - started;
+    };
+    const wallMs = await edit('WallThickness', '3 mm');
+    console.log(JSON.stringify({ wallThicknessEditMs: wallMs }));
+    expect(await view.locator('.triage-cad-status').textContent()).toContain(
+      'WallThickness changed',
+    );
+    expect(Number(await view.getAttribute('data-problems'))).toBe(0);
+    await edit('ExplodeLid', '40 mm');
+    await window.screenshot({ path: shot('cad-board-in-enclosure') });
+    await edit('ExplodeLid', '0 mm');
+    await edit('WallThickness', '2 mm');
+  });
+
   // ROADMAP P2-3 (a board edit updates the 3D view) and P2-5 (a deliberately tall part
   // gets a red highlight and a problem entry).
   (cadShipped && edaShipped ? it : it.skip)(

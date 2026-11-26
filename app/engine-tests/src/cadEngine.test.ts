@@ -30,6 +30,7 @@ import type {
   CadRecompute,
   CadResponse,
   CadTessellation,
+  CadTreeItem,
 } from '../../src/vs/triage/common/cad/cadEngine.js';
 import { EngineSupervisor } from '../../src/vs/triage/node/engineSupervisor.js';
 import { benchmarkDir } from './engine.js';
@@ -384,6 +385,59 @@ describe.skipIf(!available)('CAD engine (FreeCAD App layer over JSON-RPC)', () =
     expect(errors.length).toBeGreaterThan(0);
     expect(errors[0].kind).toBe('interference');
     expect(errors.some((p) => p.message.includes(tall.reference))).toBe(true);
+  });
+
+  // ROADMAP P2-4: "connector cutouts from footprint positions". The Smart Fan's
+  // connectors sit inside its board, so this moves the barrel jack to the edge.
+  it('opens the wall where a connector reaches the board edge', async () => {
+    interface Board {
+      outlines: { points: { x: number; y: number }[] }[];
+      footprints: { reference: string; y: number; courtyard: { x: number; y: number }[] }[];
+    }
+    const original = JSON.parse(readFileSync(boardFixture, 'utf8')) as Board;
+    const doc = (
+      await client.call<CadDocument>('document.open', {
+        path: path.join(work, 'mechanical', 'enclosure.FCStd'),
+      })
+    ).result.name;
+    const enclosure = async (board: Board) => {
+      await client.call('board.update', { board });
+      const { result } = await client.call<{
+        solids: { valid: boolean; closed: boolean; volume: number }[];
+        objects: CadTreeItem[];
+      }>('enclosure.fromBoard', { doc });
+      const name = result.objects.find((o) => o.proxy === 'Enclosure')?.name ?? 'Enclosure';
+      const properties = (
+        await client.call<{ properties: { name: string; value: unknown }[] }>('object.properties', {
+          doc,
+          object: name,
+        })
+      ).result.properties;
+      const connectors = properties.find((p) => p.name === 'Connectors')?.value as string[];
+      return { solids: result.solids, connectors };
+    };
+
+    const closed = await enclosure(original);
+    expect(closed.connectors).toEqual([]);
+
+    const moved = structuredClone(original);
+    const jack = moved.footprints.find((f) => f.reference === 'J2');
+    expect(jack).toBeDefined();
+    if (!jack) return;
+    // Its courtyard 0.5 mm over the board's bottom edge (KiCad's Y grows downwards).
+    const edge = Math.max(...moved.outlines[0].points.map((p) => p.y));
+    const dy = edge + 0.5 - Math.max(...jack.courtyard.map((p) => p.y));
+    jack.y += dy;
+    for (const point of jack.courtyard) point.y += dy;
+    const open = await enclosure(moved);
+    expect(open.connectors).toHaveLength(1);
+    expect(open.connectors[0]).toMatch(/^J2;(top|bottom);/);
+    for (const solid of open.solids) expect(solid).toMatchObject({ valid: true, closed: true });
+    // The base lost the opening's volume; the lid didn't change.
+    expect(open.solids[0].volume).toBeLessThan(closed.solids[0].volume - 10);
+    expect(open.solids[1].volume).toBeCloseTo(closed.solids[1].volume, 1);
+
+    await enclosure(original);
   });
 
   it('comes back after being killed', async () => {
