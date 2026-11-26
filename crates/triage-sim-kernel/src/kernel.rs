@@ -179,8 +179,9 @@ pub struct Kernel {
     applied: Vec<Input>,
     controls: HashMap<String, usize>,
     stats: KernelStats,
-    /// Every signal some producer reads (inside or host), for the adaptive quantum.
-    producer_reads: Vec<(SignalId, u64)>,
+    /// Every signal some producer reads (inside or host), with its value at the last
+    /// quantum, for the adaptive quantum.
+    producer_reads: Vec<(SignalId, Value)>,
 }
 
 impl Kernel {
@@ -273,10 +274,7 @@ impl Kernel {
             .collect();
         reads.sort_unstable();
         reads.dedup();
-        self.producer_reads = reads
-            .into_iter()
-            .map(|id| (id, self.bus.version(id)))
-            .collect();
+        self.producer_reads = reads.into_iter().map(|id| (id, self.bus.get(id))).collect();
     }
 
     /// The bus (signal values and traces).
@@ -495,13 +493,16 @@ impl Kernel {
         self.sync_to(target);
         self.stats.quanta += 1;
 
-        // Adaptive quantum: halve when a producer's inputs changed, else grow back.
+        // Adaptive quantum: halve when a producer's input changed noticeably (a logic
+        // level, or a number by more than 2%), else grow back. A slow drift (a
+        // temperature ramp moving an ADC pin's voltage) doesn't need short quanta:
+        // producers sync on demand for the samples they take.
         let mut changed = false;
-        for (id, version) in &mut self.producer_reads {
-            let now = self.bus.version(*id);
-            if now != *version {
+        for (id, last) in &mut self.producer_reads {
+            let now = self.bus.get(*id);
+            if significant(*last, now) {
                 changed = true;
-                *version = now;
+                *last = now;
             }
         }
         self.quantum = if changed {
@@ -583,6 +584,17 @@ impl Kernel {
             self.complete(Vec::new())?;
         }
         Ok(())
+    }
+}
+
+/// Whether a producer's input moved enough to matter for the quantum.
+fn significant(old: Value, new: Value) -> bool {
+    match (old, new) {
+        (Value::Real(a), Value::Real(b)) => {
+            let delta = (a - b).abs();
+            delta > 1e-9 && delta > 0.02 * a.abs().max(b.abs())
+        }
+        _ => old != new,
     }
 }
 
