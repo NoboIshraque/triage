@@ -40,8 +40,9 @@ and Claude**.
 - **Work in WP order**, one WP at a time unless the owner runs parallel sessions.
   Ask before ADR-level decisions (GUIDELINES §11).
 - **One phase per session.** The owner starts every phase (P0, P1, …) in a new
-  session. Finish the whole phase, update `docs/STATUS.md`, push, then tell the
-  owner the phase is done so they can start the next one (GUIDELINES §2).
+  session. Finish the whole phase, update `docs/STATUS.md`, push, **merge it into
+  the default branch** (see "Branches" below), then tell the owner the phase is
+  done and merged so they can start the next one (GUIDELINES §2).
 - **Owner checks live in `docs/CHECKS.md`.** Whenever work needs something only
   the owner can do (a run on the Windows laptop, an exit demo, a measurement on a
   real GPU, a setting on GitHub), add a check there **in the same commit**, with
@@ -62,6 +63,29 @@ and Claude**.
 - **Evidence discipline** for claims about other tools: observed / inferred /
   unknown, with sources or REA Evidence IDs.
 - Licenses are out of scope (owner's decision). The combined app is GPL-3.0-or-later.
+
+## Branches
+
+- **The default branch is the project's main branch:**
+  `claude/unified-engineering-platform-jn5rmk`. (The first session's branch
+  became the default; the owner may rename it to `main`.) Check with
+  `git ls-remote --symref origin HEAD`; if it names another branch, use that one
+  and update this line. Every finished phase lives there.
+- **Start of every session:** before reading `docs/STATUS.md`, fetch the default
+  branch and merge it into the session's branch
+  (`git fetch origin <default> && git merge --no-edit FETCH_HEAD`), so the session
+  starts from the latest finished phase and the current `docs/CHECKS.md`.
+- **End of every phase** (all its WPs done, CI green on Windows and Linux,
+  `docs/STATUS.md` and `docs/CHECKS.md` updated): merge the default branch into
+  the session's branch again (another session may have merged meanwhile), push,
+  wait for CI to pass, then open a pull request from the session's branch into
+  the default branch and merge it (a merge commit). The owner gave this standing
+  permission on 2026-11-26. Only then tell the owner the phase is done and that
+  the next phase can start.
+- **Don't merge** an unfinished phase, red CI, or a conflict that needs a
+  decision: record where things stand in `docs/STATUS.md` and tell the owner.
+- Never push to the default branch directly; always go through the pull
+  request.
 
 ## REA (reverse engineering)
 
