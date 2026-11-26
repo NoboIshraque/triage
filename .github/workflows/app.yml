@@ -116,7 +116,7 @@ jobs:
 
       # The EDA engine (KiCad, ROADMAP P1-2) builds in its own workflow (eda.yml),
       # which takes far longer than the app; the app takes the newest engine built for
-      # its OS, from this branch or else from main. An EDA job uploads its engine only
+      # its OS, from this branch or else from the default branch. An EDA job uploads its engine only
       # after the corpus and engine tests pass, so the other OS's job may still fail.
       - name: Download the newest EDA engine
         id: eda
@@ -127,8 +127,10 @@ jobs:
         run: |
           os=$([ "$RUNNER_OS" = Windows ] && echo windows || echo linux)
           branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          # Else the default branch (it isn't called main in this repository).
+          default=$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch || echo main)
           run_id=""
-          for b in "$branch" main; do
+          for b in "$branch" "$default"; do
             for id in $(gh run list -R "$GITHUB_REPOSITORY" --workflow eda.yml --branch "$b" --status completed --limit 15 --json databaseId -q '.[].databaseId' || true); do
               if gh run download "$id" -R "$GITHUB_REPOSITORY" -n "triage-eda-$os" -D "engines/eda/build/$os/stage" 2>/dev/null; then
                 run_id=$id
