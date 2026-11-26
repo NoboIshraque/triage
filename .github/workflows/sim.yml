@@ -109,11 +109,15 @@ jobs:
       - name: Sim package and CLI
         run: pnpm --filter @triage/sim build && pnpm --filter @triage/cli build
       - name: Sim tests with compiled sketches (Blink, serial echo, the Smart Fan)
+        # A run that stops advancing would hold the job for hours (vitest's timeout
+        # can't interrupt a synchronous simulation): a few minutes is plenty.
+        timeout-minutes: 15
         env:
           TRIAGE_REQUIRE_SIM: '1'
           TRIAGE_REQUIRE_TOOLCHAIN: '1'
         run: pnpm --filter @triage/sim exec vitest run --reporter=verbose
       - name: triage test on the Smart Fan (P3-6 done-when)
+        timeout-minutes: 15
         run: >-
           node -e "require('fs').mkdirSync('build/sim', { recursive: true })" &&
           node cli/dist/bin.js test examples/smart-fan --report build/sim/scenarios-${{ runner.os }}.json
