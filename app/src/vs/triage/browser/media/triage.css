@@ -382,3 +382,218 @@
 	display: flex;
 	align-items: center;
 }
+
+/* --- The Sim tab (ROADMAP P3-5) --- */
+
+.triage-view-editor .triage-sim-view {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	height: 100%;
+	outline: none;
+	font-size: 12px;
+}
+
+.triage-sim-view .triage-sim-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	padding: 3px 8px;
+	min-height: 26px;
+	border-bottom: 1px solid var(--vscode-editorGroup-border);
+	background: var(--vscode-editorGroupHeader-tabsBackground);
+}
+
+.triage-sim-view .triage-sim-button {
+	color: var(--vscode-button-secondaryForeground);
+	background: var(--vscode-button-secondaryBackground);
+	border: 1px solid var(--vscode-button-border, transparent);
+	border-radius: 2px;
+	padding: 1px 8px;
+	cursor: pointer;
+	font: inherit;
+}
+
+.triage-sim-view .triage-sim-button:hover {
+	background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.triage-sim-view .triage-sim-button[data-action="run"],
+.triage-sim-view .triage-sim-button.primary {
+	color: var(--vscode-button-foreground);
+	background: var(--vscode-button-background);
+}
+
+.triage-sim-view .triage-sim-button.momentary.down {
+	color: var(--vscode-button-foreground);
+	background: var(--vscode-button-background);
+}
+
+.triage-sim-view select,
+.triage-sim-view input:not([type="range"]) {
+	color: var(--vscode-input-foreground);
+	background: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, var(--vscode-editorGroup-border));
+	font: inherit;
+}
+
+.triage-sim-view .triage-sim-label {
+	opacity: 0.8;
+	margin-left: 6px;
+}
+
+.triage-sim-view .triage-sim-status {
+	margin-left: auto;
+	opacity: 0.85;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.triage-sim-view .triage-sim-body {
+	display: flex;
+	flex: 1;
+	min-height: 0;
+	overflow: auto;
+}
+
+.triage-sim-view .triage-sim-controls {
+	flex: 0 0 260px;
+	padding: 6px 8px;
+	border-right: 1px solid var(--vscode-editorGroup-border);
+	overflow-y: auto;
+}
+
+.triage-sim-view .triage-sim-instruments {
+	flex: 1;
+	min-width: 0;
+	padding: 6px 8px;
+	overflow-y: auto;
+}
+
+.triage-sim-view h3 {
+	margin: 8px 0 4px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	opacity: 0.75;
+}
+
+.triage-sim-view .triage-sim-section p {
+	margin: 2px 0;
+}
+
+.triage-sim-view .triage-sim-row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 3px 0;
+}
+
+.triage-sim-view .triage-sim-row .triage-sim-name {
+	flex: 0 0 110px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.triage-sim-view .triage-sim-row input[type="range"] {
+	flex: 1;
+	min-width: 60px;
+}
+
+.triage-sim-view .triage-sim-value {
+	flex: 0 0 64px;
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+
+.triage-sim-view .triage-sim-led {
+	display: inline-block;
+	min-width: 36px;
+	padding: 0 4px;
+	border-radius: 8px;
+	text-align: center;
+	color: #fff;
+	background: #e53935;
+	opacity: 0.15;
+}
+
+.triage-sim-view .triage-sim-stub {
+	font-family: var(--monaco-monospace-font);
+	opacity: 0.85;
+}
+
+.triage-sim-view .triage-sim-plot {
+	width: 100%;
+	height: 160px;
+	border: 1px solid var(--vscode-editorGroup-border);
+	background: var(--vscode-editor-background);
+}
+
+.triage-sim-view .triage-sim-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 12px;
+	margin: 2px 0 6px;
+	font-variant-numeric: tabular-nums;
+}
+
+.triage-sim-view .triage-sim-oled canvas {
+	width: 256px;
+	height: 128px;
+	image-rendering: pixelated;
+	border: 6px solid #111;
+	border-radius: 3px;
+}
+
+.triage-sim-view .triage-sim-serial {
+	height: 120px;
+	margin: 0;
+	padding: 4px;
+	overflow-y: auto;
+	white-space: pre-wrap;
+	font-family: var(--monaco-monospace-font);
+	background: var(--vscode-terminal-background, var(--vscode-editor-background));
+	border: 1px solid var(--vscode-editorGroup-border);
+}
+
+.triage-sim-view .triage-sim-serial-input {
+	display: flex;
+	gap: 4px;
+	margin-top: 3px;
+}
+
+.triage-sim-view .triage-sim-serial-input input {
+	flex: 1;
+}
+
+.triage-sim-view .triage-sim-scenario {
+	margin: 4px 0;
+}
+
+.triage-sim-view .triage-sim-scenario .triage-sim-mark {
+	display: inline-block;
+	width: 16px;
+}
+
+.triage-sim-view .triage-sim-scenario[data-result="passed"] .triage-sim-mark,
+.triage-sim-view .triage-sim-scenario li.passed {
+	color: var(--vscode-testing-iconPassed, #73c991);
+}
+
+.triage-sim-view .triage-sim-scenario[data-result="failed"] .triage-sim-mark,
+.triage-sim-view .triage-sim-scenario li.failed {
+	color: var(--vscode-testing-iconFailed, #f14c4c);
+}
+
+.triage-sim-view .triage-sim-scenario ul {
+	margin: 2px 0 6px 18px;
+	padding: 0;
+}
+
+.triage-sim-view .triage-sim-hint {
+	opacity: 0.8;
+}

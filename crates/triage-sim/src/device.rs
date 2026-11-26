@@ -100,6 +100,8 @@ pub struct BodyInfo {
     pub origin: [f64; 3],
     /// The signal with its angle.
     pub angle: String,
+    /// The signal with its speed, rad/s.
+    pub omega: String,
 }
 
 /// What the caller needs to run and show a device.
@@ -469,6 +471,7 @@ pub fn build(
                 axis: b.axis,
                 origin: b.origin,
                 angle: format!("body:{}.angle", b.name),
+                omega: format!("{}.omega", b.driven_by),
             })
             .collect(),
         leds: spec

@@ -554,6 +554,112 @@ describe('packaged Triage app', () => {
   // ROADMAP P0-4: the hello engine behind a utility-process broker.
   const engineStatus = () => window.locator('.triage-engine-status').textContent();
 
+  // ROADMAP P3: the simulation ships in the app (engines/sim: the sim package and the
+  // Rust kernel with MuJoCo). The whole device needs the firmware built, so the
+  // App workflow installs the AVR toolchain (sim/src/firmware.ts) as the Sim one does.
+  const simDir = path.join(app.folder, 'resources', 'app', 'engines', 'sim');
+  const simShipped = existsSync(path.join(simDir, 'triage_sim.node'));
+  if (process.env['TRIAGE_REQUIRE_SIM'] === '1' && !simShipped) {
+    throw new Error(`TRIAGE_REQUIRE_SIM is set but ${simDir} has no simulation`);
+  }
+  const simIt = simShipped ? it : it.skip;
+  const simView = () => window.locator('.triage-sim-view');
+  const simT = async () => Number((await simView().getAttribute('data-t')) ?? 0);
+  /** Sets a range input in the Sim tab and lets it fire its input event. */
+  const setSlider = (control: string, value: number) =>
+    window.evaluate(`(() => {
+      const input = document.querySelector('.triage-sim-view input[data-control="${control}"]');
+      if (!input) throw new Error('no slider for ${control}');
+      input.value = '${value}';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+  const runScope = async (scope: string) => {
+    await simView().locator('.triage-sim-button[data-action="stop"]').click();
+    await simView().locator('select.triage-sim-scope').selectOption({ label: scope });
+    await simView().locator('.triage-sim-button[data-action="run"]').click();
+    await expect
+      .poll(() => simView().getAttribute('data-state'), { timeout: 120_000 })
+      .toBe('running');
+    const start = await simT();
+    await expect.poll(simT, { timeout: 60_000 }).toBeGreaterThan(start + 0.5);
+  };
+
+  // P3-4 and P3-5 (PLAN §3 step 6): Run builds the firmware, the emulated Uno reads the
+  // thermistor, drives the fan, shows it on the OLED; the rotor turns in the 3D tab.
+  simIt(
+    'runs the Smart Fan in the Sim tab and turns the rotor in 3D (ROADMAP P3-4, P3-5)',
+    async () => {
+      await runCommand(window, 'Triage: Run the Simulation');
+      await expect
+        .poll(() => simView().getAttribute('data-loaded'), { timeout: 60_000 })
+        .toBe('true');
+      await expect
+        .poll(async () => (await simView().getAttribute('data-state')) ?? '', { timeout: 180_000 })
+        .toMatch(/^(running|error)$/);
+      expect(await simView().getAttribute('data-error')).toBeNull();
+      await expect.poll(simT, { timeout: 60_000 }).toBeGreaterThan(1);
+      await setSlider('env.room_temperature_c', 35);
+      const oled = simView().locator('.triage-sim-oled');
+      await expect
+        .poll(() => oled.getAttribute('data-text'), { timeout: 60_000 })
+        .toMatch(/35\.\dC 8\d%/);
+      expect(await simView().locator('.triage-sim-serial').textContent()).toContain('duty=');
+      const ratio = Number(await simView().getAttribute('data-ratio'));
+      console.log(JSON.stringify({ simulation: 'whole device', realTimeRatio: ratio }));
+      if (cadShipped) {
+        const angle = async () =>
+          Number(
+            /rotor=(-?[\d.]+)/.exec((await cadView().getAttribute('data-sim-angle')) ?? '')?.[1] ??
+              'NaN',
+          );
+        const first = await angle();
+        await expect.poll(angle, { timeout: 30_000 }).not.toBe(first);
+        expect(Number.isFinite(await angle())).toBe(true);
+      }
+      await window.screenshot({ path: shot('sim-whole-device') });
+      await setSlider('env.room_temperature_c', 40);
+      await expect.poll(() => oled.getAttribute('data-text'), { timeout: 60_000 }).toContain('HOT');
+    },
+  );
+
+  // P3-5: each scope also runs on its own.
+  simIt('runs the circuit, the code and the mechanism each on its own (ROADMAP P3-5)', async () => {
+    await runScope('Circuit only');
+    expect(await simView().textContent()).toContain('A1.D9.drive');
+    await runScope('Code only');
+    expect(
+      await simView().locator('.triage-sim-section h3', { hasText: 'Virtual I/O' }).count(),
+    ).toBe(1);
+    await setSlider('net:/TEMP_SENSE.value', 3.03);
+    await expect
+      .poll(() => simView().locator('.triage-sim-oled').getAttribute('data-text'), {
+        timeout: 60_000,
+      })
+      .toMatch(/3[45]\.\dC 8\d%/);
+    await window.screenshot({ path: shot('sim-code-only') });
+    await runScope('Mechanism only');
+    await setSlider('J1.torque.value', 2);
+    await runScope('Power stage only');
+    await simView().locator('.triage-sim-button[data-action="stop"]').click();
+    await expect.poll(() => simView().getAttribute('data-state'), { timeout: 30_000 }).toBe('idle');
+  });
+
+  // P3-6: the project's scenarios run inside the app too.
+  simIt("runs the project's scenarios from the Sim tab (ROADMAP P3-6)", async () => {
+    await simView().locator('.triage-sim-button[data-action="scenarios"]').click();
+    await expect
+      .poll(() => simView().getAttribute('data-scenarios'), { timeout: 300_000, interval: 500 })
+      .toMatch(/^(passed|failed)$/);
+    const failed = await simView()
+      .locator('.triage-sim-scenario[data-result="failed"]')
+      .allTextContents();
+    expect(failed).toEqual([]);
+    expect(
+      await simView().locator('.triage-sim-scenario[data-result="passed"]').count(),
+    ).toBeGreaterThanOrEqual(5);
+    await window.screenshot({ path: shot('sim-scenarios') });
+  });
+
   it('starts the hello engine when the Triage view opens', async () => {
     await expect
       .poll(engineStatus, { timeout: 60_000 })

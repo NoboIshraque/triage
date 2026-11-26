@@ -180,6 +180,33 @@ jobs:
         timeout-minutes: 30
         run: scripts/dev/setup.sh ${{ steps.eda.outcome == 'success' && '--eda' || '' }} ${{ steps.cad.outcome == 'success' && '--cad' || '' }}
 
+      # ROADMAP P3: the app ships the pinned Arduino AVR core (engines step), and the smoke
+      # test runs the Smart Fan's firmware, so the machine needs the AVR toolchain, as in the Sim workflow (sim.yml): Ubuntu's avr-gcc with the
+      # pinned Arduino AVR core, or arduino-cli with its own on Windows.
+      - name: AVR toolchain for the simulation checks (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y gcc-avr avr-libc binutils-avr
+          node engines/arduino-avr/fetch.mjs
+
+      - name: AVR toolchain for the simulation checks (Windows, arduino-cli)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          ARDUINO_CLI_VERSION: '1.6.0'
+          ARDUINO_CLI_SHA256: '2769b9b282ce597db9679d8ec14d726d57004ca4205ef4d7a795bf36b6cdc9d8'
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $zip = Join-Path $env:RUNNER_TEMP 'arduino-cli.zip'
+          $url = "https://github.com/arduino/arduino-cli/releases/download/v$env:ARDUINO_CLI_VERSION/arduino-cli_$($env:ARDUINO_CLI_VERSION)_Windows_64bit.zip"
+          for ($i = 1; $i -le 4; $i++) { try { Invoke-WebRequest $url -OutFile $zip; break } catch { if ($i -eq 4) { throw }; Start-Sleep (2 * $i) } }
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne $env:ARDUINO_CLI_SHA256) { throw "arduino-cli checksum $hash" }
+          $dir = Join-Path $env:RUNNER_TEMP 'arduino-cli'
+          Expand-Archive $zip -DestinationPath $dir -Force
+          & "$dir\arduino-cli.exe" core update-index
+          & "$dir\arduino-cli.exe" core install arduino:avr
+
       - name: Build the engines into the app (CMake, Ninja, Cargo)
         run: node app/build.mjs engines
 
@@ -191,6 +218,7 @@ jobs:
         env:
           TRIAGE_REQUIRE_EDA: ${{ steps.eda.outcome == 'success' && '1' || '0' }}
           TRIAGE_REQUIRE_CAD: ${{ steps.cad.outcome == 'success' && '1' || '0' }}
+          TRIAGE_REQUIRE_SIM: '1'
         run: |
           # Ubuntu 24.04 blocks the unprivileged user namespaces Chromium's sandbox uses.
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
@@ -201,6 +229,7 @@ jobs:
         env:
           TRIAGE_REQUIRE_EDA: ${{ steps.eda.outcome == 'success' && '1' || '0' }}
           TRIAGE_REQUIRE_CAD: ${{ steps.cad.outcome == 'success' && '1' || '0' }}
+          TRIAGE_REQUIRE_SIM: '1'
         run: corepack pnpm --filter @triage/app-smoke smoke
 
       - name: Upload screenshots and logs

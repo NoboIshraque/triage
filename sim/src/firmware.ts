@@ -75,6 +75,8 @@ export function findToolchain(): Toolchain | { missing: string } {
       cores.push([v, `Arduino15 core ${path.basename(v)}`]);
     }
   }
+  // In the packaged app, the core ships beside the sim package (app/build.mjs engines).
+  cores.push([path.join(import.meta.dirname, '..', 'arduino-avr'), 'Triage (bundled)']);
   cores.push([path.join(repoRoot, 'engines', 'arduino-avr', 'upstream'), 'engines/arduino-avr']);
   const core = cores.find(([dir]) => existsSync(path.join(dir, 'cores', 'arduino', 'Arduino.h')));
 

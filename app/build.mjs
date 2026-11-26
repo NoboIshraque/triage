@@ -41,6 +41,7 @@ import {
   existsSync,
   mkdirSync,
   readdirSync,
+  realpathSync,
   readFileSync,
   renameSync,
   rmSync,
@@ -261,6 +262,7 @@ function buildEngines({ arch }) {
     cpSync(path.join(repoRoot, file), path.join(target, path.basename(file)));
     console.log(`Copied ${path.basename(file)} into ${path.relative(process.cwd(), target)}`);
   }
+  buildSimulation(target);
   // The EDA engine (KiCad's engine, ROADMAP P1-2), staged by engines/eda/build.mjs
   // or downloaded from the EDA workflow: programs, kifaces and libraries in one folder.
   const edaStage = path.join(
@@ -316,6 +318,89 @@ function buildEngines({ arch }) {
       `No CAD engine in ${path.relative(process.cwd(), cadStage)}: the 3D tab will say so.`,
     );
   }
+}
+
+/**
+ * The simulation (ROADMAP P3): MuJoCo built from source (engines/mujoco), the
+ * Rust kernel as a Node addon with it (crates/triage-sim-node), and the sim
+ * package (sim/, compiled by tsc) with its pure-JavaScript dependencies (avr8js,
+ * yaml, smol-toml), into resources/app/engines/sim/ for the sim engine's utility
+ * process (vs/triage/node/simEngineMain).
+ */
+function buildSimulation(target) {
+  const os = isWindows ? 'windows' : process.platform === 'darwin' ? 'macos' : 'linux';
+  const mujocoHeader = path.join(
+    repoRoot,
+    'engines',
+    'mujoco',
+    'build',
+    os,
+    'install',
+    'include',
+    'mujoco',
+    'mujoco.h',
+  );
+  if (!existsSync(mujocoHeader)) {
+    run(process.execPath, [path.join(repoRoot, 'engines', 'mujoco', 'build.mjs')], {
+      cwd: repoRoot,
+    });
+  }
+  run(
+    process.execPath,
+    [path.join(repoRoot, 'crates', 'triage-sim-node', 'build.mjs'), '--mujoco'],
+    {
+      cwd: repoRoot,
+    },
+  );
+  run('corepack', ['pnpm', 'install', '--frozen-lockfile', '--filter', '@triage/sim'], {
+    cwd: repoRoot,
+  });
+  run('corepack', ['pnpm', '--filter', '@triage/sim', 'build'], { cwd: repoRoot });
+  const simTarget = path.join(target, 'sim');
+  rmSync(simTarget, { recursive: true, force: true });
+  mkdirSync(simTarget, { recursive: true });
+  const simDir = path.join(repoRoot, 'sim');
+  cpSync(path.join(simDir, 'dist'), path.join(simTarget, 'dist'), { recursive: true });
+  // "type": "module", so Node loads dist/*.js as ES modules.
+  writeFileSync(
+    path.join(simTarget, 'package.json'),
+    `${JSON.stringify({ name: '@triage/sim', private: true, type: 'module', main: 'dist/index.js' }, null, 2)}\n`,
+  );
+  // pnpm links dependencies into its store; copy the files themselves.
+  for (const dependency of ['avr8js', 'yaml', 'smol-toml']) {
+    cpSync(
+      realpathSync(path.join(simDir, 'node_modules', dependency)),
+      path.join(simTarget, 'node_modules', dependency),
+      { recursive: true, dereference: true },
+    );
+  }
+  // The Arduino AVR core (engines/arduino-avr, when fetched): the app then needs
+  // only avr-gcc to build Arduino firmware (sim/src/firmware.ts looks here too).
+  const core = path.join(repoRoot, 'engines', 'arduino-avr', 'upstream');
+  if (existsSync(path.join(core, 'cores', 'arduino', 'Arduino.h'))) {
+    for (const part of [
+      'cores',
+      'variants',
+      'libraries',
+      'platform.txt',
+      'boards.txt',
+      'LICENSE.txt',
+      'README.md',
+    ]) {
+      if (existsSync(path.join(core, part))) {
+        cpSync(path.join(core, part), path.join(simTarget, 'arduino-avr', part), {
+          recursive: true,
+        });
+      }
+    }
+  }
+  const addons = path.join(repoRoot, 'build', 'native', 'addons');
+  for (const name of readdirSync(addons).filter(
+    (n) => n === 'triage_sim.node' || /^(lib)?mujoco/.test(n),
+  )) {
+    cpSync(path.join(addons, name), path.join(simTarget, name));
+  }
+  console.log(`Copied the simulation into ${path.relative(process.cwd(), simTarget)}`);
 }
 
 function dist({ arch }) {
