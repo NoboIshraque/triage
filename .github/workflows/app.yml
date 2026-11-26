@@ -175,7 +175,9 @@ jobs:
       # installers declare or bundle them (ROADMAP P8-2).
       - name: KiCad's and FreeCAD's libraries for the Linux engines
         if: runner.os == 'Linux' && (steps.eda.outcome == 'success' || steps.cad.outcome == 'success')
-        timeout-minutes: 15
+        # About 220 MB from Ubuntu's mirror: 2–3 minutes usually, but App run 63's
+        # mirror gave 243 kB/s and the step ran out of time at 15 minutes.
+        timeout-minutes: 30
         run: scripts/dev/setup.sh ${{ steps.eda.outcome == 'success' && '--eda' || '' }} ${{ steps.cad.outcome == 'success' && '--cad' || '' }}
 
       - name: Build the engines into the app (CMake, Ninja, Cargo)
