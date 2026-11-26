@@ -12,11 +12,10 @@
 > If something went wrong, write it there too (or tell Claude in a session).
 > Claude reads this file at the start of every session and acts on what you wrote.
 
-**Current build branch:** `claude/wizardly-johnson-kqaiv5` (P3, the simulation;
-Claude updates this line when a session works on another branch). P2 and
-everything before it is **merged into the default branch**
-(`claude/unified-engineering-platform-jn5rmk`), so the default branch's nightly
-build and ZIP download have it too; P3 joins it when the phase is merged.
+**Current build branch:** `claude/unified-engineering-platform-jn5rmk`, the
+**default branch** (Claude updates this line when a session works on another
+branch). P0 to P3, the simulation included, are **merged into it**, so its
+nightly build and its ZIP download have everything the open checks need.
 
 ## At a glance
 
@@ -242,8 +241,8 @@ Triage's own commands start with "Triage:".
   scenarios run as tests. CI checks all of it on Windows and Linux; this is the
   run on your laptop that finishes milestone M2 (together with C3, M1).
 - **You need:** a build and the example project (top of this file) from the
-  current build branch, made on **2026-11-26 or later** (once P3 is merged,
-  the nightly too), about 30 minutes, and **the Arduino IDE 2** (or
+  current build branch, made after P3 was merged: **2026-11-27 or later** (the
+  nightly of 2026-11-27 has it), about 30 minutes, and **the Arduino IDE 2** (or
   arduino-cli): Triage compiles the firmware with the AVR compiler it installs.
   - **Install it once:** download the Arduino IDE 2 for Windows from
     <https://www.arduino.cc/en/software> and install it. Start it once, open
@@ -262,6 +261,10 @@ Triage's own commands start with "Triage:".
      status bar at the bottom says "Sim: Whole device · … · 1.00× real time".
      *If it says avr-gcc wasn't found:* the Arduino IDE (above) isn't
      installed, or its AVR boards aren't; tell Claude the exact message.
+     *If the ratio stays below 1.00×:* tell Claude the number. On CI's Windows
+     machine (4 slow cores, no graphics card) the app reached only 0.2–0.3×,
+     while the same firmware runs at 1.3× outside the app there; your laptop
+     is the real measure.
   3. **The display and the serial monitor:** under **Display**, the OLED
      shows the temperature (about `24.0C 0%`) and `AUTO`. The **Serial
      monitor** prints a line every 0.1 s, like `t=24.0 reading=491 duty=0%

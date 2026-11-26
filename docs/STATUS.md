@@ -2,23 +2,25 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-26 · **Phase P3 Simulation on Arduino: built**, CI in
-progress (this session; see "P3 (2026-11-26)" below). P2 is done and merged into
-the default branch. The owner's checks still open: **C3** (M1 demo), **C4** (60
-fps on a real GPU), **C5** (the 3D tab, optional) and, new, **C6**: the M2 exit
-demo, the Smart Fan running in the Sim tab on the Windows laptop. Every owner
-step is in [CHECKS.md](CHECKS.md).
+**Last updated:** 2026-11-27 · **Phase P3 Simulation on Arduino: done** on
+Windows and Linux in CI (Sim run 9, App run 80, CI run 114) and merged into the
+default branch through a pull request; see "P3 done" below. **Next: phase PC**
+(the phone and tablet companion), which the owner starts in a new session. The
+owner's checks still open: **C3** (M1 demo), **C4** (60 fps on a real GPU),
+**C5** (the 3D tab, optional) and, new, **C6**: the M2 exit demo, the Smart Fan
+running in the Sim tab on the Windows laptop. Every owner step is in
+[CHECKS.md](CHECKS.md).
 
-### P3 (2026-11-26)
+### P3 done (2026-11-27)
 
 | WP | State | Evidence |
 |---|---|---|
 | P3-1 Sim kernel core | **done** | `crates/triage-sim-kernel`: picosecond clock, unit contract, conservative quantum scheduler in grant / sync / unblock phases, hosts (producers outside Rust), adaptive quantum (1 ms … 1 µs), signal bus with traces, inputs recorded where they took effect, scopes and control / hold / trace / ideal / open stubs. Tests: replay reproduces a run's trace hash exactly; a host producer matches an in-kernel one; scheduler property tests (proptest, 64 cases: contiguous steps, every edge once at its time, exact integrals, quantum bounds); each stub kind |
-| P3-2 AVR unit | **done** in CI pending | `sim/src/avr.ts`: ATmega328P (Uno, Nano) in avr8js as the kernel's host: pins, ADC synced on demand, PWM, USART, TWI (I²C at transaction level), SPI; a 64K-table decoder generated from avr8js (all 65,536 opcodes checked); the Sim tab's serial monitor. Blink (hand-assembled) 3× and serial echo 4× real time here; the compiled Arduino Blink and serial echo run in the Sim workflow on both OSes (`sim/test/sketches.test.ts`) |
+| P3-2 AVR unit | **done** | `sim/src/avr.ts`: ATmega328P (Uno, Nano) in avr8js as the kernel's host: pins, ADC synced on demand, PWM, USART, TWI (I²C at transaction level), SPI; a 64K-table decoder generated from avr8js (all 65,536 opcodes checked); the Sim tab's serial monitor. Compiled Arduino sketches in the Sim workflow (`sim/test/sketches.test.ts`): Blink 1.3× and serial echo 2.3× real time on Windows (Sim run 8), 2.8× and 4.1× on Linux (Sim run 9); the Smart Fan's whole device 1.3× and 2.5× |
 | P3-3 T0 circuit + parts | **done** | `crates/triage-mna` (Newton–Raphson MNA, backward Euler) and `crates/triage-sim` (rails, logic nets, analog islands; resistor, NTC, pot, button, LED, diode, MOSFET, DC motor, capacitor, inductor, servo; the SSD1306 in `sim/`). The thermistor divider reads the ADC's own counts from 20 to 40 °C (511/512 at 25 °C, 620 at 35 °C; also through the AVR's ADC); LED current matches Kirchhoff and Shockley for 220, 330 and 1 kΩ |
 | P3-4 Mechanics + 3D playback | **done**, one point open (DV-31) | `crates/triage-mujoco` (MuJoCo 4.0.1 built from source, rotors with `mjs_*`, torques in `mjcb_control`; analytic spin-up within 1%); fan speed follows PWM (0 → 100% duty, torque balance at full duty); MuJoCo and the built-in rotor agree within 1%. The 3D tab turns the rotor by the simulation's angle at the display's rate (smoke test). **The Smart Fan has no LED**, so the LED glow in 3D isn't shown on it (DV-31) |
-| P3-5 Run UX and scopes | **done** in CI pending | The Sim tab: Run / Pause / Step / Stop, speed, scope picker (whole device, circuit only, code only, mechanism only, the saved "Power stage only"), environment and parts' controls, virtual I/O panel, stubs, plots, OLED, serial monitor; the status bar. PLAN §3 step 6 (35 °C → 80%, "35.0C 80%" on the OLED, the rotor turning in 3D) and each scope on its own are smoke checks |
-| P3-6 Scenario tests | **done** in CI pending | YAML v0 (`at`, `within`, `always`, `scope`, environment ramps, timed inputs; `sim/src/scenario.ts`), `triage test` / `triage sim run`, the Test Explorer (VS Code's testing service) and the Sim tab's scenario list; five Smart Fan scenarios, `overheat.yaml` as in PLAN §4.7; the Sim workflow runs `triage test examples/smart-fan` on Windows and Linux |
+| P3-5 Run UX and scopes | **done** | The Sim tab: Run / Pause / Step / Stop, speed, scope picker (whole device, circuit only, code only, mechanism only, the saved "Power stage only"), environment and parts' controls, virtual I/O panel, stubs, plots, OLED, serial monitor; the status bar; a narrow Sim tab stacks its columns. PLAN §3 step 6 (35 °C → 80%, "35.0C 80%" on the OLED, the rotor turning in 3D) and each scope on its own pass as smoke checks in the packaged app on both OSes (App run 80) |
+| P3-6 Scenario tests | **done** | YAML v0 (`at`, `within`, `always`, `scope`, environment ramps, timed inputs; `sim/src/scenario.ts`), `triage test` / `triage sim run`, the Test Explorer (VS Code's testing service) and the Sim tab's scenario list; five Smart Fan scenarios, `overheat.yaml` as in PLAN §4.7. `triage test examples/smart-fan` passes all five headless on Windows (overheat 12 s in 5.8 s) and Linux (in 3.2 s) in the Sim workflow (Sim runs 8 and 9), and from the Sim tab in the app (App run 80) |
 
 **How the pieces fit.** The kernel (Rust) owns time, the circuit, the mechanics
 and the environment; the AVR emulator (avr8js, JavaScript) runs as its host in
@@ -41,7 +43,12 @@ or arduino-cli with the AVR core (Triage uses their compiler); on Linux Ubuntu's
 `gcc-avr` and `avr-libc` (the app ships Arduino's AVR core). Times cross into
 JavaScript as picoseconds in numbers, exact for about 2.5 hours of virtual time.
 Traces are trimmed to the last half second in interactive runs, so plots keep 10
-s of samples, not the full history. The Smart Fan has no LED (DV-31).
+s of samples, not the full history. The Smart Fan has no LED (DV-31). **In the
+app on CI's Windows machine** (4 slow cores, software graphics, KiCad's and
+FreeCAD's engines running) the whole device reached only about 0.2–0.3× real
+time, against 1.02× in the app on Linux and 1.3× for the same firmware outside
+the app on Windows; the laptop run (C6 step 2) is the real measure, and the
+owner reports the number.
 
 ### P2 done (2026-11-26)
 
@@ -317,7 +324,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | **done**: P0-1 … P0-7 2026-11-24, P0-8 2026-11-25, **P0-9 2026-11-26** (second sweep; App run 58 on both OSes) |
 | P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **done** 2026-11-26 on Windows and Linux in CI (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 accepted); **the owner's M1 run on Windows and the GPU 60 fps check next** |
 | P2 3D engine + enclosure from board | P2-1 FreeCAD fork · P2-2 CAD engine RPC · P2-3 3D view · P2-4 enclosure · P2-5 fit checks | **done** 2026-11-26 on Windows and Linux in CI (DV-25 … DV-27; see "P2 done" at the top) |
-| P3 Simulation on Arduino (M2) | P3-1 … P3-6 | **built** 2026-11-26; CI on Windows and Linux in progress (see "P3" above); **the owner's M2 run (C6) next** |
+| P3 Simulation on Arduino (M2) | P3-1 … P3-6 | **done** 2026-11-27 on Windows and Linux in CI (Sim run 9, App run 80; DV-28 … DV-32); **the owner's M2 run (C6) next** |
 | PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | not started (after P3, before P4) |
 | P4 ESP32 + Raspberry Pi (M3) | P4-1 … P4-6 | not started |
 | P5 In-app electronics editing | P5-1 … P5-7 | not started |
@@ -548,3 +555,22 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   `link.exe` shadowed MSVC's in the first Windows Sim job (PowerShell now).
   The worker restarted once mid-session; the owner then asked to merge the
   default branch (the "Branches" rules in CLAUDE.md), done before going on.
+  CI then found five more problems, all fixed:
+  - the adaptive quantum halved on every small move of an analog input, so a
+    temperature ramp kept it at 1 µs (now only logic changes or moves over 2%);
+  - the smoke test's net rename (P1-5) left `MOTOR_SPEED` in the smoke project,
+    so the firmware built after it failed (it now renames the net back);
+  - the main one: `Runner.runUntil` gave the kernel targets between whole
+    picoseconds (0.104 s = 104000000000.00002 ps), which the kernel rounded back
+    to the time it had, so every paced run in the app and the Smart Fan sketch
+    test hung. Targets now round, the AVR also runs an instruction when a grant
+    is shorter than a cycle, and a run that stops advancing throws; the Sim
+    workflow's test steps stop after 15 minutes;
+  - in a narrow Sim tab (240 px in the engineering layout on CI's 1024 px
+    Windows screen) the instruments shrank to nothing under the controls; they
+    now stack;
+  - the sim engine waited on a 0 ms timer between catch-up slices, which
+    Windows stretches to 15.6 ms (now `setImmediate`), and the smoke checks
+    stop their runs even when they fail, and accept 79% at 34.9 °C.
+  CI: Sim run 9, App run 80 and CI run 114 green on both OSes. P3 merged into
+  the default branch through a pull request.
