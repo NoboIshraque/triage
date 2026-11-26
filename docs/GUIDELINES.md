@@ -17,6 +17,7 @@ project coherent across many sessions.
 ## 2. Session routine
 
 **Start (first minutes)**
+0. Merge the default branch into the session's branch (CLAUDE.md, "Branches").
 1. Read `CLAUDE.md`, then `docs/STATUS.md`: the current work package (WP), blockers and open questions.
    Then `docs/CHECKS.md`: checks the owner marked done or wrote results into.
 2. Read that WP in `docs/ROADMAP.md`, plus the PLAN sections and ADRs it touches.
@@ -35,15 +36,18 @@ project coherent across many sessions.
 2. Add or update the owner's checks in `docs/CHECKS.md` (detailed steps; only the
    owner marks a check done).
 3. Push.
-4. Tell the owner what now works, which checks in `docs/CHECKS.md` are new or
+4. At the end of a phase: merge it into the default branch through a pull
+   request once CI is green (CLAUDE.md, "Branches").
+5. Tell the owner what now works, which checks in `docs/CHECKS.md` are new or
    changed, what's next, and any questions.
 
 **One phase per session.** The owner starts each phase (P0, P1, …) in a new
 session. A session works through its phase's WPs in order. When the phase is
-done, it updates `STATUS.md` (phase done, next phase), pushes, and tells the
-owner plainly: "Phase Px is done; start Py in a new session." A session that
-can't finish its phase records where it stopped in `STATUS.md`, and the next
-session continues that phase.
+done, it updates `STATUS.md` (phase done, next phase), pushes, merges into the
+default branch, and tells the owner plainly: "Phase Px is done and merged; start
+Py in a new session." A session that can't finish its phase records where it
+stopped in `STATUS.md` and doesn't merge; the next session continues that
+phase.
 
 ## 3. Work package template
 
@@ -76,9 +80,13 @@ before continuing.
 
 ## 5. Branches and pull requests
 
-- One assigned branch per session. Never push to `main` directly.
-- When a WP (or a few related ones) is done and CI is green, open a PR to `main`
-  if the owner asked for PRs. The owner reviews and merges.
+- One assigned branch per session. Never push to the default branch (the
+  project's main branch, named in CLAUDE.md) directly.
+- A session starts by merging the default branch into its own branch.
+- When a phase is done and CI is green on Windows and Linux, the session opens a
+  pull request into the default branch and merges it (the owner's standing
+  permission, 2026-11-26; CLAUDE.md "Branches"). Unfinished phases, red CI and
+  conflicts that need a decision aren't merged.
 - Parallel sessions on **independent** WPs are fine, with separate branches and
   no shared files beyond `STATUS.md` (merge that by hand).
 
