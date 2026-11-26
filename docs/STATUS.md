@@ -463,4 +463,6 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   issues: Linux users need KiCad's libraries installed (P8-2); KiCad's share data
   isn't staged (the fallback editor starts without global libraries);
   `LayerName()` misnames a few virtual layers; `Route` takes all moves in one
-  call (sessions in P6). Pending: EDA run 14 confirms the Windows compiler cache.
+  call (sessions in P6). EDA run 14 (KiCad's USE_CCACHE switch) passed on both OSes
+  and confirmed the Windows compiler cache: 1,953 of 1,953 MSVC compiles
+  cacheable (none before), 1.8 GB saved for the next run.
