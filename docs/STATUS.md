@@ -6,7 +6,8 @@
 in CI on Windows and Linux (this session; App run 65, EDA run 20, CAD run 7). Next:
 **P3 Simulation on Arduino**, which the owner starts in a new session. **P0-9 is
 done** (checked below). P1's owner checks (the M1 demo and the 60 fps check on a
-real GPU, DV-22) are still open, steps below; P2's Windows steps are optional.
+real GPU, DV-22) are still open; their steps, and every other owner step, are in
+[CHECKS.md](CHECKS.md).
 
 ### P2 done (2026-11-26)
 
@@ -18,25 +19,12 @@ real GPU, DV-22) are still open, steps below; P2's Windows steps are optional.
 | P2-4 Enclosure from board | **done** on both OSes (CAD run 7, App run 65) | `triage_cad/enclosure.py`: base, bosses under the board's three M3 holes, connector openings, lid; parameters are FreeCAD properties edited in the properties panel; `examples/smart-fan/mechanical/enclosure.FCStd` is generated from the board (80.9 × 59.3 × 31.6 mm base, 4 mm lid); wall 2 → 3 mm recomputes and re-tessellates in 117 ms; base.stl and lid.stl export as closed solids; a connector moved to the board's edge gets an opening in the wall (engine test). Smoke check: WallThickness 2 → 3 mm in the 3D tab's properties panel recomputes and redraws; lifting the lid (ExplodeLid) shows the board inside |
 | P2-5 Fit checks | **done** on both OSes (App run 65; CAD run 7's engine tests) | `checks.fit`: interference and clearance between documents. Smoke check: R1 set to 60 mm → the enclosure turns red and the Problems panel says "Enclosure collides with R1 (73.3 mm³ overlap)"; back to 0 → no problem |
 
-### Try P2 on Windows (owner check, optional)
+### Owner checks
 
-1. Download artifact **triage-Windows** from the newest green App run on this
-   branch (**Actions → App**). It carries both engines (KiCad's and FreeCAD's).
-2. Open `examples/smart-fan` from a clone, click the Triage icon, then **Open
-   Engineering Layout**. The **3D** tab shows the fan's rotor and the enclosure;
-   the status bar says "FreeCAD engine: connected".
-3. In the 3D tab: middle-drag orbits, Shift + middle-drag pans, the wheel zooms
-   (Alt + left-drag orbits on a laptop's touchpad), **N** shows the outliner and
-   properties, **Home** frames everything.
-4. Click **Enclosure** in the outliner, set **ExplodeLid** to `40 mm` (Enter): the
-   lid lifts and the board shows inside. Set **WallThickness** to `3 mm`: the
-   enclosure recomputes.
-5. **F1 → Triage: Set a Part's Height (3D and Fit Checks)**, `R1`, `60`: R1
-   pokes through the lid, the enclosure turns red and the Problems panel lists
-   the collision. Set it back to `0`.
-6. **Export STL** (3D tab toolbar) writes `mechanical/exports/base.stl` and
-   `lid.stl`; open them in a slicer. Open `mechanical/enclosure.FCStd` in your
-   own FreeCAD 1.1 if you have it.
+Every step for the owner, with detailed instructions, is in
+[CHECKS.md](CHECKS.md); the owner marks checks done there. Open now: **C3** the
+M1 exit demo (P1), **C4** frame rates on a real GPU (DV-22), **C5** the 3D tab
+and the enclosure (P2, optional). None of them blocks P3.
 
 ### P0-9 checked (2026-11-26)
 
@@ -128,26 +116,8 @@ checks on Windows.
 
 ### Try P1 on Windows (the M1 owner check)
 
-1. Download artifact **triage-Windows** from App run 48
-   (<https://github.com/NoboIshraque/triage/actions/runs/45732478696>, kept
-   until 2026-11-27 01:14 UTC; after that, **Actions → App → Run workflow** on
-   this branch builds a fresh one in about 20 minutes). It carries the KiCad
-   engine.
-2. Install or unzip as for P0, open `examples/smart-fan` from a clone, click the
-   Triage icon, then **Open Engineering Layout**: the Schematic and Board tabs
-   show the Smart Fan.
-3. Click a part (Q1), then look at the other tab: the same part is selected.
-   Drag it, press **R** to rotate it, **Ctrl+S** to save.
-4. **F1 → Triage: Rename Net in the Schematic**, `FAN_PWM` → `MOTOR_SPEED`:
-   `firmware/generated/board_pins.h` and the diagnostics in `main.cpp` update.
-5. **F1 → Triage: Benchmark Schematic and Board Views**: tell Claude the frame
-   rates (the 60 fps check, DV-22).
-6. **F1 → Triage: Edit in KiCad (Fallback Window)**: KiCad's editor opens the
-   same file; save there and Triage's tab updates. KiCad's own library and
-   template files aren't bundled yet, so KiCad may first ask how to set up its
-   global library tables: choose the empty table (the Smart Fan carries its own
-   libraries).
-7. Open the saved files in your own KiCad 10 if you have it.
+Moved to [CHECKS.md](CHECKS.md): **C3** (the M1 exit demo) and **C4** (frame
+rates on a real GPU).
 
 ### P0 in one paragraph
 
@@ -285,6 +255,7 @@ The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt
 | D10 (2026-11-25) | **Editing path: direct hosting.** KiCad's code does the routing, checks and saving inside the engine; Triage draws the tools (owner: "I'm guessing the proposed one is better") | [ADR 0004](adr/0004-editing-path.md) (Accepted) |
 | — (2026-11-25) | The repository is **public** (Actions had stopped for billing; public repositories run Actions free) | [DV-24](DEVIATIONS.md) |
 | D11 (2026-11-25) | **Phone and tablet companion accepted**: a relay, "whichever is the most secure" (end-to-end sealed, holds no keys); the phone app on **GitHub Pages**, the owner's domain later; **iOS 26.4+** for the direct path; phase **PC between P3 and P4**; **View only or View and edit asked each time**, and a view-only phone can be given edit permission during the session | [ADR 0005](adr/0005-phone-companion.md) (Accepted), PLAN §4.16, ROADMAP PC, [DV-23](DEVIATIONS.md) |
+| — (2026-11-26) | The owner's steps live in **`docs/CHECKS.md`**, with detailed instructions; every session adds and updates them, and **only the owner marks a check done** | CLAUDE.md, GUIDELINES §2 and §4, [CHECKS.md](CHECKS.md) |
 
 ## Deviations from the plan
 
