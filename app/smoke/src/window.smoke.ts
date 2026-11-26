@@ -522,6 +522,15 @@ describe('packaged Triage app', () => {
     const netlist = path.join(profile, 'smart-fan.net');
     kicadCli(['sch', 'export', 'netlist', '--output', netlist, schematic]);
     expect(readFileSync(netlist, 'utf8')).toContain('MOTOR_SPEED');
+    // Rename it back: the simulation checks below build the firmware, which uses FAN_PWM.
+    await runCommand(window, 'Triage: Rename Net in the Schematic');
+    await prompt('Net to rename');
+    await input.fill('MOTOR_SPEED');
+    await window.keyboard.press('Enter');
+    await prompt('New name for MOTOR_SPEED');
+    await input.fill('FAN_PWM');
+    await window.keyboard.press('Enter');
+    await expect.poll(() => readFileSync(header, 'utf8'), { timeout: 10_000 }).toContain('FAN_PWM');
   });
 
   edaIt('reloads the board within 2 s when KiCad saves it (ROADMAP P1-7)', async () => {
