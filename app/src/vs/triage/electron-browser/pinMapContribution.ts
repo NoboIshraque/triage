@@ -31,7 +31,8 @@ import { IWorkbenchContribution } from '../../workbench/common/contributions.js'
 import { ITriageCrossProbeService } from '../common/eda/crossProbe.js';
 import { ITriageEdaEngineService } from '../common/eda/edaEngine.js';
 import { Message } from '../common/eda/protobuf.js';
-import { IPinMap, IPinMapComponent, ITriageProject, ITriageProjectService } from '../common/projectModel.js';
+import { buildLinks, ILinksInputComponent, linksText } from '../common/links.js';
+import { IPinMap, ITriageProject, ITriageProjectService } from '../common/projectModel.js';
 
 const MARKER_OWNER = 'triage.pinmap';
 const SOURCE_EXTENSIONS = /\.(c|cc|cpp|cxx|h|hh|hpp|ino)$/i;
@@ -248,8 +249,8 @@ export class TriagePinMapContribution extends Disposable implements IWorkbenchCo
 		this.changedAt = 0;
 		try {
 			const netlist = await this.netlist(files.schematic);
-			const components: IPinMapComponent[] = (netlist.components as Message[]).map(c => ({
-				reference: c.reference, libId: c.libId, footprint: c.footprint,
+			const components: ILinksInputComponent[] = (netlist.components as Message[]).map(c => ({
+				reference: c.reference, libId: c.libId, value: c.value ?? '', footprint: c.footprint,
 				pins: (c.pins as Message[]).map(p => ({ number: p.number, name: p.name, net: p.net })),
 			}));
 			const sources = await this.firmwareSources(files.firmware);
@@ -288,28 +289,18 @@ export class TriagePinMapContribution extends Disposable implements IWorkbenchCo
 		}
 	}
 
-	/** .triage/links.json, the cross-domain link graph v0 (PLAN §4.4): parts and nets by stable id. */
-	private async writeLinks(files: ProjectFiles, map: IPinMap, components: IPinMapComponent[]): Promise<void> {
-		const nets = new Map<string, string[]>();
-		for (const component of components) {
-			for (const pin of component.pins) {
-				if (pin.net) {
-					nets.set(pin.net, [...(nets.get(pin.net) ?? []), `${component.reference}.${pin.number}`]);
-				}
-			}
-		}
-		const links = {
-			format: 0,
-			generator: 'Triage (ROADMAP P1-5)',
-			schematic: files.schematic.slice(files.root.length + 1).replace(/\\/g, '/'),
-			board: { profile: map.board, symbol: map.reference },
-			components: components.map(c => ({ reference: c.reference, symbol: c.libId, footprint: c.footprint })),
-			nets: [...nets].sort(([a], [b]) => a.localeCompare(b)).map(([name, pins]) => {
-				const pin = map.pins.find(p => p.net === name);
-				return { name, pins, firmware: pin?.constant ? { constant: pin.constant, pin: pin.pin, number: pin.number } : undefined };
-			}),
-		};
-		const text = `${JSON.stringify(links, null, '\t')}\n`;
+	/** .triage/links.json, the cross-domain link graph (PLAN §4.4, common/links.ts). */
+	private async writeLinks(files: ProjectFiles, map: IPinMap, components: readonly ILinksInputComponent[]): Promise<void> {
+		const links = buildLinks(
+			files.schematic.slice(files.root.length + 1).replace(/\\/g, '/'),
+			{ profile: map.board, symbol: map.reference },
+			components,
+			net => {
+				const pin = map.pins.find(p => p.net === net);
+				return pin?.constant ? { constant: pin.constant, pin: pin.pin, number: pin.number } : undefined;
+			},
+		);
+		const text = linksText(links);
 		const uri = URI.file(join(files.root, '.triage', 'links.json'));
 		const current = await this.fileService.readFile(uri).then(content => content.value.toString(), () => '');
 		if (current !== text) {

@@ -139,6 +139,10 @@ struct Island {
     parts: Vec<IslandPart>,
     rails: Vec<(usize, ElementId)>,
     failures: u64,
+    /// The inputs of the last solve: a resistive island whose inputs didn't
+    /// change keeps its solution.
+    inputs: Vec<f64>,
+    solved: bool,
 }
 
 struct LogicNet {
@@ -269,6 +273,8 @@ impl CircuitUnit {
                 parts: Vec::new(),
                 rails: Vec::new(),
                 failures: 0,
+                inputs: Vec::new(),
+                solved: false,
             };
             let mut nodes: BTreeMap<String, Node> = BTreeMap::new();
             for net in nets {
@@ -673,6 +679,7 @@ fn add_part(
 
 impl Island {
     fn update_inputs(&mut self, bus: &SignalBus, temperature: Option<f64>) {
+        let mut inputs = Vec::with_capacity(self.inputs.len());
         for pin in &self.pins {
             let (ohms, volts) = match bus.logic(pin.drive) {
                 Logic::High => (PIN_OHMS, pin.vcc),
@@ -683,6 +690,7 @@ impl Island {
             };
             self.circuit.set_ohms(pin.ohms, ohms);
             self.circuit.set_volts(pin.volts, volts);
+            inputs.extend([ohms, volts]);
         }
         for part in &self.parts {
             match part.state {
@@ -690,11 +698,15 @@ impl Island {
                     let kelvin = temperature.unwrap_or(25.0) + 273.15;
                     let ohms = r25 * (beta * (1.0 / kelvin - 1.0 / 298.15)).exp();
                     self.circuit.set_ohms(element, ohms);
+                    inputs.push(ohms);
                 }
                 PartState::Motor { emf, ke, omega, .. } => {
                     self.circuit.set_volts(emf, ke * bus.real(omega));
                 }
-                PartState::Button { element, pressed } => self.circuit.set_closed(element, pressed),
+                PartState::Button { element, pressed } => {
+                    self.circuit.set_closed(element, pressed);
+                    inputs.push(if pressed { 1.0 } else { 0.0 });
+                }
                 PartState::Pot {
                     upper,
                     lower,
@@ -704,9 +716,14 @@ impl Island {
                     self.circuit
                         .set_ohms(upper, (ohms * (1.0 - position)).max(1e-3));
                     self.circuit.set_ohms(lower, (ohms * position).max(1e-3));
+                    inputs.push(position);
                 }
                 _ => {}
             }
+        }
+        if inputs != self.inputs {
+            self.inputs = inputs;
+            self.solved = false;
         }
     }
 
@@ -723,8 +740,12 @@ impl Island {
                     return;
                 }
             }
-        } else if self.circuit.solve_dc().is_err() {
-            self.failures += 1;
+        } else if !self.solved {
+            if self.circuit.solve_dc().is_ok() {
+                self.solved = true;
+            } else {
+                self.failures += 1;
+            }
         }
     }
 }

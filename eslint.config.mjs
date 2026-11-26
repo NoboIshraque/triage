@@ -17,6 +17,7 @@ export default defineConfig(
       'app/VSCode-*/**',
       'app/.smoke/**',
       'engines/**',
+      'sim/src/generated/**',
     ],
   },
   js.configs.recommended,

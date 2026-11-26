@@ -1,0 +1,33 @@
+{
+  "name": "@triage/sim",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Triage's simulation runner (ROADMAP P3-2 to P3-6): the AVR unit (avr8js) as the Rust kernel's host, the SSD1306 display, the device from the project's link graph, firmware builds and scenario tests.",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "avr8js": "0.21.1",
+    "smol-toml": "^1.4.0",
+    "yaml": "^2.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

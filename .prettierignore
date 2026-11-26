@@ -21,3 +21,9 @@ pnpm-lock.yaml
 dist/
 .turbo/
 coverage/
+
+# Files Triage writes into projects (the app writes them with tabs).
+/examples/*/.triage/
+
+# Generated from avr8js (sim/scripts/avr-decoder.mjs)
+/sim/src/generated/

@@ -1,0 +1,6 @@
+{
+  "$comment": "Pinned Arduino AVR core (ROADMAP P3-2): the Arduino API (cores/arduino), the Uno and Nano pin variants and the Wire library, compiled with the firmware by Triage's AVR build (sim/src/firmware.ts) when no Arduino IDE or arduino-cli install provides one. Not a fork: no patches; fetched with scripts/forks/fetch.mjs into engines/arduino-avr/upstream/.",
+  "repository": "https://github.com/arduino/ArduinoCore-avr.git",
+  "tag": "1.8.8",
+  "commit": "86df345b3cf46754a5db38fb983ec2808ce31303"
+}

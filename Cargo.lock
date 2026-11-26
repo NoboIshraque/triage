@@ -719,6 +719,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "triage-sim-node"
+version = "0.0.0"
+dependencies = [
+ "napi",
+ "napi-build",
+ "napi-derive",
+ "serde_json",
+ "triage-sim",
+ "triage-sim-kernel",
+]
+
+[[package]]
 name = "unarray"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"

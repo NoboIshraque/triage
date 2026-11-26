@@ -49,3 +49,6 @@ _autosave-*
 # Python caches and FreeCAD backup files (FreeCAD writes one when it saves over a file)
 __pycache__/
 *.FCBak
+
+# Firmware and simulation builds inside example projects
+/examples/*/.triage/build/
