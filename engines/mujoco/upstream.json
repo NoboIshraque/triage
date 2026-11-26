@@ -1,0 +1,6 @@
+{
+  "$comment": "Pinned MuJoCo release for the mechanics unit (ROADMAP P3-4, PLAN §4.7). Not a fork: no patches; engines/mujoco/build.mjs checks out exactly this commit into engines/mujoco/upstream/ with scripts/forks/fetch.mjs and builds the library from source with CMake.",
+  "repository": "https://github.com/google-deepmind/mujoco.git",
+  "tag": "4.0.1",
+  "commit": "4ed093a9f06b170bd1564942fa37e1bb907d93e3"
+}
