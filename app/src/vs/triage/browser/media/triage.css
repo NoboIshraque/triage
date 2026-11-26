@@ -473,6 +473,29 @@
 	overflow-y: auto;
 }
 
+/* A narrow Sim tab (the engineering layout's corner): the instruments would shrink
+   to nothing beside the 260 px controls, so the two stack and scroll as one. */
+.triage-view-editor .triage-sim-view {
+	container-type: inline-size;
+}
+
+@container (max-width: 560px) {
+	.triage-sim-view .triage-sim-body {
+		flex-direction: column;
+	}
+
+	.triage-sim-view .triage-sim-controls,
+	.triage-sim-view .triage-sim-instruments {
+		flex: none;
+		overflow: visible;
+	}
+
+	.triage-sim-view .triage-sim-controls {
+		border-right: none;
+		border-bottom: 1px solid var(--vscode-editorGroup-border);
+	}
+}
+
 .triage-sim-view h3 {
 	margin: 8px 0 4px;
 	font-size: 11px;

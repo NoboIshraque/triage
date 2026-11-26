@@ -39,6 +39,7 @@ export class SimEngine implements ISimEngine {
 	private speed = 1;
 	private running = false;
 	private timer: ReturnType<typeof setTimeout> | undefined;
+	private immediate: ReturnType<typeof setImmediate> | undefined;
 	private wallStart = 0;
 	private virtualStart = 0;
 	private lastFrame = 0;
@@ -163,6 +164,7 @@ export class SimEngine implements ISimEngine {
 		this.ratioWall = this.wallStart;
 		this.ratioVirtual = this.virtualStart;
 		this.setState({ kind: 'running', info: this.info });
+		this.cancelTick();
 		this.tick();
 	}
 
@@ -176,7 +178,7 @@ export class SimEngine implements ISimEngine {
 
 	async pause(): Promise<void> {
 		this.running = false;
-		clearTimeout(this.timer);
+		this.cancelTick();
 		if (this.info && this.runner) {
 			this.publish(true);
 			this.setState({ kind: 'paused', info: this.info });
@@ -188,7 +190,7 @@ export class SimEngine implements ISimEngine {
 			throw new Error('prepare a scope first');
 		}
 		this.running = false;
-		clearTimeout(this.timer);
+		this.cancelTick();
 		const end = this.runner.now + seconds;
 		while (this.runner.now < end - 1e-12) {
 			this.advance(Math.min(this.runner.now + CHUNK, end));
@@ -199,7 +201,7 @@ export class SimEngine implements ISimEngine {
 
 	async stop(): Promise<void> {
 		this.running = false;
-		clearTimeout(this.timer);
+		this.cancelTick();
 		this.runner = undefined;
 		this.info = undefined;
 		if (this.state.kind !== 'idle') {
@@ -291,8 +293,20 @@ export class SimEngine implements ISimEngine {
 		if (performance.now() - this.lastFrame >= FRAME_MS) {
 			this.publish(false);
 		}
-		const behind = this.runner.now < target;
-		this.timer = setTimeout(() => this.tick(), behind ? 0 : 4);
+		// Behind: go on at once (setImmediate still lets messages in; a 0 ms timeout
+		// waits up to 15.6 ms on Windows, a third of the time). Caught up: rest a little.
+		if (this.runner.now < target) {
+			this.immediate = setImmediate(() => this.tick());
+		} else {
+			this.timer = setTimeout(() => this.tick(), 4);
+		}
+	}
+
+	private cancelTick(): void {
+		clearTimeout(this.timer);
+		clearImmediate(this.immediate);
+		this.timer = undefined;
+		this.immediate = undefined;
 	}
 
 	/** Publishes a frame. */
