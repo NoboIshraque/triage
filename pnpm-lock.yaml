@@ -73,6 +73,10 @@ importers:
         version: 5.1.0(@types/node@22.20.5)(vite@8.3.8(@types/node@22.20.5)(yaml@2.9.1))
 
   cli:
+    dependencies:
+      '@triage/sim':
+        specifier: workspace:*
+        version: link:../sim
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

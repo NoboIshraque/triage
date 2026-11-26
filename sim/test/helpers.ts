@@ -2,7 +2,9 @@
 // unit is tested on machines without avr-gcc; compiled sketches run where it is.
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 import { assemble } from 'avr8js/dist/esm/utils/assembler.js';
+import { addonAvailable as built } from '../src/addon.js';
 import { toHex } from '../src/hex.js';
 import type { DeviceSpec } from '../src/project.js';
 
@@ -62,3 +64,14 @@ export const USART_INIT = `
   ldi r16, 0x06
   sts 0xC2, r16
 `;
+
+/**
+ * Speed checks (≥ 1× real time, ROADMAP P3-2) count in CI's Sim workflow, which
+ * runs the suite alone; elsewhere (turbo's parallel `pnpm check`) they only log.
+ */
+export const timed = process.env['TRIAGE_REQUIRE_SIM'] === '1';
+
+// CI's Sim workflow builds the addon first; there, a missing addon is a failure.
+if (process.env['TRIAGE_REQUIRE_SIM'] === '1' && !built()) {
+  throw new Error('TRIAGE_REQUIRE_SIM is set but the simulation addon is not built');
+}

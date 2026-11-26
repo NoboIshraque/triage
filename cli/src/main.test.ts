@@ -28,9 +28,9 @@ describe('triage CLI', () => {
   });
 
   it('says planned commands are not available yet', () => {
-    const result = run(['sim']);
+    const result = run(['erc']);
     expect(result.exitCode).toBe(EXIT_USAGE);
-    expect(result.stderr).toContain("'sim' is not available yet");
+    expect(result.stderr).toContain("'erc' is not available yet");
   });
 
   it('keeps the version equal to package.json', () => {

@@ -1,0 +1,125 @@
+# Simulation (ROADMAP P3): MuJoCo built from source, the kernel and device crates
+# tested with it, the sim addon (triage_sim.node), Arduino firmware compiled
+# (Linux: Ubuntu's avr-gcc and the pinned Arduino AVR core; Windows: arduino-cli
+# and its toolchain, as the owner's laptop has it), the sim package's tests with
+# compiled sketches, and `triage test` on the Smart Fan's scenarios
+# (P3-6 done-when: overheat.yaml passes headless on both OSes).
+name: Sim
+
+on:
+  push:
+    paths-ignore: ['**/*.md', 'docs/**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sim-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: '0'
+  TURBO_TELEMETRY_DISABLED: '1'
+  ARDUINO_CLI_VERSION: '1.6.0'
+  ARDUINO_CLI_SHA256: '2769b9b282ce597db9679d8ec14d726d57004ca4205ef4d7a795bf36b6cdc9d8'
+
+jobs:
+  sim:
+    name: Sim (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: MSVC developer environment (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+      - name: Build tools and the AVR toolchain (Linux, Ubuntu's packages)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build gcc-avr avr-libc binutils-avr
+          avr-gcc --version | head -1
+          node engines/arduino-avr/fetch.mjs
+      - name: Ninja and arduino-cli with the Arduino AVR core (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) { choco install ninja -y --no-progress }
+          $zip = Join-Path $env:RUNNER_TEMP 'arduino-cli.zip'
+          $url = "https://github.com/arduino/arduino-cli/releases/download/v$env:ARDUINO_CLI_VERSION/arduino-cli_$($env:ARDUINO_CLI_VERSION)_Windows_64bit.zip"
+          for ($i = 1; $i -le 4; $i++) { try { Invoke-WebRequest $url -OutFile $zip; break } catch { if ($i -eq 4) { throw }; Start-Sleep (2 * $i) } }
+          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+          if ($hash -ne $env:ARDUINO_CLI_SHA256) { throw "arduino-cli checksum $hash" }
+          $dir = Join-Path $env:RUNNER_TEMP 'arduino-cli'
+          Expand-Archive $zip -DestinationPath $dir -Force
+          $dir | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
+          & "$dir\arduino-cli.exe" core update-index
+          & "$dir\arduino-cli.exe" core install arduino:avr
+          & "$dir\arduino-cli.exe" core list
+      - name: Install the pinned Rust toolchain (rust-toolchain.toml)
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: sim
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Restore MuJoCo
+        id: mujoco-cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: engines/mujoco/build/*/install
+          key: mujoco-${{ runner.os }}-${{ hashFiles('engines/mujoco/upstream.json', 'engines/mujoco/build.mjs') }}
+      - name: MuJoCo (built from source, ROADMAP P3-4)
+        if: steps.mujoco-cache.outputs.cache-hit != 'true'
+        run: node engines/mujoco/build.mjs
+      - name: MuJoCo's library on PATH (Windows tests)
+        if: runner.os == 'Windows'
+        run: echo "$GITHUB_WORKSPACE/engines/mujoco/build/windows/install/bin" >> "$GITHUB_PATH"
+      - name: Kernel, circuit, parts and mechanics tests with MuJoCo
+        env:
+          TRIAGE_REQUIRE_MUJOCO: '1'
+        run: |
+          cargo clippy -p triage-mujoco -p triage-sim -p triage-sim-node --all-targets --features triage-sim/mujoco --locked -- -D warnings
+          cargo test -p triage-sim-kernel -p triage-mna -p triage-mujoco -p triage-sim --features triage-sim/mujoco --locked
+      - name: The sim addon (triage_sim.node with MuJoCo)
+        run: node crates/triage-sim-node/build.mjs --mujoco
+      - name: Sim package and CLI
+        run: |
+          pnpm --filter @triage/sim build
+          pnpm --filter @triage/cli build
+      - name: Sim tests with compiled sketches (Blink, serial echo, the Smart Fan)
+        env:
+          TRIAGE_REQUIRE_SIM: '1'
+          TRIAGE_REQUIRE_TOOLCHAIN: '1'
+        run: pnpm --filter @triage/sim exec vitest run --reporter=verbose
+      - name: triage test on the Smart Fan (P3-6 done-when)
+        run: |
+          mkdir -p build/sim
+          node cli/dist/bin.js test examples/smart-fan --report build/sim/scenarios-${{ runner.os }}.json
+      - name: Upload the scenario report, firmware and addon
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: triage-sim-${{ runner.os }}
+          path: |
+            build/sim/
+            build/native/addons/
+            examples/smart-fan/.triage/build/
+          if-no-files-found: warn
+          retention-days: 7

@@ -4,7 +4,7 @@
 import { describe, expect, it } from 'vitest';
 import { addonAvailable } from '../src/addon.js';
 import { Runner } from '../src/runner.js';
-import { USART_INIT, WHOLE, asm, ledDevice, smartFanDevice } from './helpers.js';
+import { USART_INIT, WHOLE, asm, ledDevice, smartFanDevice, timed } from './helpers.js';
 
 const BLINK = `
   sbi 0x04, 5        ; DDRB: D13 (PB5) is an output
@@ -95,7 +95,7 @@ describe.skipIf(!addonAvailable())('AVR unit', () => {
     console.log(
       `blink: 2 s simulated in ${wall.toFixed(2)} s (${(2 / wall).toFixed(1)}× real time)`,
     );
-    expect(2 / wall).toBeGreaterThanOrEqual(1);
+    if (timed) expect(2 / wall).toBeGreaterThanOrEqual(1);
   });
 
   it('echoes serial input', () => {
@@ -112,7 +112,7 @@ describe.skipIf(!addonAvailable())('AVR unit', () => {
     console.log(
       `serial echo: 1 s simulated in ${wall.toFixed(2)} s (${(1 / wall).toFixed(1)}× real time)`,
     );
-    expect(1 / wall).toBeGreaterThanOrEqual(1);
+    if (timed) expect(1 / wall).toBeGreaterThanOrEqual(1);
   });
 
   it('reads the thermistor divider with the ADC, synced to the circuit', () => {

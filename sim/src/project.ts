@@ -78,6 +78,8 @@ export interface DeviceSpec {
 
 export interface ScopeSpec {
   name: string;
+  /** A saved scope's file name without `.toml` (`power-stage`). */
+  id?: string;
   run: string[];
   stubs: Record<string, unknown>;
 }
@@ -362,6 +364,7 @@ export function scopes(project?: Project): ScopeSpec[] {
     .sort()) {
     const scope = readToml(path.join(dir, file));
     builtIn.push({
+      id: path.basename(file, '.toml'),
       name: str(scope['name'], path.basename(file, '.toml')),
       run: Array.isArray(scope['run']) ? (scope['run'] as string[]) : [],
       stubs: section(scope, 'stubs'),
@@ -386,7 +389,7 @@ export function findScope(name: string, project?: Project): ScopeSpec {
   };
   const target = alias[key] ?? name;
   const scope =
-    all.find((s) => s.name === target) ??
+    all.find((s) => s.name === target || s.id === name) ??
     all.find((s) => s.name.toLowerCase().replace(/[\s_]+/g, '-') === key);
   if (!scope) throw new Error(`no scope "${name}" (${all.map((s) => s.name).join(', ')})`);
   return scope;

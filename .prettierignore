@@ -27,3 +27,6 @@ coverage/
 
 # Generated from avr8js (sim/scripts/avr-decoder.mjs)
 /sim/src/generated/
+
+# Scenario files: PLAN §4.7 writes expectations unquoted, which plain YAML tools reject
+/examples/*/simulation/scenarios/

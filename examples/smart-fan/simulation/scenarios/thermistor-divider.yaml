@@ -1,0 +1,11 @@
+# Circuit only (PLAN §3 step 6: check the divider before writing any code): at
+# 35 °C the thermistor divider gives about 3.03 V on A0.
+name: the thermistor divider at 35 °C
+scope: circuit
+duration: 0.1s
+environment: { temperature_C: 35 }
+expect:
+  - at: 0.05s
+    that: voltage(net: TEMP_SENSE) >= 3.0V
+  - at: 0.05s
+    that: voltage(net: TEMP_SENSE) <= 3.06V

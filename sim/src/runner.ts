@@ -56,6 +56,7 @@ export interface RunnerOptions {
 export class Runner {
   readonly sim: NativeSimulation;
   readonly info: DeviceInfo;
+  readonly device: DeviceSpec;
   readonly avr: AvrUnit | undefined;
   /** Displays by reference (`J3`). */
   readonly displays = new Map<string, Ssd1306>();
@@ -64,6 +65,7 @@ export class Runner {
   constructor(options: RunnerOptions) {
     const addon = loadAddon();
     const { scope } = options;
+    this.device = options.device;
     this.sim = new addon.Simulation(
       JSON.stringify(options.device),
       JSON.stringify({ name: scope.name, run: scope.run, stubs: scope.stubs }),
@@ -127,6 +129,13 @@ export class Runner {
     if (v === null)
       throw new Error(`no signal "${signal}" (${this.info.signals.map((s) => s[0]).join(', ')})`);
     return v;
+  }
+
+  /** The drive signal of the board pin on a net (`FAN_PWM` → `A1.D9.drive`), if any. */
+  driveFor(net: string): string | undefined {
+    const board = this.device.board;
+    const pin = board?.pins.find((p) => p.net === net || p.net === `/${net}`);
+    return board && pin ? `${board.reference}.${pin.name}.drive` : undefined;
   }
 
   /** Whether the device has a signal. */

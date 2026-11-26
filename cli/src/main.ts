@@ -1,3 +1,4 @@
+import { buildCommand, simCommand, testCommand } from './commands.js';
 import { TRIAGE_VERSION } from './version.js';
 
 /** What a CLI invocation produced. `bin.ts` writes it to the process. */
@@ -11,7 +12,7 @@ export interface CliResult {
 export const EXIT_USAGE = 2;
 
 /** Commands planned in PLAN §4.10. They arrive with their work packages. */
-const PLANNED_COMMANDS = ['build', 'sim', 'test', 'erc', 'drc', 'export'] as const;
+const PLANNED_COMMANDS = ['erc', 'drc', 'export'] as const;
 
 export function usage(): string {
   return [
@@ -20,6 +21,14 @@ export function usage(): string {
     'Usage: triage <command>',
     '',
     'Commands:',
+    '  test [PROJECT] [--scenario FILE]… [--report FILE.json]',
+    '              Run the scenarios in simulation/scenarios/ (exit 1 if one fails)',
+    '  sim run [PROJECT] --scope NAME --for 5s [--set CONTROL=VALUE]… [--watch SIGNAL]…',
+    '              Run a scope (whole-device, circuit, code, mechanism, a saved one)',
+    '  sim scopes [PROJECT]',
+    '              List the scopes',
+    '  build [PROJECT]',
+    '              Build the firmware (avr-gcc and the Arduino AVR core)',
     '  help        Show this help',
     '  version     Print the version',
     '',
@@ -41,6 +50,20 @@ export function run(argv: readonly string[]): CliResult {
     case '--version':
     case '-v':
       return { exitCode: 0, stdout: `triage ${TRIAGE_VERSION}\n`, stderr: '' };
+    case 'test':
+    case 'sim':
+    case 'build': {
+      const commands = { test: testCommand, sim: simCommand, build: buildCommand };
+      try {
+        return commands[command](argv.slice(1));
+      } catch (error) {
+        return {
+          exitCode: 1,
+          stdout: '',
+          stderr: `triage ${command}: ${error instanceof Error ? error.message : String(error)}\n`,
+        };
+      }
+    }
     default: {
       const planned = (PLANNED_COMMANDS as readonly string[]).includes(command);
       const reason = planned ? 'is not available yet' : 'is not a triage command';

@@ -9,3 +9,4 @@ export * from './i2c.js';
 export * from './project.js';
 export * from './runner.js';
 export * from './ssd1306.js';
+export * from './scenario.js';
