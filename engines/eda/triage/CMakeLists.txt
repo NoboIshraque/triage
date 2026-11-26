@@ -70,7 +70,8 @@ target_sources( pcbnew_kiface PRIVATE
     ${TRIAGE_FACE_COMMON_SRCS}
     ${CMAKE_CURRENT_SOURCE_DIR}/pcb/pcb_face.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/pcb/pcb_edit.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/pcb/pcb_route.cpp )
+    ${CMAKE_CURRENT_SOURCE_DIR}/pcb/pcb_route.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/pcb/pcb_board3d.cpp )
 target_compile_definitions( pcbnew_kiface PRIVATE KICAD_TRIAGE )
 target_include_directories( pcbnew_kiface PRIVATE
     ${CMAKE_SOURCE_DIR}/pcbnew/python/scripting )

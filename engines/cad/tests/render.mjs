@@ -3,6 +3,7 @@
 // screenshots, frame times, how much of the picture is covered, and picking.
 //
 //   node engines/cad/tests/render.mjs [--out dir] [--size 1200x800] [--board board3d.json]
+//                                     [--explode mm]   (lifts an enclosure's lid)
 //
 // It opens the Smart Fan's FreeCAD documents through the staged engine, plus the
 // board (board.update) when a GetBoard3D answer is given as JSON, and draws them
@@ -107,6 +108,16 @@ async function main() {
       const { result: opened } = await engine.call('document.open', {
         path: path.join(root, 'examples', 'smart-fan', 'mechanical', name),
       });
+      const enclosure = opened.objects.find((o) => o.proxy === 'Enclosure');
+      if (enclosure && argument('--explode')) {
+        // Lifts the lid for the picture, so the board inside shows.
+        await engine.call('object.setProperty', {
+          doc: opened.name,
+          object: enclosure.name,
+          property: 'ExplodeLid',
+          value: Number(argument('--explode')),
+        });
+      }
       const { result, meshes } = await engine.call('document.tessellate', { doc: opened.name });
       add(opened.name, result, meshes);
     }

@@ -127,6 +127,7 @@ private:
         case pb::Request::kGetItems: return aRequest.get_items().document();
         case pb::Request::kHighlight: return aRequest.highlight().document();
         case pb::Request::kRoute: return aRequest.route().document();
+        case pb::Request::kGetBoard3D: return aRequest.get_board_3d().document();
         default: return 0;
         }
     }
@@ -422,6 +423,38 @@ int dump( HOST& aHost, const std::string& aFile, const std::string& aPrefix )
     std::ofstream( aPrefix + ".info.json" ) << toJson( info );
     std::ofstream( aPrefix + ".list.json" ) << toJson( list );
     std::ofstream( aPrefix + ".netlist.json" ) << toJson( netlist );
+
+    // Boards: the 3D view's board too (ROADMAP P2-3), for scripts and the CAD engine's
+    // tests, which then need no protobuf client.
+    if( info.document().kind() == pb::DOCUMENT_KIND_BOARD )
+    {
+        BULK_SINK    none = []( std::string&& ) {};
+        pb::Request  open;
+        pb::Response opened, board;
+        open.set_id( 100 );
+        open.mutable_open_document()->set_path( aFile );
+        aHost.Handle( open, opened, none );
+
+        if( !opened.ok() )
+        {
+            std::fprintf( stderr, "triage-eda-engine: %s\n", opened.error().c_str() );
+            return 1;
+        }
+
+        pb::Request request;
+        request.set_id( 101 );
+        request.mutable_get_board_3d()->set_document( opened.document().document() );
+        aHost.Handle( request, board, none );
+
+        if( !board.ok() )
+        {
+            std::fprintf( stderr, "triage-eda-engine: %s\n", board.error().c_str() );
+            return 1;
+        }
+
+        std::ofstream( aPrefix + ".board3d.json" ) << toJson( board.board_3d() );
+    }
+
     return 0;
 }
 

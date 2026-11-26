@@ -308,6 +308,43 @@ describe('packaged Triage app', () => {
     await window.screenshot({ path: shot('engineering-layout') });
   });
 
+  // ROADMAP P2-3: the 3D tab draws the project's FreeCAD documents through FreeCAD's
+  // engine, and the board through KiCad's when that ships too.
+  const cadDir = path.join(app.folder, 'resources', 'app', 'engines', 'cad');
+  const cadShipped = existsSync(path.join(cadDir, 'bin', `FreeCADCmd${exe}`));
+  if (process.env['TRIAGE_REQUIRE_CAD'] === '1' && !cadShipped) {
+    throw new Error(`TRIAGE_REQUIRE_CAD is set but ${cadDir} has no engine`);
+  }
+  const cadIt = cadShipped ? it : it.skip;
+  const cadView = () => window.locator('.triage-cad-view');
+  /** The share of the 3D canvas that isn't background (the view keeps its last frame). */
+  const cadCoverage = async () =>
+    Number(
+      await window.evaluate(`(() => {
+        const canvas = document.querySelector('.triage-cad-canvas');
+        const gl = canvas && canvas.getContext('webgl2');
+        if (!gl) return 0;
+        const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+        gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        let covered = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          const d = Math.abs(pixels[i] - pixels[0]) + Math.abs(pixels[i + 1] - pixels[1]) + Math.abs(pixels[i + 2] - pixels[2]);
+          if (d > 24) covered++;
+        }
+        return covered / (pixels.length / 4);
+      })()`),
+    );
+
+  cadIt("draws the Smart Fan in the 3D tab with FreeCAD's engine", async () => {
+    await expect
+      .poll(() => cadView().getAttribute('data-state'), { timeout: 180_000 })
+      .toBe('ready');
+    expect(Number(await cadView().getAttribute('data-objects'))).toBeGreaterThan(0);
+    expect(await cadView().getAttribute('data-board')).toBe(edaShipped ? 'shown' : 'error');
+    await expect.poll(cadCoverage, { timeout: 30_000 }).toBeGreaterThan(0.01);
+    await window.screenshot({ path: shot('cad-view') });
+  });
+
   // ROADMAP P1-4: the Schematic and Board tabs drawn by KiCad's engine.
   const edaView = (kind: string) => window.locator(`.triage-eda-view[data-triage-eda="${kind}"]`);
 

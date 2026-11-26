@@ -100,6 +100,8 @@ export class CadView extends Disposable {
 	private readonly status: HTMLElement;
 	private renderer: CadRenderer | undefined;
 	private readonly docDisposables = this._register(new DisposableStore());
+	/** The outliner rows' listeners, replaced at each render. */
+	private readonly outlinerDisposables = this._register(new DisposableStore());
 
 	private readonly documents = new Map<string, LoadedDocument>();
 	private mechanicalPaths: readonly string[] = [];
@@ -402,6 +404,7 @@ export class CadView extends Disposable {
 	/** What tests read: how many objects are drawn, and whether the board is. */
 	private updateDataset(): void {
 		this.element.dataset['objects'] = String(this.objects.length);
+		this.element.dataset['hidden'] = this.objects.filter(o => !o.visible).map(o => o.key).join(' ');
 		this.element.dataset['problems'] = String(this.problems.filter(p => p.severity === 'error').length);
 		this.element.dataset['problemObjects'] = this.objects.filter(o => o.problem).map(o => o.key).join(' ');
 		this.element.dataset['board'] = !this.boardPath ? 'none' : this.boardError ? 'error' : 'shown';
@@ -546,6 +549,18 @@ export class CadView extends Disposable {
 			case 'Home': renderer.frame(); break;
 			case 'Escape': this.select(undefined, false); return true;
 			case 'KeyN': this.togglePanel(); break;
+			// Blender: H hides the selection, Alt+H shows everything, Shift+H isolates it.
+			case 'KeyH':
+				if (event.altKey) {
+					this.setVisible(() => true);
+				} else if (event.shiftKey && this.selection) {
+					const keep = this.selection;
+					this.setVisible(object => object.key === keep);
+				} else if (this.selection) {
+					const hide = this.selection;
+					this.setVisible(object => object.visible && object.key !== hide);
+				}
+				break;
 			default: return false;
 		}
 		this.scheduleRender();
@@ -579,6 +594,16 @@ export class CadView extends Disposable {
 
 	// ---- Selection, outliner and properties -----------------------------------------------------
 
+	/** Shows the objects `visible` says yes to and hides the others. */
+	setVisible(visible: (object: SceneObject) => boolean): void {
+		for (const object of this.objects) {
+			object.visible = visible(object);
+		}
+		this.renderOutliner();
+		this.updateDataset();
+		this.scheduleRender();
+	}
+
 	/** Blender's N panel: shows or hides the outliner and properties. */
 	private togglePanel(): void {
 		const shown = this.element.classList.contains('narrow')
@@ -601,9 +626,16 @@ export class CadView extends Disposable {
 
 	private renderOutliner(): void {
 		clearNode(this.outliner);
+		this.outlinerDisposables.clear();
 		for (const doc of this.documents.values()) {
-			const row = append(this.outliner, $('.triage-cad-doc', undefined, doc.label));
+			const row = append(this.outliner, $('.triage-cad-doc'));
 			row.title = doc.path ?? doc.label;
+			const docObjects = this.objects.filter(o => o.key.startsWith(`${doc.name}/`));
+			this.eye(row, docObjects.some(o => o.visible), () => {
+				const show = !docObjects.some(o => o.visible);
+				this.setVisible(o => o.key.startsWith(`${doc.name}/`) ? show : o.visible);
+			});
+			append(row, $('span', undefined, doc.label));
 			const shown = new Set(doc.meshes.map(m => m.object));
 			for (const item of doc.objects) {
 				if (!shown.has(item.name) && item.parent === null && !item.children.length) {
@@ -613,15 +645,30 @@ export class CadView extends Disposable {
 					continue;
 				}
 				const key = `${doc.name}/${item.name}`;
-				const entry = append(this.outliner, $('.triage-cad-item', undefined, item.label));
+				const entry = append(this.outliner, $('.triage-cad-item'));
+				const drawn = this.renderer?.getObject(key);
+				if (drawn) {
+					this.eye(entry, drawn.visible, () => this.setVisible(o => o.key === key ? !o.visible : o.visible));
+				}
+				append(entry, $('span', undefined, item.label));
 				entry.dataset['key'] = key;
 				entry.title = `${item.label} (${item.type})`;
 				entry.classList.toggle('selected', key === this.selection);
 				entry.classList.toggle('invalid', item.state.includes('Invalid'));
 				entry.classList.toggle('problem', this.renderer?.getObject(key)?.problem === true);
-				this._register(addDisposableListener(entry, EventType.CLICK, () => this.select(key, false)));
+				this.outlinerDisposables.add(addDisposableListener(entry, EventType.CLICK, () => this.select(key, false)));
 			}
 		}
+	}
+
+	/** An eye toggle at the start of an outliner row. */
+	private eye(row: HTMLElement, visible: boolean, toggle: () => void): void {
+		const icon = append(row, $(`span.triage-cad-eye.codicon.codicon-${visible ? 'eye' : 'eye-closed'}`));
+		icon.title = visible ? localize('triage.cad.hide', "Hide (H)") : localize('triage.cad.show', "Show (Alt+H shows everything)");
+		this.outlinerDisposables.add(addDisposableListener(icon, EventType.CLICK, event => {
+			event.stopPropagation();
+			toggle();
+		}));
 	}
 
 	private async renderProperties(): Promise<void> {

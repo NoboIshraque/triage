@@ -285,6 +285,107 @@ describe.skipIf(!available)('CAD engine (FreeCAD App layer over JSON-RPC)', () =
     expect((await client.call<unknown[]>('document.list')).result.length).toBeGreaterThan(0);
   });
 
+  // ROADMAP P2-4, P2-5: the Smart Fan's real board (GetBoard3D, kept as a fixture by
+  // scripts/examples/smart-fan-enclosure.mjs), its enclosure and the fit checks.
+  const boardFixture = path.join(
+    repoRoot,
+    'engines',
+    'cad',
+    'tests',
+    'fixtures',
+    'smart-fan-board3d.json',
+  );
+  interface BoardResult {
+    doc: string;
+    parts: { reference: string; height: number; object: string | null }[];
+    mountingHoles: unknown[];
+  }
+  interface Fit {
+    problems: {
+      severity: string;
+      kind: string;
+      message: string;
+      a: { object: string };
+      b: { object: string };
+    }[];
+  }
+
+  it('gives the Smart Fan board a printable enclosure that follows it', async () => {
+    const board = JSON.parse(readFileSync(boardFixture, 'utf8')) as Record<string, unknown>;
+    const built = (await client.call<BoardResult>('board.update', { board })).result;
+    expect(built.parts.filter((p) => p.object).length).toBeGreaterThan(3);
+    expect(built.mountingHoles.length).toBeGreaterThan(0);
+
+    const enclosurePath = path.join(work, 'mechanical', 'enclosure.FCStd');
+    const doc = (await client.call<CadDocument>('document.open', { path: enclosurePath })).result
+      .name;
+    const item = (await client.call<CadDocument>('document.tree', { doc })).result.objects.find(
+      (o) => o.proxy === 'Enclosure',
+    );
+    expect(item).toBeDefined();
+    const enclosure = await client.call<{ solids: { valid: boolean; closed: boolean }[] }>(
+      'enclosure.fromBoard',
+      { doc },
+    );
+    expect(enclosure.result.solids).toHaveLength(2);
+    for (const solid of enclosure.result.solids)
+      expect(solid).toMatchObject({ valid: true, closed: true });
+
+    // Done when: changing the wall thickness recomputes live.
+    const tessellate = async () =>
+      (await client.call<CadTessellation>('document.tessellate', { doc })).result.meshes[0];
+    const before = await tessellate();
+    const started = Date.now();
+    const edited = await client.call<{ recompute: CadRecompute }>('object.setProperty', {
+      doc,
+      object: item?.name ?? 'Enclosure',
+      property: 'WallThickness',
+      value: '3 mm',
+    });
+    const after = await tessellate();
+    timings.wallThicknessMs = Date.now() - started;
+    expect(edited.result.recompute.errors).toEqual([]);
+    expect(after.box[3] - after.box[0]).toBeCloseTo(before.box[3] - before.box[0] + 2, 3);
+
+    // Printable: each part as a closed STL.
+    const exported = await client.call<{
+      files: { path: string; valid: boolean; closed: boolean }[];
+    }>('enclosure.export', { doc, folder: path.join(work, 'exports') });
+    expect(exported.result.files.map((f) => path.basename(f.path))).toEqual([
+      'base.stl',
+      'lid.stl',
+    ]);
+    for (const file of exported.result.files) {
+      expect(file).toMatchObject({ valid: true, closed: true });
+      expect(existsSync(file.path)).toBe(true);
+    }
+
+    // The board fits its enclosure.
+    const fit = (await client.call<Fit>('checks.fit', { docs: [built.doc, doc] })).result;
+    expect(fit.problems.filter((p) => p.severity === 'error')).toEqual([]);
+  });
+
+  // ROADMAP P2-5, done when: a deliberately tall part is a problem.
+  it('finds a deliberately tall part that hits the lid', async () => {
+    const board = JSON.parse(readFileSync(boardFixture, 'utf8')) as {
+      footprints: { reference: string; height?: number }[];
+    };
+    const tall = board.footprints.find((f) => f.reference === 'R1') ?? board.footprints[0];
+    tall.height = 60;
+    const built = (await client.call<BoardResult>('board.update', { board })).result;
+    const doc = (
+      await client.call<CadDocument>('document.open', {
+        path: path.join(work, 'mechanical', 'enclosure.FCStd'),
+      })
+    ).result.name;
+    await client.call('enclosure.fromBoard', { doc });
+    const fit = (await client.call<Fit>('checks.fit', { docs: [built.doc, doc] })).result;
+    const errors = fit.problems.filter((p) => p.severity === 'error');
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors[0].kind).toBe('interference');
+    expect(errors.some((p) => p.message.includes(tall.reference))).toBe(true);
+  });
+
   it('comes back after being killed', async () => {
     const before = supervisor.state.kind === 'connected' ? supervisor.state.pid : -1;
     supervisor.kill();

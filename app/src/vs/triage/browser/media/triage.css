@@ -365,3 +365,20 @@
 	display: block;
 	flex-basis: 200px;
 }
+
+.triage-cad-view .triage-cad-eye {
+	margin-right: 6px;
+	cursor: pointer;
+	opacity: 0.8;
+	font-size: 12px;
+	vertical-align: middle;
+}
+
+.triage-cad-view .triage-cad-eye.codicon-eye-closed {
+	opacity: 0.45;
+}
+
+.triage-cad-view .triage-cad-doc {
+	display: flex;
+	align-items: center;
+}
