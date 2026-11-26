@@ -1,8 +1,9 @@
 /*---------------------------------------------------------------------------------------------
  *  Triage. Licensed under GPL-3.0-or-later (see docs/PLAN.md §5).
  *  The tabs of the Engineering layout. Schematic and Board show the project's
- *  KiCad files through the EDA engine (ROADMAP P1-4); 3D and Sim are still
- *  placeholders that say which work package fills them.
+ *  KiCad files through the EDA engine (ROADMAP P1-4); 3D shows its FreeCAD
+ *  documents and the board through the CAD engine (P2-3); Sim is still a
+ *  placeholder that says which work package fills it.
  *--------------------------------------------------------------------------------------------*/
 
 import { $, append, Dimension, reset } from '../../base/browser/dom.js';
@@ -23,6 +24,7 @@ import { EditorInput } from '../../workbench/common/editor/editorInput.js';
 import { IEditorGroup } from '../../workbench/services/editor/common/editorGroupsService.js';
 import { ITriageProjectService, TriageProjectState } from '../common/projectModel.js';
 import { ITriageView, TRIAGE_VIEW_SCHEME, TriageViewKind, triageView } from '../common/triage.js';
+import { CadView } from './cad/cadView.js';
 import { EdaDocumentView } from './eda/edaDocumentView.js';
 
 export class TriageViewInput extends EditorInput {
@@ -95,11 +97,28 @@ export function kicadFileFor(state: TriageProjectState, kind: TriageViewKind): s
 	return join(state.project.root, domainPath, project.path.replace(/\.kicad_pro$/, extension));
 }
 
+/** The project's FreeCAD documents (absolute paths), as its triage.toml lists them. */
+export function freecadFilesFor(state: TriageProjectState): string[] {
+	if (state.kind !== 'project') {
+		return [];
+	}
+	const mechanical = state.project.domains.find(domain => domain.id === 'mechanical');
+	if (!mechanical) {
+		return [];
+	}
+	return mechanical.files
+		.filter(file => file.exists && /\.fcstd$/i.test(file.path))
+		.map(file => join(state.project.root, file.path.startsWith(mechanical.path) ? '' : mechanical.path, file.path));
+}
+
 export class TriageViewEditor extends EditorPane {
 	static readonly ID = 'workbench.editor.triageView';
 
 	private container!: HTMLElement;
 	private readonly eda = this._register(new MutableDisposable<EdaDocumentView>());
+	private readonly cad = this._register(new MutableDisposable<CadView>());
+	/** What the 3D view shows, so a project refresh that changes nothing keeps it. */
+	private cadSources = '';
 	private readonly projectListener = this._register(new MutableDisposable());
 	private dimension: Dimension | undefined;
 
@@ -130,9 +149,45 @@ export class TriageViewEditor extends EditorPane {
 			this.showKicad(view);
 			return;
 		}
+		if (view.kind === TriageViewKind.ThreeD) {
+			this.projectListener.value = this.projectService.onDidChangeState(() => this.showCad(view));
+			if (this.projectService.state.kind === 'none') {
+				void this.projectService.refresh();
+			}
+			this.showCad(view);
+			return;
+		}
 		this.eda.clear();
+		this.cad.clear();
 		this.projectListener.clear();
 		this.showCard(view);
+	}
+
+	/** The 3D view of the project's FreeCAD documents and board; the card without them. */
+	private showCad(view: ITriageView): void {
+		const state = this.projectService.state;
+		const documents = freecadFilesFor(state);
+		const board = kicadFileFor(state, TriageViewKind.Board);
+		if (documents.length === 0 && !board) {
+			this.cad.clear();
+			this.cadSources = '';
+			this.showCard(view, state.kind === 'loading'
+				? localize('triage.view.loadingProject', "Loading the project…")
+				: localize('triage.view.noFreecad', "Open a Triage project whose triage.toml names FreeCAD documents ([mechanical] documents) or a KiCad project."));
+			return;
+		}
+		const sources = JSON.stringify([documents, board]);
+		if (this.cad.value && this.cadSources === sources) {
+			return;
+		}
+		this.cadSources = sources;
+		const cadView = this.instantiationService.createInstance(CadView);
+		this.cad.value = cadView;
+		reset(this.container, cadView.element);
+		if (this.dimension) {
+			cadView.layout(this.dimension.width, this.dimension.height);
+		}
+		void cadView.open(documents, board);
 	}
 
 	/** Engine views of Schematic and Board; the card while there is no KiCad file. */
@@ -175,9 +230,15 @@ export class TriageViewEditor extends EditorPane {
 		return this.eda.value;
 	}
 
+	/** The 3D view in this tab, if it shows one (commands and tests use it). */
+	get cadView(): CadView | undefined {
+		return this.cad.value;
+	}
+
 	override focus(): void {
 		super.focus();
 		this.eda.value?.element.focus();
+		this.cad.value?.element.focus();
 	}
 
 	override layout(dimension: Dimension): void {
@@ -185,5 +246,6 @@ export class TriageViewEditor extends EditorPane {
 		this.container.style.width = `${dimension.width}px`;
 		this.container.style.height = `${dimension.height}px`;
 		this.eda.value?.layout(dimension.width, dimension.height);
+		this.cad.value?.layout(dimension.width, dimension.height);
 	}
 }

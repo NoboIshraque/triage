@@ -14,7 +14,8 @@
 #
 # Methods: engine.info, document.open, document.new, document.close, document.list,
 # document.tree, document.recompute, document.save, document.undo, document.redo,
-# document.tessellate, object.properties, object.setProperty.
+# document.tessellate, object.properties, object.setProperty, board.update,
+# enclosure.fromBoard, enclosure.export, checks.fit.
 import json
 import os
 import sys
@@ -23,7 +24,7 @@ import traceback
 
 import FreeCAD
 
-from . import documents
+from . import board, checks, documents, enclosure
 from .documents import INVALID_PARAMS, RpcError
 from .tessellation import pack_mesh, mesh_shape
 from .transport import ERROR, HELLO, PING, PONG, Closed, Connection
@@ -167,6 +168,59 @@ class Engine:
         result["objects"] = documents.tree(doc)
         return result
 
+    def board_update(self, params, request_id):
+        """Builds the board document from the KiCad engine's GetBoard3D (as JSON)."""
+        return board.update(_param(params, "board", dict))
+
+    def enclosure_from_board(self, params, request_id):
+        """Creates or updates the enclosure in a document from the last board.update."""
+        doc = documents.document(_param(params, "doc", str))
+        if not board.LAST:
+            raise RpcError(INVALID_PARAMS, "no board yet: call board.update first")
+        board_doc = documents.document(board.LAST["doc"])
+        feature = enclosure.find(doc)
+        if feature is None:
+            doc.openTransaction("Enclosure from board")
+            feature = enclosure.create(doc, enclosure.board_inputs(board_doc, board.LAST))
+            doc.commitTransaction()
+            changed = True
+        else:
+            doc.openTransaction("Enclosure follows the board")
+            changed = enclosure.update_from_board(feature, enclosure.board_inputs(board_doc, board.LAST))
+            doc.commitTransaction()
+        result = documents.recompute(doc) if changed else {"recomputed": 0, "errors": []}
+        return {
+            "object": feature.Name,
+            "changed": changed,
+            "recompute": result,
+            "solids": [_solid_info(s) for s in feature.Shape.Solids],
+            "objects": documents.tree(doc),
+        }
+
+    def enclosure_export(self, params, request_id):
+        """Writes the enclosure's parts as STL files for printing (base.stl, lid.stl)."""
+        doc = documents.document(_param(params, "doc", str))
+        folder = os.path.abspath(_param(params, "folder", str))
+        feature = enclosure.find(doc)
+        if feature is None:
+            raise RpcError(documents.NOT_FOUND, f"{doc.Name} has no enclosure")
+        os.makedirs(folder, exist_ok=True)
+        files = []
+        for name, solid in zip(("base", "lid"), feature.Shape.Solids):
+            path = os.path.join(folder, f"{name}.stl")
+            solid.exportStl(path)
+            files.append({"path": path, **_solid_info(solid)})
+        return {"files": files}
+
+    def checks_fit(self, params, request_id):
+        """Interference and clearance between the drawn solids of the given documents."""
+        names = _param(params, "docs", list)
+        clearance = float(_param(params, "minClearance", (int, float), 1.0, required=False))
+        started = time.perf_counter()
+        result = checks.fit(names, clearance)
+        result["milliseconds"] = round((time.perf_counter() - started) * 1000, 1)
+        return result
+
     METHODS = {
         "engine.info": engine_info,
         "document.open": document_open,
@@ -181,6 +235,10 @@ class Engine:
         "document.tessellate": document_tessellate,
         "object.properties": object_properties,
         "object.setProperty": object_set_property,
+        "board.update": board_update,
+        "enclosure.fromBoard": enclosure_from_board,
+        "enclosure.export": enclosure_export,
+        "checks.fit": checks_fit,
     }
 
     # --- the loop ---------------------------------------------------------------
@@ -228,6 +286,17 @@ class Engine:
                 self.connection.send(RESPONSE, json.dumps(response, allow_nan=False).encode("utf-8"))
             else:
                 self.connection.send_text(ERROR, f"unknown frame type {frame_type}")
+
+
+def _solid_info(solid):
+    """What makes a solid printable: valid, closed, and how big."""
+    box = solid.BoundBox
+    return {
+        "valid": solid.isValid(),
+        "closed": all(shell.isClosed() for shell in solid.Shells),
+        "volume": solid.Volume,
+        "size": [box.XLength, box.YLength, box.ZLength],
+    }
 
 
 def _importable(module):

@@ -106,6 +106,8 @@ def tree(doc):
                 "visible": bool(getattr(o, "Visibility", True)),
                 "shown": shown(o),
                 "tip": o.Tip.Name if getattr(o, "Tip", None) is not None and hasattr(o.Tip, "Name") else None,
+                # Python features name their class (Triage's Enclosure …).
+                "proxy": type(getattr(o, "Proxy", None)).__name__ if getattr(o, "Proxy", None) is not None else None,
             }
         )
     return items
@@ -276,13 +278,18 @@ def set_property(doc, o, name, value):
 # --- Meshes -----------------------------------------------------------------------
 
 
+# Functions that may know an object's colour (board.py adds Triage's own property).
+COLOUR_HOOKS = []
+
+
 def _colour(o):
-    """A shape's colour, if the document records one (ShapeMaterial or a legacy
-    ShapeColor property); else None and the view picks its default."""
-    for name in ("ShapeColor",):
-        value = getattr(o, name, None)
-        if isinstance(value, tuple) and len(value) >= 3:
-            return [float(value[0]), float(value[1]), float(value[2])]
+    """An object's colour, if something records one; else None and the view picks
+    its default. (FreeCAD keeps colours in the GUI's view providers, which the
+    engine doesn't have.)"""
+    for hook in COLOUR_HOOKS:
+        colour = hook(o)
+        if colour is not None:
+            return colour
     return None
 
 

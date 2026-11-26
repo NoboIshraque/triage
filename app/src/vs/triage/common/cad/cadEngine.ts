@@ -53,6 +53,8 @@ export interface CadTreeItem {
 	/** Whether the 3D view draws it (document.tessellate's default set). */
 	readonly shown: boolean;
 	readonly tip: string | null;
+	/** A Python feature's class (Triage's "Enclosure" …), else null. */
+	readonly proxy: string | null;
 }
 
 export interface CadDocument {
