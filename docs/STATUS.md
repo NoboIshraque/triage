@@ -71,6 +71,12 @@ minutes, and kicad-cli passed all 54 demo files on Windows; the engine's
 `--load-all` report then broke on Windows paths (backslashes written into JSON
 by hand). It now writes the lines with a JSON library.
 
+The Windows compiler cache was empty: all 1,953 MSVC compiles were
+"uncacheable" (EDA run 12), because KiCad forces `/Zi` debug info unless its own
+`USE_CCACHE` switch is on, and only then uses `/Z7`, which ccache can cache.
+The build script now turns on KiCad's switch instead of setting the launcher
+itself, so later Windows builds reuse the cache instead of taking 70 minutes.
+
 ### Try P1 on Windows (the M1 owner check, once CI builds it)
 
 1. **Actions → App →** the newest green run → artifact **triage-Windows** (it

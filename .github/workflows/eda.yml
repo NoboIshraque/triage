@@ -84,7 +84,7 @@ jobs:
         run: |
           ccache --zero-stats
           node engines/eda/build.mjs build --ccache
-          ccache --show-stats
+          ccache --show-stats -v
 
       - name: Save the compiler cache
         if: always()
@@ -233,7 +233,7 @@ jobs:
         run: |
           & $env:CCACHE_EXE --zero-stats
           node engines/eda/build.mjs build --ccache
-          & $env:CCACHE_EXE --show-stats
+          & $env:CCACHE_EXE --show-stats -v
 
       - name: Save the compiler cache
         if: always()

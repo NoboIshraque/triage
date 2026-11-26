@@ -78,10 +78,18 @@ function cmakeOptions({ ccache, debug }) {
     KICAD_USE_PCH: ccache ? 'OFF' : 'ON',
   };
   if (ccache) {
-    // CCACHE_EXE: a specific ccache (setup.ps1 -Eda skips Strawberry Perl's old one).
-    const launcher = (process.env.CCACHE_EXE || 'ccache').split(path.sep).join('/');
-    options.CMAKE_C_COMPILER_LAUNCHER = launcher;
-    options.CMAKE_CXX_COMPILER_LAUNCHER = launcher;
+    // KiCad's own switch: it adds the launcher, and with MSVC it also switches
+    // debug info to /Z7, without which ccache caches nothing (KiCad otherwise
+    // forces /Zi; EDA run 12: 1953 of 1953 Windows compiles uncacheable).
+    // CCACHE_FOUND pre-sets KiCad's find_program result: CCACHE_EXE names a
+    // specific ccache (setup.ps1 -Eda skips Strawberry Perl's old one).
+    options.USE_CCACHE = 'ON';
+    // KiCad prepends ccache to these: clear what an older configure cached.
+    options.CMAKE_C_COMPILER_LAUNCHER = '';
+    options.CMAKE_CXX_COMPILER_LAUNCHER = '';
+    if (process.env.CCACHE_EXE) {
+      options.CCACHE_FOUND = process.env.CCACHE_EXE.split(path.sep).join('/');
+    }
   }
   if (isWindows) {
     const vcpkgRoot = process.env.VCPKG_ROOT;
@@ -95,8 +103,6 @@ function cmakeOptions({ ccache, debug }) {
       .join('/');
     options.VCPKG_TARGET_TRIPLET = 'x64-windows';
     options.KICAD_WIN32_DPI_AWARE = 'ON';
-    // ccache caches MSVC objects only with embedded debug information.
-    if (ccache) options.CMAKE_MSVC_DEBUG_INFORMATION_FORMAT = 'Embedded';
     options.CMAKE_POLICY_DEFAULT_CMP0141 = 'NEW';
   } else {
     options.KICAD_WAYLAND = 'OFF';
