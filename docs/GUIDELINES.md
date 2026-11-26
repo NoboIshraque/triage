@@ -18,6 +18,7 @@ project coherent across many sessions.
 
 **Start (first minutes)**
 1. Read `CLAUDE.md`, then `docs/STATUS.md`: the current work package (WP), blockers and open questions.
+   Then `docs/CHECKS.md`: checks the owner marked done or wrote results into.
 2. Read that WP in `docs/ROADMAP.md`, plus the PLAN sections and ADRs it touches.
 3. State the goal and "done when" in two or three lines. If a decision the WP
    depends on is open, ask before building.
@@ -31,9 +32,11 @@ project coherent across many sessions.
 
 **End**
 1. Update `docs/STATUS.md`: WP status, what's done, what's next, known issues.
-2. Push.
-3. Tell the owner what now works, how to try it on Windows (which nightly, which
-   steps), what's next, and any questions.
+2. Add or update the owner's checks in `docs/CHECKS.md` (detailed steps; only the
+   owner marks a check done).
+3. Push.
+4. Tell the owner what now works, which checks in `docs/CHECKS.md` are new or
+   changed, what's next, and any questions.
 
 **One phase per session.** The owner starts each phase (P0, P1, …) in a new
 session. A session works through its phase's WPs in order. When the phase is
@@ -63,7 +66,8 @@ before continuing.
 - CI is green on **Windows and Linux** (macOS from P8).
 - **One window:** the feature works inside Triage. Needing the stock KiCad or
   FreeCAD window is allowed only where the ROADMAP lists the fallback.
-- **Milestone WPs:** the owner has run the exit demo on their Windows laptop.
+- **Milestone WPs:** the owner has run the exit demo on their Windows laptop
+  (a check in `docs/CHECKS.md`, which the owner marks done).
 - No performance budget from PLAN §4.14 regresses (benchmarks for touched areas).
 - Docs updated: user-facing notes, `STATUS.md`, and an ADR if a decision was made or changed.
 - **Deviations logged:** anything built differently from PLAN, ROADMAP,

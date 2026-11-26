@@ -17,6 +17,8 @@ import { ITriageProjectService } from '../common/projectModel.js';
 import { TriageProjectService } from './projectService.js';
 import { ITriageEdaEngineService } from '../common/eda/edaEngine.js';
 import { TriageEdaEngineService } from './edaEngineService.js';
+import { ITriageCadEngineService } from '../common/cad/cadEngineService.js';
+import { TriageCadEngineService } from './cadEngineService.js';
 import { registerWorkbenchContribution2, WorkbenchPhase } from '../../workbench/common/contributions.js';
 import { TriagePinMapContribution } from './pinMapContribution.js';
 import { ICommandService } from '../../platform/commands/common/commands.js';
@@ -25,6 +27,7 @@ import { join } from '../../base/common/path.js';
 registerSingleton(ITriageHelloEngineService, TriageHelloEngineService, InstantiationType.Delayed);
 registerSingleton(ITriageProjectService, TriageProjectService, InstantiationType.Delayed);
 registerSingleton(ITriageEdaEngineService, TriageEdaEngineService, InstantiationType.Delayed);
+registerSingleton(ITriageCadEngineService, TriageCadEngineService, InstantiationType.Delayed);
 
 registerAction2(class extends Action2 {
 	constructor() {

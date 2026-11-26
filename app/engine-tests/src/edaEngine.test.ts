@@ -248,6 +248,40 @@ describe.skipIf(!available)('triage-eda-engine', () => {
     expect(readFileSync(schematic, 'utf8')).toContain('"MOTOR_SPEED"');
   });
 
+  // ROADMAP P2-3 … P2-5: the board the 3D view and the enclosure are built from.
+  it('describes the board in 3D, with a height field added by an edit', async () => {
+    const document = (await eda.ok('openDocument', { path: board })).response.document
+      .document as number;
+    const read = async () => (await eda.ok('getBoard3d', { document })).response.board3d;
+    const before = await read();
+    expect(before.outlineOk).toBe(true);
+    expect(before.thickness).toBeCloseTo(1.6, 3);
+    expect(before.outlines).toHaveLength(1);
+    expect((before.outlines[0].points as Message[]).length).toBeGreaterThanOrEqual(4);
+    const references = (before.footprints as Message[]).map((f) => f.reference as string);
+    expect(references).toEqual(expect.arrayContaining(['A1', 'Q1', 'J1', 'H1', 'H2', 'H3']));
+    const h1 = (before.footprints as Message[]).find((f) => f.reference === 'H1');
+    expect(h1?.boardOnly).toBe(true);
+    const holes = (before.holes as Message[]).filter((h) => h.footprint === 'H1');
+    expect(holes.length).toBeGreaterThan(0);
+    expect(holes.some((h) => !h.plated && h.width >= 3)).toBe(true);
+    const q1 = (before.footprints as Message[]).find((f) => f.reference === 'Q1');
+    expect((q1?.courtyard as Message[]).length).toBeGreaterThanOrEqual(4);
+    expect(q1?.height ?? 0).toBe(0);
+
+    // A new user field, as the 3D tab's "Set a Part's Height" writes it: the live
+    // board answers with it before anything is saved.
+    await eda.ok('edit', {
+      document,
+      setField: { uuid: q1?.uuid, field: 'Height', text: '19 mm' },
+    });
+    const after = await read();
+    expect((after.footprints as Message[]).find((f) => f.reference === 'Q1')?.height).toBe(19);
+    await eda.ok('undo', { document });
+    const undone = await read();
+    expect((undone.footprints as Message[]).find((f) => f.reference === 'Q1')?.height ?? 0).toBe(0);
+  });
+
   it('comes back after being killed', async () => {
     const before = supervisor.state;
     supervisor.kill();

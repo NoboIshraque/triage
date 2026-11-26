@@ -178,10 +178,72 @@ describe('packaged Triage app', () => {
         naming: [],
       });
     }
-    // Triage's logo (K3 Slate, scripts/branding/icons.py) replaces VS Code's and Code-OSS's.
-    for (const logo of ['code-icon.svg', 'vscode-icon.svg']) {
+    // Triage's logo (K3 Slate, scripts/branding/icons.py) replaces VS Code's and Code-OSS's,
+    // and the Agents window's mark (the "Open in Agents" button and the Agents window).
+    for (const logo of [
+      'code-icon.svg',
+      'vscode-icon.svg',
+      'sessions-icon.svg',
+      'sessions-logo-light.svg',
+      'sessions-logo-dark.svg',
+    ]) {
       expect(readFileSync(path.join(appRoot, 'out', 'media', logo), 'utf8')).toContain('#1e293b');
     }
+  });
+
+  // ROADMAP P0-9, the second sweep (2026-11-26): texts written into code rather than
+  // the message files. GitHub's Copilot extension keeps its texts (mostly prompts for
+  // the language model; scripts/branding/rebrand.mjs).
+  it("doesn't name VS Code in built-in extensions' names, messages or the workbench's own texts", () => {
+    const appRoot = path.dirname(app.productJson);
+    const extensions = path.join(appRoot, 'extensions');
+    const localized = /\.t\(\s*("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\$]|\\.)*`)/g;
+    const scripts = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : scripts(full);
+        return entry.name.endsWith('.js') ? [full] : [];
+      });
+    const found: string[] = [];
+    for (const name of readdirSync(extensions)) {
+      const dir = path.join(extensions, name);
+      if (name === 'copilot' || !existsSync(path.join(dir, 'package.json'))) continue;
+      const manifest = JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8')) as {
+        displayName?: string;
+        description?: string;
+        contributes?: unknown;
+      };
+      const names = [manifest.displayName ?? '', manifest.description ?? ''];
+      JSON.stringify(manifest.contributes ?? {}, (key, value: unknown) => {
+        if (
+          ['displayName', 'description', 'title', 'label'].includes(key) &&
+          typeof value === 'string'
+        )
+          names.push(value);
+        return value;
+      });
+      found.push(...namingVSCode(names).map((text) => `${name}/package.json: ${text}`));
+      for (const script of scripts(dir)) {
+        const messages = [...readFileSync(script, 'utf8').matchAll(localized)].map(
+          (m) => m[1] ?? '',
+        );
+        found.push(
+          ...namingVSCode(messages).map((text) => `${path.relative(extensions, script)}: ${text}`),
+        );
+      }
+    }
+    const workbench = readFileSync(
+      path.join(appRoot, 'out', 'vs', 'workbench', 'workbench.desktop.main.js'),
+      'utf8',
+    );
+    const workbenchTexts = [
+      ...workbench.matchAll(/(?:localize2\(\d+,\s*|altText:\s*)("(?:[^"\\\n]|\\.)*")/g),
+    ].map((m) => m[1] ?? '');
+    for (const text of ['"VS Code Version"', '[VS Code Release Notes]']) {
+      if (workbench.includes(text)) workbenchTexts.push(text);
+    }
+    found.push(...namingVSCode(workbenchTexts).map((text) => `workbench: ${text}`));
+    expect(found).toEqual([]);
   });
 
   it('opens a window showing the workbench', async () => {
@@ -245,6 +307,120 @@ describe('packaged Triage app', () => {
     expect(top?.height ?? 0).toBeGreaterThan((bottom?.height ?? 0) * 0.6);
     await window.screenshot({ path: shot('engineering-layout') });
   });
+
+  // ROADMAP P2-3: the 3D tab draws the project's FreeCAD documents through FreeCAD's
+  // engine, and the board through KiCad's when that ships too.
+  const cadDir = path.join(app.folder, 'resources', 'app', 'engines', 'cad');
+  const cadShipped = existsSync(path.join(cadDir, 'bin', `FreeCADCmd${exe}`));
+  if (process.env['TRIAGE_REQUIRE_CAD'] === '1' && !cadShipped) {
+    throw new Error(`TRIAGE_REQUIRE_CAD is set but ${cadDir} has no engine`);
+  }
+  const cadIt = cadShipped ? it : it.skip;
+  const cadView = () => window.locator('.triage-cad-view');
+  /** The share of the 3D canvas that isn't background (the view keeps its last frame). */
+  const cadCoverage = async () =>
+    Number(
+      await window.evaluate(`(() => {
+        const canvas = document.querySelector('.triage-cad-canvas');
+        const gl = canvas && canvas.getContext('webgl2');
+        if (!gl) return 0;
+        const pixels = new Uint8Array(canvas.width * canvas.height * 4);
+        gl.readPixels(0, 0, canvas.width, canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        let covered = 0;
+        for (let i = 0; i < pixels.length; i += 4) {
+          const d = Math.abs(pixels[i] - pixels[0]) + Math.abs(pixels[i + 1] - pixels[1]) + Math.abs(pixels[i + 2] - pixels[2]);
+          if (d > 24) covered++;
+        }
+        return covered / (pixels.length / 4);
+      })()`),
+    );
+
+  cadIt("draws the Smart Fan in the 3D tab with FreeCAD's engine", async () => {
+    await expect
+      .poll(() => cadView().getAttribute('data-state'), { timeout: 180_000 })
+      .toBe('ready');
+    expect(Number(await cadView().getAttribute('data-objects'))).toBeGreaterThan(0);
+    expect(await cadView().getAttribute('data-board')).toBe(edaShipped ? 'shown' : 'error');
+    await expect.poll(cadCoverage, { timeout: 30_000 }).toBeGreaterThan(0.01);
+    await window.screenshot({ path: shot('cad-view') });
+  });
+
+  // ROADMAP P2-4: the enclosure's parameters are edited in the 3D tab's properties
+  // panel and it recomputes live; lifting its lid shows the board inside (P2-3).
+  cadIt("edits the enclosure's wall thickness in the properties panel", async () => {
+    const view = cadView();
+    const classes = (await view.getAttribute('class')) ?? '';
+    if (classes.includes('narrow') && !classes.includes('panel-open')) {
+      // The toolbar may be clipped in a narrow tab; the button still answers.
+      await view.locator('.triage-cad-button', { hasText: 'Panel' }).dispatchEvent('click');
+    }
+    await view.locator('.triage-cad-item', { hasText: 'Enclosure' }).first().click();
+    const edits = async () => Number((await view.getAttribute('data-edits')) ?? 0);
+    const edit = async (property: string, text: string) => {
+      const input = view.locator(`.triage-cad-property input[data-property="${property}"]`);
+      await input.waitFor({ state: 'visible', timeout: 30_000 });
+      const before = await edits();
+      await input.fill(text);
+      await input.press('Enter');
+      const started = Date.now();
+      await expect.poll(edits, { timeout: 30_000, interval: 25 }).toBe(before + 1);
+      return Date.now() - started;
+    };
+    const wallMs = await edit('WallThickness', '3 mm');
+    console.log(JSON.stringify({ wallThicknessEditMs: wallMs }));
+    expect(await view.locator('.triage-cad-status').textContent()).toContain(
+      'WallThickness changed',
+    );
+    expect(Number(await view.getAttribute('data-problems'))).toBe(0);
+    await edit('ExplodeLid', '40 mm');
+    await window.screenshot({ path: shot('cad-board-in-enclosure') });
+    await edit('ExplodeLid', '0 mm');
+    await edit('WallThickness', '2 mm');
+  });
+
+  // ROADMAP P2-3 (a board edit updates the 3D view) and P2-5 (a deliberately tall part
+  // gets a red highlight and a problem entry).
+  (cadShipped && edaShipped ? it : it.skip)(
+    'follows a board edit in 3D and reports a part too tall for the enclosure',
+    async () => {
+      const updates = async () => Number((await cadView().getAttribute('data-board-updates')) ?? 0);
+      const setHeight = async (reference: string, height: string) => {
+        const before = await updates();
+        await runCommand(window, "Triage: Set a Part's Height (3D and Fit Checks)");
+        const input = window.locator('.quick-input-widget .quick-input-box input');
+        const prompt = (text: string) =>
+          window
+            .locator('.quick-input-widget .quick-input-message', { hasText: text })
+            .waitFor({ state: 'visible', timeout: 30_000 });
+        await prompt('Part reference');
+        await input.fill(reference);
+        await window.keyboard.press('Enter');
+        await prompt(`Height of ${reference}`);
+        await input.fill(height);
+        await window.keyboard.press('Enter');
+        const started = Date.now();
+        await expect.poll(updates, { timeout: 60_000, interval: 50 }).toBeGreaterThan(before);
+        return Date.now() - started;
+      };
+      const problems = async () => Number((await cadView().getAttribute('data-problems')) ?? 0);
+      expect(await problems()).toBe(0);
+
+      const editToViewMs = await setHeight('R1', '60');
+      console.log(JSON.stringify({ boardEditTo3dMs: editToViewMs }));
+      await expect.poll(problems, { timeout: 30_000 }).toBeGreaterThan(0);
+      expect(await cadView().getAttribute('data-problem-objects')).toContain('R1');
+      await runCommand(window, 'View: Focus Problems (Errors, Warnings, Infos)');
+      await window
+        .locator('.markers-panel .marker-message', { hasText: 'R1' })
+        .first()
+        .waitFor({ state: 'visible', timeout: 30_000 });
+      await window.screenshot({ path: shot('cad-fit-problem') });
+
+      // Back to the height the footprint's kind gives (0 = not set).
+      await setHeight('R1', '0');
+      await expect.poll(problems, { timeout: 30_000 }).toBe(0);
+    },
+  );
 
   // ROADMAP P1-4: the Schematic and Board tabs drawn by KiCad's engine.
   const edaView = (kind: string) => window.locator(`.triage-eda-view[data-triage-eda="${kind}"]`);
@@ -446,6 +622,12 @@ describe('packaged Triage app', () => {
     const statusIds = await Promise.all(statusItems.map((item) => item.getAttribute('id')));
     expect(statusIds.filter((id) => id !== null && /chat|copilot/i.test(id))).toEqual([]);
     expect(await window.locator('.notification-toast', { hasText: 'Copilot' }).count()).toBe(0);
+  });
+  // ROADMAP P0-9: the rebrand rewrites checksummed bundles and updates their checksums,
+  // so VS Code's integrity check (it runs a few seconds after start) stays quiet.
+  it("doesn't say the installation is corrupt", async () => {
+    const corrupt = window.locator('.notification-toast', { hasText: 'appears to be corrupt' });
+    expect(await corrupt.count()).toBe(0);
   });
   // The owner's request (2026-11-24): views can also live in windows of their own.
   it('opens Schematic, Board, 3D and Sim in separate windows', async () => {

@@ -291,6 +291,31 @@ function buildEngines({ arch }) {
       `No EDA engine in ${path.relative(process.cwd(), edaStage)}: the Schematic and Board tabs will say so.`,
     );
   }
+  // The CAD engine (FreeCAD's App layer and Triage's engine host, ROADMAP P2-2),
+  // staged by engines/cad/build.mjs or downloaded from the CAD workflow.
+  const cadStage = path.join(
+    repoRoot,
+    'engines',
+    'cad',
+    'build',
+    isWindows ? 'windows' : 'linux',
+    'stage',
+  );
+  const cadTarget = path.join(target, 'cad');
+  rmSync(cadTarget, { recursive: true, force: true });
+  if (existsSync(cadStage)) {
+    cpSync(cadStage, cadTarget, { recursive: true, verbatimSymlinks: true });
+    if (!isWindows) {
+      // Artifacts lose the executable bit.
+      const freecad = path.join(cadTarget, 'bin', 'FreeCADCmd');
+      if (existsSync(freecad)) chmodSync(freecad, 0o755);
+    }
+    console.log(`Copied the CAD engine into ${path.relative(process.cwd(), cadTarget)}`);
+  } else {
+    console.log(
+      `No CAD engine in ${path.relative(process.cwd(), cadStage)}: the 3D tab will say so.`,
+    );
+  }
 }
 
 function dist({ arch }) {

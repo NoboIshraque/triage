@@ -28,6 +28,7 @@ message Request {
     GetItems get_items = 22;
     Highlight highlight = 23;
     Route route = 24;
+    GetBoard3D get_board_3d = 25;
   }
 }
 
@@ -48,6 +49,7 @@ message Response {
     EditResult edit = 15;
     Items items = 16;
     RouteResult route = 17;
+    Board3D board_3d = 18;
   }
 }
 
@@ -324,6 +326,73 @@ message RouteResult {
   uint32 removed = 6;     // board items it replaced (shoved tracks)
   string mode = 7;
   string note = 8;        // the router's failure reason, if any
+}
+
+// The board as the 3D view and the enclosure see it (ROADMAP P2-3 … P2-5), from the
+// engine's live board (edits included). Lengths in mm, in KiCad's board coordinates
+// (X right, Y down, as on the Board tab); the CAD side turns them into 3D (Y up).
+message GetBoard3D {
+  uint32 document = 1;
+}
+
+message Point2 {
+  double x = 1;
+  double y = 2;
+}
+
+// A closed outline with the cutouts inside it.
+message Outline {
+  repeated Point2 points = 1;
+  repeated Cutout cutouts = 2;
+}
+
+message Cutout {
+  repeated Point2 points = 1;
+}
+
+// A drilled hole: round (width == height) or a slot, with its rotation.
+message Hole {
+  double x = 1;
+  double y = 2;
+  double width = 3;
+  double height = 4;
+  double angle = 5;      // degrees
+  bool plated = 6;
+  string footprint = 7;  // the owning footprint's reference
+  string pad = 8;        // pad number ("" for mechanical holes)
+}
+
+// A footprint's 3D model entry, as written in the board (paths keep KiCad's variables).
+message Model3D {
+  string path = 1;
+  repeated double offset = 2;   // x, y, z (mm)
+  repeated double rotation = 3; // x, y, z (degrees)
+  repeated double scale = 4;    // x, y, z
+  bool show = 5;
+}
+
+message Footprint3D {
+  string uuid = 1;
+  string reference = 2;
+  string value = 3;
+  string footprint = 4;           // library id
+  double x = 5;
+  double y = 6;
+  double angle = 7;               // degrees
+  bool back = 8;                  // on the board's back
+  repeated Point2 courtyard = 9;  // the courtyard on its side (placed), or the
+                                  // footprint's bounding box where it has none
+  double height = 10;             // mm, from a "Height" field; 0 when the board doesn't say
+  repeated Model3D models = 11;
+  bool board_only = 12;           // KiCad's "not in schematic" footprints (mounting holes …)
+}
+
+message Board3D {
+  double thickness = 1;                  // mm
+  repeated Outline outlines = 2;         // the board's outline(s), as KiCad builds them for 3D
+  repeated Hole holes = 3;               // drilled pad holes (vias excluded)
+  repeated Footprint3D footprints = 4;
+  bool outline_ok = 5;                   // false: KiCad inferred the outline (Edge.Cuts not closed)
 }
 
 // Engine -> broker, unsolicited (frame type 0x23).

@@ -147,6 +147,7 @@ const FOOTPRINTS = {
   'PinHeader_1x04_P2.54mm_Vertical': 'Connector_PinHeader_2.54mm',
   BarrelJack_Horizontal: 'Connector_BarrelJack',
   SW_PUSH_6mm: 'Button_Switch_THT',
+  'MountingHole_3.2mm_M3': 'MountingHole',
 };
 
 function loadLibraries() {
@@ -325,6 +326,20 @@ const PLACEMENT = {
   J1: [30.48, 6.35, 0],
   J3: [30.48, 17.78, 0],
   J2: [16.51, 36.83, 0],
+};
+
+/**
+ * The Arduino Uno's mounting holes, relative to the Arduino footprint's pad 1 (mm):
+ * Arduino's drawing places them at (13.97, 2.54), (66.04, 7.62) and (66.04, 35.56)
+ * from the board's corner; in the footprint the board's edge is at x = -27.94 and its
+ * power and analog header (pad 1, y = 0) 2.54 mm from the edge. The Uno's fourth
+ * hole, (15.24, 50.8), sits 3.6 mm from the header's pad 32: too close for an M3
+ * screw head on the shield (KiCad's DRC says so), so the shield uses three.
+ */
+const MOUNTING_HOLES = {
+  H1: [-13.97, 0],
+  H2: [38.1, 5.08],
+  H3: [38.1, 33.02],
 };
 
 const fmt = (v) => Number(v.toFixed(4));
@@ -553,6 +568,32 @@ function board(libs, rootUuid, symbolUuids) {
       ['sheetname', q('/')],
       ['sheetfile', q(`${PROJECT}.kicad_sch`)],
     );
+    items.push(kept);
+  }
+
+  // Three of the Uno's M3 mounting holes (ROADMAP P2-4: the enclosure's screw bosses go
+  // under them), board-only footprints like those "Add Mounting Hole" places.
+  for (const [ref, [dx, dy]] of Object.entries(MOUNTING_HOLES)) {
+    const source = libs.footprints['MountingHole_3.2mm_M3'].tree;
+    const fp = structuredClone(source);
+    restoreQ(fp, source);
+    const kept = fp.filter(
+      (child, index) =>
+        index < 2 || !['version', 'generator', 'generator_version'].includes(head(child)),
+    );
+    kept[1] = q(FP('MountingHole_3.2mm_M3'));
+    const layerIndex = kept.findIndex((child) => head(child) === 'layer');
+    kept.splice(
+      layerIndex + 1,
+      0,
+      ['uuid', q(randomUUID())],
+      ['at', fmt(origin[0] + dx), fmt(origin[1] + dy)],
+    );
+    for (const child of kept) {
+      if (head(child) === 'property' && atomText(child[1]) === 'Reference') child[2] = q(ref);
+      // "Not in schematic": the holes have no symbols.
+      if (head(child) === 'attr' && !child.includes('board_only')) child.push('board_only');
+    }
     items.push(kept);
   }
 

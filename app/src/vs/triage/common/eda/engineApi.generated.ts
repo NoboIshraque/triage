@@ -53,6 +53,14 @@ export const Reload: MessageDescriptor = { name: 'Reload', fields: [] };
 export const EditResult: MessageDescriptor = { name: 'EditResult', fields: [] };
 export const Route: MessageDescriptor = { name: 'Route', fields: [] };
 export const RouteResult: MessageDescriptor = { name: 'RouteResult', fields: [] };
+export const GetBoard3D: MessageDescriptor = { name: 'GetBoard3D', fields: [] };
+export const Point2: MessageDescriptor = { name: 'Point2', fields: [] };
+export const Outline: MessageDescriptor = { name: 'Outline', fields: [] };
+export const Cutout: MessageDescriptor = { name: 'Cutout', fields: [] };
+export const Hole: MessageDescriptor = { name: 'Hole', fields: [] };
+export const Model3D: MessageDescriptor = { name: 'Model3D', fields: [] };
+export const Footprint3D: MessageDescriptor = { name: 'Footprint3D', fields: [] };
+export const Board3D: MessageDescriptor = { name: 'Board3D', fields: [] };
 export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 
 (Request.fields as unknown[]).push(
@@ -72,6 +80,7 @@ export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 	{ name: 'getItems', number: 22, type: GetItems },
 	{ name: 'highlight', number: 23, type: Highlight },
 	{ name: 'route', number: 24, type: Route },
+	{ name: 'getBoard3d', number: 25, type: GetBoard3D },
 );
 (Response.fields as unknown[]).push(
 	{ name: 'id', number: 1, type: 'uint64' },
@@ -86,6 +95,7 @@ export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 	{ name: 'edit', number: 15, type: EditResult },
 	{ name: 'items', number: 16, type: Items },
 	{ name: 'route', number: 17, type: RouteResult },
+	{ name: 'board3d', number: 18, type: Board3D },
 );
 (GetVersion.fields as unknown[]).push(
 );
@@ -131,7 +141,7 @@ export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 	{ name: 'background', number: 7, type: 'uint32' },
 	{ name: 'iuPerMm', number: 8, type: 'double' },
 	{ name: 'modified', number: 9, type: 'bool' },
-	{ name: 'pixelsPerIuAtScale_1', number: 10, type: 'double' },
+	{ name: 'pixelsPerIuAtScale1', number: 10, type: 'double' },
 	{ name: 'content', number: 11, type: Box },
 );
 (GetDisplayList.fields as unknown[]).push(
@@ -310,6 +320,58 @@ export const Event: MessageDescriptor = { name: 'Event', fields: [] };
 	{ name: 'removed', number: 6, type: 'uint32' },
 	{ name: 'mode', number: 7, type: 'string' },
 	{ name: 'note', number: 8, type: 'string' },
+);
+(GetBoard3D.fields as unknown[]).push(
+	{ name: 'document', number: 1, type: 'uint32' },
+);
+(Point2.fields as unknown[]).push(
+	{ name: 'x', number: 1, type: 'double' },
+	{ name: 'y', number: 2, type: 'double' },
+);
+(Outline.fields as unknown[]).push(
+	{ name: 'points', number: 1, type: Point2, repeated: true },
+	{ name: 'cutouts', number: 2, type: Cutout, repeated: true },
+);
+(Cutout.fields as unknown[]).push(
+	{ name: 'points', number: 1, type: Point2, repeated: true },
+);
+(Hole.fields as unknown[]).push(
+	{ name: 'x', number: 1, type: 'double' },
+	{ name: 'y', number: 2, type: 'double' },
+	{ name: 'width', number: 3, type: 'double' },
+	{ name: 'height', number: 4, type: 'double' },
+	{ name: 'angle', number: 5, type: 'double' },
+	{ name: 'plated', number: 6, type: 'bool' },
+	{ name: 'footprint', number: 7, type: 'string' },
+	{ name: 'pad', number: 8, type: 'string' },
+);
+(Model3D.fields as unknown[]).push(
+	{ name: 'path', number: 1, type: 'string' },
+	{ name: 'offset', number: 2, type: 'double', repeated: true },
+	{ name: 'rotation', number: 3, type: 'double', repeated: true },
+	{ name: 'scale', number: 4, type: 'double', repeated: true },
+	{ name: 'show', number: 5, type: 'bool' },
+);
+(Footprint3D.fields as unknown[]).push(
+	{ name: 'uuid', number: 1, type: 'string' },
+	{ name: 'reference', number: 2, type: 'string' },
+	{ name: 'value', number: 3, type: 'string' },
+	{ name: 'footprint', number: 4, type: 'string' },
+	{ name: 'x', number: 5, type: 'double' },
+	{ name: 'y', number: 6, type: 'double' },
+	{ name: 'angle', number: 7, type: 'double' },
+	{ name: 'back', number: 8, type: 'bool' },
+	{ name: 'courtyard', number: 9, type: Point2, repeated: true },
+	{ name: 'height', number: 10, type: 'double' },
+	{ name: 'models', number: 11, type: Model3D, repeated: true },
+	{ name: 'boardOnly', number: 12, type: 'bool' },
+);
+(Board3D.fields as unknown[]).push(
+	{ name: 'thickness', number: 1, type: 'double' },
+	{ name: 'outlines', number: 2, type: Outline, repeated: true },
+	{ name: 'holes', number: 3, type: Hole, repeated: true },
+	{ name: 'footprints', number: 4, type: Footprint3D, repeated: true },
+	{ name: 'outlineOk', number: 5, type: 'bool' },
 );
 (Event.fields as unknown[]).push(
 	{ name: 'log', number: 1, type: 'string' },

@@ -245,6 +245,13 @@ def main() -> None:
     write(letterpress / "letterpress-hcDark.svg", letterpress_svg('fill="none"', 'fill="#3C3C3C" '))
     reversed_svg = logo_svg(REVERSED_FILL, REVERSED_LINES)
     write(SRC / "triage" / "browser" / "media" / "triage-logo-dark.svg", reversed_svg)
+    # The Agents window's own mark (the "Open in Agents" title-bar button and the
+    # Agents window). Upstream's "-light" file is the light mark for dark themes,
+    # "-dark" the dark one for light themes (.vs, .hc-light).
+    sessions = SRC / "sessions" / "browser" / "media"
+    write(sessions / "sessions-icon.svg", svg)
+    write(sessions / "sessions-logo-light.svg", reversed_svg)
+    write(sessions / "sessions-logo-dark.svg", svg)
     write(BRAND / "triage-logo.svg", svg)
     write(BRAND / "triage-logo-reversed.svg", reversed_svg)
 

@@ -7,6 +7,9 @@
   scripts\dev\setup.ps1 -App        also what the VS Code fork (app\) needs: Spectre-mitigated libraries
   scripts\dev\setup.ps1 -Eda        also what the KiCad fork (engines\eda\) needs: vcpkg (VCPKG_ROOT,
                                     cloned and bootstrapped if unset) and ccache 4 (ROADMAP P1-1)
+  scripts\dev\setup.ps1 -Cad        also what the FreeCAD fork (engines\cad\) needs: FreeCAD's LibPack
+                                    (FREECAD_LIBPACK_DIR, downloaded and SHA-256 checked if unset) and
+                                    ccache 4 (ROADMAP P2-1)
   scripts\dev\setup.ps1 -DevShell   load the Visual Studio C++ environment into this shell
                                     (and, on GitHub Actions, into the later steps of the job)
   scripts\dev\setup.ps1 -Check      only report what is missing; exit 1 if anything is
@@ -16,7 +19,7 @@
   workload; rustup and the toolchain pinned in rust-toolchain.toml (MSVC); CMake 3.25+
   and Ninja. Linux: scripts/dev/setup.sh.
 #>
-param([switch]$Check, [switch]$App, [switch]$Eda, [switch]$DevShell)
+param([switch]$Check, [switch]$App, [switch]$Eda, [switch]$Cad, [switch]$DevShell)
 
 $ErrorActionPreference = 'Stop'
 $ProgressPreference = 'SilentlyContinue'
@@ -194,6 +197,10 @@ if ($Eda) {
     if ($env:GITHUB_ENV) { Add-Content -Path $env:GITHUB_ENV -Value "VCPKG_ROOT=$env:VCPKG_ROOT" }
     else { [Environment]::SetEnvironmentVariable('VCPKG_ROOT', $env:VCPKG_ROOT, 'User') }
   }
+}
+
+# --- Compiler cache for the engine forks ------------------------------------------------
+if ($Eda -or $Cad) {
   # Strawberry Perl's old ccache on the runners can't cache MSVC; ccache 4 can.
   function Test-Ccache {
     $exe = Get-Command ccache -All -ErrorAction SilentlyContinue | Where-Object { $_.Source -notmatch 'Strawberry' } | Select-Object -First 1
@@ -205,6 +212,39 @@ if ($Eda) {
     [void](Test-Ccache)
     Say 'ccache' "$env:CCACHE_EXE ok"
     if ($env:GITHUB_ENV) { Add-Content -Path $env:GITHUB_ENV -Value "CCACHE_EXE=$env:CCACHE_EXE" }
+  }
+}
+
+# --- FreeCAD fork: LibPack ---------------------------------------------------------------
+if ($Cad) {
+  # FreeCAD's own bundle of its Windows dependencies (Python 3.12, Qt 6, OpenCASCADE,
+  # Boost, Xerces …): the one FreeCAD 1.1.4's own CI builds with
+  # (engines/cad/upstream/.github/workflows/actions/windows/getLibpack).
+  $LibPackName = 'LibPack-1.1.0-v3.1.1.3-Release'
+  $LibPackUrl = "https://github.com/FreeCAD/FreeCAD-LibPack/releases/download/3.1.1.3/$LibPackName.7z"
+  $LibPackSha256 = '3565842b2f2c464d891d37f1ce8467f2cd0b3dd758a6dfacc7acfeff290b67d4'
+  if (-not $env:FREECAD_LIBPACK_DIR) { $env:FREECAD_LIBPACK_DIR = Join-Path $Tools $LibPackName }
+  function Test-LibPack { Test-Path (Join-Path $env:FREECAD_LIBPACK_DIR 'bin\Qt6Core.dll') }
+  if (-not (Test-LibPack) -and -not $Check) {
+    [void](Require '7-zip' { (Have '7z') -or (Test-Path "$env:ProgramFiles\7-Zip\7z.exe") } { Install-Tool '7-zip' '7zip.7zip' '7zip' })
+  }
+  if (Require 'libpack' { Test-LibPack } {
+      $sevenZip = if (Have '7z') { (Get-Command 7z).Source } else { "$env:ProgramFiles\7-Zip\7z.exe" }
+      $archive = Join-Path ([IO.Path]::GetTempPath()) "$LibPackName.7z"
+      Invoke-WebRequest -Uri $LibPackUrl -OutFile $archive
+      $actual = (Get-FileHash -Algorithm SHA256 $archive).Hash.ToLower()
+      if ($actual -ne $LibPackSha256) { throw "LibPack checksum mismatch: $actual" }
+      $parent = Split-Path $env:FREECAD_LIBPACK_DIR -Parent
+      New-Item -ItemType Directory -Force $parent | Out-Null
+      & $sevenZip x $archive "-o$parent" -y -bso0 -bsp0
+      if ($LASTEXITCODE -ne 0) { throw "7-Zip failed to unpack $archive" }
+      $unpacked = Join-Path $parent $LibPackName
+      if ($unpacked -ne $env:FREECAD_LIBPACK_DIR) { Move-Item $unpacked $env:FREECAD_LIBPACK_DIR }
+      Remove-Item $archive
+    }) {
+    Say 'libpack' "$env:FREECAD_LIBPACK_DIR ok"
+    if ($env:GITHUB_ENV) { Add-Content -Path $env:GITHUB_ENV -Value "FREECAD_LIBPACK_DIR=$env:FREECAD_LIBPACK_DIR" }
+    else { [Environment]::SetEnvironmentVariable('FREECAD_LIBPACK_DIR', $env:FREECAD_LIBPACK_DIR, 'User') }
   }
 }
 

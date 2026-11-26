@@ -577,6 +577,11 @@ void PCB_FACE::Handle( const pb::Request& aRequest, pb::Response& aResponse,
             save( *d, aRequest.save(), aResponse );
         return;
 
+    case pb::Request::kGetBoard3D:
+        if( PCB_DOC* d = doc( aRequest.get_board_3d().document(), aResponse ) )
+            board3D( *d, aResponse );
+        return;
+
     case pb::Request::kReload:
         if( PCB_DOC* d = doc( aRequest.reload().document(), aResponse ) )
         {

@@ -12,6 +12,8 @@ and Claude**.
 ## Read first, every session
 
 1. `docs/STATUS.md`: current phase and work package, open questions, session log.
+   `docs/CHECKS.md`: the owner's checks. Act on any the owner marked done or
+   wrote results into, and record those results in `docs/STATUS.md`.
 2. `docs/ROADMAP.md`: the work package you're on (goal, deliverable, done-when).
 3. `docs/GUIDELINES.md`: session routine, definition of done, forks, testing.
    `docs/DEVIATIONS.md`: where the build already differs from the plan.
@@ -40,6 +42,15 @@ and Claude**.
 - **One phase per session.** The owner starts every phase (P0, P1, …) in a new
   session. Finish the whole phase, update `docs/STATUS.md`, push, then tell the
   owner the phase is done so they can start the next one (GUIDELINES §2).
+- **Owner checks live in `docs/CHECKS.md`.** Whenever work needs something only
+  the owner can do (a run on the Windows laptop, an exit demo, a measurement on a
+  real GPU, a setting on GitHub), add a check there **in the same commit**, with
+  clear, detailed, numbered steps: where to get the build, the exact clicks,
+  keys and commands, what the owner should see, and what to tell Claude. Keep
+  every open check current when the build, a command, a file or the build branch
+  changes, and keep the "At a glance" table and the "Current build branch" line
+  up to date. **Never mark a check done; only the owner does.** Tell the owner
+  at the end of a session which checks were added or changed.
 - **Log every deviation from the plan** in `docs/DEVIATIONS.md`, in the same
   commit as the change: what the plan said, what was built, why. The owner
   compares the final build with the plan from that list.

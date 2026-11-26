@@ -21,6 +21,7 @@ import { Extensions as ViewExtensions, IViewContainersRegistry, IViewsRegistry, 
 import { InstantiationType, registerSingleton } from '../../platform/instantiation/common/extensions.js';
 import { ITriageCrossProbeService, TriageCrossProbeService } from '../common/eda/crossProbe.js';
 import { TRIAGE_CATEGORY, TRIAGE_OVERVIEW_VIEW_ID, TRIAGE_VIEW_CONTAINER_ID } from '../common/triage.js';
+import { registerCadCommands } from './cad/cadCommands.js';
 import { registerEdaCommands } from './eda/edaCommands.js';
 import { OpenEngineeringLayoutAction, OpenEngineeringWindowsAction, PopOutViewAction } from './engineeringLayout.js';
 import { TriageOverviewView } from './triageOverviewView.js';
@@ -73,6 +74,7 @@ Registry.as<IEditorFactoryRegistry>(EditorExtensions.EditorFactory).registerEdit
 
 registerSingleton(ITriageCrossProbeService, TriageCrossProbeService, InstantiationType.Delayed);
 registerEdaCommands();
+registerCadCommands();
 
 registerAction2(OpenEngineeringLayoutAction);
 registerAction2(OpenEngineeringWindowsAction);

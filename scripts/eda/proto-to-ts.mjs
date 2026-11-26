@@ -60,7 +60,8 @@ export function parseProto(text) {
   return { messages, enums };
 }
 
-const camel = (name) => name.replace(/_([a-z])/g, (_, c) => c.toUpperCase());
+// get_board_3d -> getBoard3d, as protobuf-es names it.
+const camel = (name) => name.replace(/_([a-z0-9])/g, (_, c) => c.toUpperCase());
 
 export function generate(text) {
   const { messages, enums } = parseProto(text);
