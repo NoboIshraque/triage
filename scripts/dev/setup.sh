@@ -44,14 +44,16 @@ EDA_PACKAGES=(ccache gettext swig python3-dev libwxgtk3.2-dev libwxgtk-webview3.
   libglu1-mesa-dev libnng-dev libsecret-1-dev libpoppler-glib-dev unixodbc-dev)
 # FreeCAD 1.1's App layer (no GUI) from Ubuntu 24.04's archive: the libraries
 # engines/cad/upstream/CMakeLists.txt asks for with BUILD_GUI off, the Qt tools its
-# translations need (patch 0001) and TBB, which Ubuntu's OpenCASCADE links.
+# translations need (patch 0001), and TBB, fontconfig, GL and X11, which Ubuntu's
+# OpenCASCADE links (its visualization toolkit).
 CAD_PACKAGES=(ccache python3-dev libboost-dev libboost-program-options-dev libboost-regex-dev
   libboost-thread-dev libboost-date-time-dev libboost-filesystem-dev libboost-iostreams-dev
   libboost-graph-dev libboost-serialization-dev libeigen3-dev libxerces-c-dev libyaml-cpp-dev
   libfmt-dev libicu-dev zlib1g-dev libfreetype-dev libocct-foundation-dev
   libocct-modeling-data-dev libocct-modeling-algorithms-dev libocct-ocaf-dev
   libocct-data-exchange-dev libocct-visualization-dev libtbb-dev qt6-base-dev qt6-base-dev-tools
-  qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools libkdtree++-dev pybind11-dev swig)
+  qt6-tools-dev qt6-tools-dev-tools qt6-l10n-tools libkdtree++-dev pybind11-dev swig
+  libfontconfig-dev libgl-dev libx11-dev)
 
 missing=()
 say() { printf '%-14s %s\n' "$1" "$2"; }
