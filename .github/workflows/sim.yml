@@ -32,11 +32,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-24.04, windows-2022]
+        include:
+          - os: ubuntu-24.04
+            shell: bash
+          # PowerShell: Git Bash puts its own link.exe before MSVC's on PATH.
+          # Steps chain commands with &&, so the first failure fails the step.
+          - os: windows-2022
+            shell: pwsh
     runs-on: ${{ matrix.os }}
     defaults:
       run:
-        shell: bash
+        shell: ${{ matrix.shell }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: MSVC developer environment (Windows)
@@ -46,6 +52,7 @@ jobs:
           arch: x64
       - name: Build tools and the AVR toolchain (Linux, Ubuntu's packages)
         if: runner.os == 'Linux'
+        shell: bash
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build gcc-avr avr-libc binutils-avr
@@ -90,27 +97,25 @@ jobs:
         run: node engines/mujoco/build.mjs
       - name: MuJoCo's library on PATH (Windows tests)
         if: runner.os == 'Windows'
-        run: echo "$GITHUB_WORKSPACE/engines/mujoco/build/windows/install/bin" >> "$GITHUB_PATH"
+        run: Join-Path $env:GITHUB_WORKSPACE 'engines\mujoco\build\windows\install\bin' | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
       - name: Kernel, circuit, parts and mechanics tests with MuJoCo
         env:
           TRIAGE_REQUIRE_MUJOCO: '1'
-        run: |
-          cargo clippy -p triage-mujoco -p triage-sim -p triage-sim-node --all-targets --features triage-sim/mujoco --locked -- -D warnings
+        run: >-
+          cargo clippy -p triage-mujoco -p triage-sim -p triage-sim-node --all-targets --features triage-sim/mujoco --locked -- -D warnings &&
           cargo test -p triage-sim-kernel -p triage-mna -p triage-mujoco -p triage-sim --features triage-sim/mujoco --locked
       - name: The sim addon (triage_sim.node with MuJoCo)
         run: node crates/triage-sim-node/build.mjs --mujoco
       - name: Sim package and CLI
-        run: |
-          pnpm --filter @triage/sim build
-          pnpm --filter @triage/cli build
+        run: pnpm --filter @triage/sim build && pnpm --filter @triage/cli build
       - name: Sim tests with compiled sketches (Blink, serial echo, the Smart Fan)
         env:
           TRIAGE_REQUIRE_SIM: '1'
           TRIAGE_REQUIRE_TOOLCHAIN: '1'
         run: pnpm --filter @triage/sim exec vitest run --reporter=verbose
       - name: triage test on the Smart Fan (P3-6 done-when)
-        run: |
-          mkdir -p build/sim
+        run: >-
+          node -e "require('fs').mkdirSync('build/sim', { recursive: true })" &&
           node cli/dist/bin.js test examples/smart-fan --report build/sim/scenarios-${{ runner.os }}.json
       - name: Upload the scenario report, firmware and addon
         if: always()

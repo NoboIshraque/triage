@@ -50,6 +50,14 @@ describe('SSD1306', () => {
     expect(d.text).toBe('');
   });
 
+  it('takes a command\'s parameters from later transactions, as drivers send them', () => {
+    const d = new Ssd1306();
+    for (const byte of [0x20, 0x00, 0x21, 0, 127, 0x22, 3, 7, 0xaf]) send(d, 0x00, [byte]);
+    send(d, 0x40, glyphs('MAX'));
+    expect(d.text).toBe('MAX');
+    expect(d.buffer[3 * 128]).toBe(FONT_5X7['M'.charCodeAt(0) - FONT_FIRST]?.[0]);
+  });
+
   it('reads spaced words', () => {
     const page = new Uint8Array(128);
     page.set(glyphs('A  B'));

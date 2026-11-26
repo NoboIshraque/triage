@@ -45,10 +45,16 @@ describe.skipIf(!ready)('compiled sketches', () => {
     });
     runner.runFor(0.2); // warm up
     const ratio = speed(runner, 3);
-    const edges = Array.from(runner.trace('A1.D13.drive').t).filter((t) => t > 0);
-    const gaps = edges.slice(1).map((t, i) => t - (edges[i] ?? 0));
-    expect(gaps.length).toBeGreaterThanOrEqual(5);
-    for (const gap of gaps) expect(Math.abs(gap - 0.5)).toBeLessThan(0.002);
+    // pinMode makes the pin a low output first; then high for 500 ms, low for 500 ms.
+    const { t, v } = runner.trace('A1.D13.drive');
+    const edges: [number, number][] = [];
+    for (let i = 1; i < t.length; i++) if (v[i - 1] !== 2) edges.push([t[i] ?? 0, v[i] ?? 0]);
+    expect(edges.length).toBeGreaterThanOrEqual(5);
+    for (let i = 1; i < edges.length; i++) {
+      const gap = (edges[i]?.[0] ?? 0) - (edges[i - 1]?.[0] ?? 0);
+      expect(Math.abs(gap - 0.5)).toBeLessThan(0.002);
+      expect(edges[i]?.[1]).not.toBe(edges[i - 1]?.[1]);
+    }
     console.log(`Blink: ${ratio.toFixed(1)}× real time`);
     if (timed) expect(ratio).toBeGreaterThanOrEqual(1);
   });

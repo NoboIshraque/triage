@@ -47,8 +47,9 @@ export class Ssd1306 implements I2cDevice {
   constructor(readonly address = 0x3c) {}
 
   start(): void {
+    // A new control byte; a command's parameters may still follow (the controller's
+    // command parser keeps its state across transactions, and drivers rely on it).
     this.control = undefined;
-    this.command = [];
   }
 
   stop(): void {
