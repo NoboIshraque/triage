@@ -1,0 +1,12 @@
+[package]
+name = "triage-mna"
+description = "Modified nodal analysis for small analog islands: the T0 circuit solver of Triage's simulation (ROADMAP P3-3, PLAN §4.7)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lints]
+workspace = true

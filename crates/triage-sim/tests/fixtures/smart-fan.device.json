@@ -1,0 +1,34 @@
+{
+  "name": "Smart Fan",
+  "ground": "/GND",
+  "board": {
+    "reference": "A1",
+    "profile": "arduino-uno",
+    "pins": [
+      { "name": "D2", "net": "/BUTTON", "analog": false, "pwm": false },
+      { "name": "D9", "net": "/FAN_PWM", "analog": false, "pwm": true },
+      { "name": "A0", "net": "/TEMP_SENSE", "analog": true, "pwm": false },
+      { "name": "A4", "net": "/I2C_SDA", "analog": true, "pwm": false },
+      { "name": "A5", "net": "/I2C_SCL", "analog": true, "pwm": false }
+    ],
+    "regulator": { "net": "/+5V", "volts": 5.0 },
+    "vin": "/+12V",
+    "quiescent_a": 0.045
+  },
+  "parts": [
+    { "reference": "D1", "model": "diode", "params": {}, "pins": { "anode": "/FAN_NEG", "cathode": "/+12V" } },
+    { "reference": "J1", "model": "dc-motor", "params": { "ohms": 24.0, "henries": 0.0015, "ke": 0.03, "kt": 0.03 }, "pins": { "+": "/+12V", "-": "/FAN_NEG" } },
+    { "reference": "J2", "model": "supply", "params": { "volts": 12.0 }, "pins": { "+": "/+12V", "-": "/GND" } },
+    { "reference": "J3", "model": "ssd1306", "params": { "address": 60.0 }, "pins": { "gnd": "/GND", "vcc": "/+5V", "scl": "/I2C_SCL", "sda": "/I2C_SDA" } },
+    { "reference": "Q1", "model": "nmos", "params": { "vth": 1.5, "k": 13.0, "lambda": 0.01 }, "pins": { "g": "/FAN_GATE", "d": "/FAN_NEG", "s": "/GND" } },
+    { "reference": "R1", "model": "resistor", "params": { "ohms": 10000.0 }, "pins": { "a": "/TEMP_SENSE", "b": "/GND" } },
+    { "reference": "R2", "model": "resistor", "params": { "ohms": 220.0 }, "pins": { "a": "/FAN_PWM", "b": "/FAN_GATE" } },
+    { "reference": "R3", "model": "resistor", "params": { "ohms": 100000.0 }, "pins": { "a": "/FAN_GATE", "b": "/GND" } },
+    { "reference": "SW1", "model": "button", "params": {}, "pins": { "a": "/BUTTON", "b": "/GND" } },
+    { "reference": "TH1", "model": "ntc", "params": { "r25": 10000.0, "beta": 3950.0 }, "pins": { "a": "/+5V", "b": "/TEMP_SENSE" } }
+  ],
+  "environment": { "room_temperature_c": 24.0, "temperature_profile": [] },
+  "mechanics": [
+    { "name": "rotor", "driven_by": "J1", "radius_m": 0.033, "mass_kg": 0.01, "damping": 2e-6, "drag": 4e-8, "object": "fan.FCStd#Rotor", "axis": [0, 0, 1], "origin": [0, 0, 0] }
+  ]
+}
