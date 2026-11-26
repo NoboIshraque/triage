@@ -178,10 +178,72 @@ describe('packaged Triage app', () => {
         naming: [],
       });
     }
-    // Triage's logo (K3 Slate, scripts/branding/icons.py) replaces VS Code's and Code-OSS's.
-    for (const logo of ['code-icon.svg', 'vscode-icon.svg']) {
+    // Triage's logo (K3 Slate, scripts/branding/icons.py) replaces VS Code's and Code-OSS's,
+    // and the Agents window's mark (the "Open in Agents" button and the Agents window).
+    for (const logo of [
+      'code-icon.svg',
+      'vscode-icon.svg',
+      'sessions-icon.svg',
+      'sessions-logo-light.svg',
+      'sessions-logo-dark.svg',
+    ]) {
       expect(readFileSync(path.join(appRoot, 'out', 'media', logo), 'utf8')).toContain('#1e293b');
     }
+  });
+
+  // ROADMAP P0-9, the second sweep (2026-11-26): texts written into code rather than
+  // the message files. GitHub's Copilot extension keeps its texts (mostly prompts for
+  // the language model; scripts/branding/rebrand.mjs).
+  it("doesn't name VS Code in built-in extensions' names, messages or the workbench's own texts", () => {
+    const appRoot = path.dirname(app.productJson);
+    const extensions = path.join(appRoot, 'extensions');
+    const localized = /\.t\(\s*("(?:[^"\\\n]|\\.)*"|'(?:[^'\\\n]|\\.)*'|`(?:[^`\\$]|\\.)*`)/g;
+    const scripts = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) return entry.name === 'node_modules' ? [] : scripts(full);
+        return entry.name.endsWith('.js') ? [full] : [];
+      });
+    const found: string[] = [];
+    for (const name of readdirSync(extensions)) {
+      const dir = path.join(extensions, name);
+      if (name === 'copilot' || !existsSync(path.join(dir, 'package.json'))) continue;
+      const manifest = JSON.parse(readFileSync(path.join(dir, 'package.json'), 'utf8')) as {
+        displayName?: string;
+        description?: string;
+        contributes?: unknown;
+      };
+      const names = [manifest.displayName ?? '', manifest.description ?? ''];
+      JSON.stringify(manifest.contributes ?? {}, (key, value: unknown) => {
+        if (
+          ['displayName', 'description', 'title', 'label'].includes(key) &&
+          typeof value === 'string'
+        )
+          names.push(value);
+        return value;
+      });
+      found.push(...namingVSCode(names).map((text) => `${name}/package.json: ${text}`));
+      for (const script of scripts(dir)) {
+        const messages = [...readFileSync(script, 'utf8').matchAll(localized)].map(
+          (m) => m[1] ?? '',
+        );
+        found.push(
+          ...namingVSCode(messages).map((text) => `${path.relative(extensions, script)}: ${text}`),
+        );
+      }
+    }
+    const workbench = readFileSync(
+      path.join(appRoot, 'out', 'vs', 'workbench', 'workbench.desktop.main.js'),
+      'utf8',
+    );
+    const workbenchTexts = [
+      ...workbench.matchAll(/(?:localize2\(\d+,\s*|altText:\s*)("(?:[^"\\\n]|\\.)*")/g),
+    ].map((m) => m[1] ?? '');
+    for (const text of ['"VS Code Version"', '[VS Code Release Notes]']) {
+      if (workbench.includes(text)) workbenchTexts.push(text);
+    }
+    found.push(...namingVSCode(workbenchTexts).map((text) => `workbench: ${text}`));
+    expect(found).toEqual([]);
   });
 
   it('opens a window showing the workbench', async () => {
