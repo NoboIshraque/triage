@@ -5,8 +5,9 @@
 #                                   and TRIAGE_TEST_OUTPUT=<results.json>
 #
 # The engine is FreeCAD without its GUI (ADR 0002), so a few test files import modules
-# it doesn't have: pivy (Coin3D's Python binding, the 3D view's scene graph) and Draft
-# (a workbench the engine doesn't build). FreeCAD's own runner would fail to load the
+# it doesn't have: pivy (Coin3D's Python binding, the 3D view's scene graph), Draft
+# (a workbench the engine doesn't build) and PartDesign's involute gear (a GUI script).
+# FreeCADGui gets no placeholder: test files import it to find out whether the GUI runs. FreeCAD's own runner would fail to load the
 # whole suite then. Here those names are placeholders: importing them works, and a test
 # that actually uses one is reported as skipped, with the module named. Every other
 # test runs as FreeCAD's own runner runs it (unittest, the suite's module by name).
@@ -25,6 +26,7 @@ ABSENT = {
     "pivy": "pivy (Coin3D's Python binding) belongs to FreeCAD's 3D view, which the engine doesn't build",
     "pivy.coin": "pivy (Coin3D's Python binding) belongs to FreeCAD's 3D view, which the engine doesn't build",
     "Draft": "the Draft workbench is not built into the engine",
+    "InvoluteGearFeature": "PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI",
 }
 
 

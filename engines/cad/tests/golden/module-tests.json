@@ -1,0 +1,124 @@
+{
+  "$comment": "Tests of FreeCAD's Part, Sketcher and PartDesign suites that don't pass in Triage's CAD engine, and why (engines/cad/tests/run.mjs).",
+  "minimumTests": {
+    "TestPartApp": 131,
+    "TestSketcherApp": 33,
+    "TestPartDesignApp": 168
+  },
+  "notPassing": [
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testCustomizedGearProfile",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testCustomizedGearProfileForSplinedHub",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testCustomizedGearProfileForSplinedShaft",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testDefaultGearProfile",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testDefaultInternalGearProfile",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testExternalGearProfileOrientation",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testInternalGearProfileOrientation",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testLowPrecisionGearProfile",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testLowPrecisionInternalGearProfile",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testShiftedExternalGearProfile",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testShiftedInternalGearProfile",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testUsagePadGearProfile",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testUsagePocketInternalGearProfile",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testZeroFilletExternalGearProfile_BaseAboveRoot",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testZeroFilletExternalGearProfile_BaseBelowRoot",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestInvoluteGear.TestInvoluteGear.testZeroFilletInternalGearProfile",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses InvoluteGearFeature.makeInvoluteGear: PartDesign's involute gear is a GUI script (it imports PySide), which FreeCAD installs only with its GUI"
+    },
+    {
+      "id": "PartDesignTests.TestTopologicalNamingProblem.TestTopologicalNamingProblem.testPD_TNPSketchPadSketchDelete",
+      "outcome": "error",
+      "os": ["linux", "windows"],
+      "why": "imports Sketcher's ProfileLib.RegularPolygon, which imports FreeCADGui (FreeCAD's GUI, not built into the engine) without using it"
+    },
+    {
+      "id": "parttests.TestPartMirror.TestPartMirroringRegression.testMirroringWithDraftCloneStability",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "uses Draft.make_clone: the Draft workbench is not built into the engine"
+    },
+    {
+      "id": "SketcherTests.TestSketcherSolver.TestSketcherSolver.testCircleToLineDistance_Driving_Secant",
+      "outcome": "skipped",
+      "os": ["linux", "windows"],
+      "why": "FreeCAD skips it itself: \"Support for secants still under discussion, see comments in PR 9044\""
+    }
+  ]
+}
