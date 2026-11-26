@@ -10,7 +10,9 @@ import {
   rebrandText,
   rebrandValue,
   rebrandWorkbenchCode,
+  updateChecksums,
 } from './rebrand.mjs';
+import { createHash } from 'node:crypto';
 
 describe('rebrandText', () => {
   it('replaces both forms of the name', () => {
@@ -257,6 +259,44 @@ describe('rebrandPackagedApp', () => {
         JSON.parse(read('extensions', 'copilot', 'package.json')).displayName,
         'Support for VS Code',
       );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+});
+
+describe('updateChecksums', () => {
+  it("keeps VS Code's integrity check quiet after a bundle is rewritten", () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'triage-rebrand-'));
+    try {
+      mkdirSync(path.join(root, 'out', 'vs'), { recursive: true });
+      writeFileSync(path.join(root, 'out', 'vs', 'main.js'), 'rewritten');
+      writeFileSync(path.join(root, 'out', 'vs', 'same.js'), 'same');
+      const sum = (text) => createHash('sha256').update(text).digest('base64').replace(/=+$/, '');
+      writeFileSync(
+        path.join(root, 'product.json'),
+        `${JSON.stringify(
+          {
+            nameShort: 'Triage',
+            checksums: {
+              'vs/main.js': sum('original'),
+              'vs/same.js': sum('same'),
+              'vs/gone.js': 'x',
+            },
+          },
+          null,
+          '\t',
+        )}\n`,
+      );
+      assert.equal(updateChecksums(root), 1);
+      const product = JSON.parse(readFileSync(path.join(root, 'product.json'), 'utf8'));
+      assert.deepEqual(product.checksums, {
+        'vs/main.js': sum('rewritten'),
+        'vs/same.js': sum('same'),
+        'vs/gone.js': 'x',
+      });
+      assert.match(readFileSync(path.join(root, 'product.json'), 'utf8'), /^\{\n\t"nameShort"/);
+      assert.equal(updateChecksums(root), 0);
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

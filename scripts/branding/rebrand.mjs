@@ -19,6 +19,7 @@
 // GitHub's Copilot extension (hidden by default) keeps its manifest's literals and its
 // runtime messages: most are prompts for the language model, not interface text. Its
 // package.nls.json (settings, commands) is rewritten like every other extension's.
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
@@ -272,5 +273,39 @@ export function rebrandPackagedApp(appRoot, name) {
       }
     }
   }
+  updateChecksums(appRoot);
   return { files, strings: counter.changed };
+}
+
+/**
+ * VS Code keeps SHA-256 checksums of its core bundles in product.json and warns
+ * that the installation "appears to be corrupt" when one doesn't match
+ * (integrityService.ts). The rewritten bundles get new checksums, computed as the
+ * build computes them (build/gulpfile.vscode.ts computeChecksum).
+ * @returns {number} how many checksums changed
+ */
+export function updateChecksums(appRoot) {
+  const productFile = path.join(appRoot, 'product.json');
+  if (!existsSync(productFile)) return 0;
+  const text = readFileSync(productFile, 'utf8');
+  const product = JSON.parse(text);
+  if (!product.checksums) return 0;
+  let changed = 0;
+  for (const file of Object.keys(product.checksums)) {
+    const full = path.join(appRoot, 'out', file);
+    if (!existsSync(full)) continue;
+    const checksum = createHash('sha256')
+      .update(readFileSync(full))
+      .digest('base64')
+      .replace(/=+$/, '');
+    if (checksum !== product.checksums[file]) {
+      product.checksums[file] = checksum;
+      changed++;
+    }
+  }
+  if (changed > 0) {
+    const indent = /\n(\t| +)"/.exec(text)?.[1] ?? '\t';
+    writeFileSync(productFile, `${JSON.stringify(product, null, indent)}\n`);
+  }
+  return changed;
 }

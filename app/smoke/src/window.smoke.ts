@@ -509,6 +509,12 @@ describe('packaged Triage app', () => {
     expect(statusIds.filter((id) => id !== null && /chat|copilot/i.test(id))).toEqual([]);
     expect(await window.locator('.notification-toast', { hasText: 'Copilot' }).count()).toBe(0);
   });
+  // ROADMAP P0-9: the rebrand rewrites checksummed bundles and updates their checksums,
+  // so VS Code's integrity check (it runs a few seconds after start) stays quiet.
+  it("doesn't say the installation is corrupt", async () => {
+    const corrupt = window.locator('.notification-toast', { hasText: 'appears to be corrupt' });
+    expect(await corrupt.count()).toBe(0);
+  });
   // The owner's request (2026-11-24): views can also live in windows of their own.
   it('opens Schematic, Board, 3D and Sim in separate windows', async () => {
     const app = electronApp;
