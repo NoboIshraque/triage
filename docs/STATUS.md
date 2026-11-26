@@ -2,16 +2,35 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-26 · **Phase P1 Electronics engine + views: done.**
-Every P1 work package passes its checks in CI on **Windows and Linux**: the
-KiCad engine passes all 54 KiCad demo files and its integration tests on both
-(EDA run 13), and the packaged app passes all 22 smoke checks with the engine
-on both (App run 48), including cross-probe, edit and save read by stock KiCad,
-net rename → `board_pins.h` (443 ms Windows, 329 ms Linux) and a KiCad save →
-reload (105 ms, 141 ms). **The owner's checks:** the M1 demo on the Windows
-laptop, and the 60 fps check on a real GPU (DV-22); steps below. P0-8 is done;
-P0-9 stays open. ADR 0004 and ADR 0005 accepted. **Next:** P2 (3D engine and
-enclosure from board) in a new session.
+**Last updated:** 2026-11-26 · **Phase P2 3D engine + enclosure from board: in
+progress** (this session). **P0-9 is done** (checked below). **P1 is done** in CI
+on Windows and Linux; its owner checks (the M1 demo and the 60 fps check on a real
+GPU, DV-22) are still open, steps below.
+
+### P2 so far (2026-11-26)
+
+| WP | State | Evidence |
+|---|---|---|
+| P2-1 FreeCAD fork builds | **done on Linux**; Windows building in CI (CAD run 1, LibPack) | FreeCAD 1.1.4's App layer (no GUI) in `engines/cad/`; FreeCAD's own Part, Sketcher and PartDesign suites through the staged `FreeCADCmd`: 313 of 332 pass, the other 19 are in `engines/cad/tests/golden/module-tests.json` with reasons (16 gear tests use a GUI script, DV-25). Linux CI failed linking once (fontconfig, fixed) |
+| P2-2 CAD engine RPC | **done on Linux** | FreeCAD's App layer behind JSON-RPC in `FreeCADCmd` (P0-4 frames, binary meshes); `app/engine-tests/src/cadEngine.test.ts` opens and force-recomputes every Smart Fan document (fan: 16 objects in 142 ms), meshes, edit + undo + save, errors, restart |
+| P2-3 3D view | built; the board side waits for KiCad's `GetBoard3D` (compiling) | the 3D tab draws the FreeCAD documents and the board with Triage's WebGL2 renderer (DV-26), outliner, properties, Blender-style navigation; headless render harness `engines/cad/tests/render.mjs`; a local packaged app showed the fan in the 3D tab |
+| P2-4 Enclosure from board | built in the CAD engine | `triage_cad/enclosure.py`: base, bosses, connector openings, lid; parameters are FreeCAD properties; wall 2 → 3 mm recomputes and re-tessellates in 119 ms; STL export |
+| P2-5 Fit checks | built in the CAD engine | `checks.fit`: interference (a 40 mm part hits the lid) and clearance; the 3D tab paints problems red and lists them in the Problems panel |
+
+### P0-9 checked (2026-11-26)
+
+The first sweep met its done-when (App run 48: no VS Code name in the message files
+or on the Welcome page, Triage's logos), but a scan of App run 48's Linux build
+found more: 32 texts in the built-in extensions' names and runtime messages, the
+English originals of workbench commands, the walkthroughs' image descriptions, the
+issue reporter and the built-in changelog text, and the Agents window's own mark.
+`rebrand.mjs` now rewrites those too (Copilot keeps its prompts; its settings and
+commands are rewritten), `icons.py` draws Triage's logo for the Agents window,
+and the smoke test checks every one of those places. **App run 58 passed on
+Windows and Linux** with the new checks. A local build then showed that rewriting
+VS Code's core bundles made it say the installation "appears to be corrupt"
+(their checksums in product.json); the rebrand now updates those checksums and
+the smoke test checks the warning stays away. **P0-9 is done.**
 
 ### P1 in one paragraph
 
@@ -249,7 +268,7 @@ The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt
 ## Deviations from the plan
 
 Every place the build differs from the plan is logged in
-[DEVIATIONS.md](DEVIATIONS.md) (24 entries, DV-01 … DV-24, plus choices the plan left open), so the
+[DEVIATIONS.md](DEVIATIONS.md) (27 entries, DV-01 … DV-27, plus choices the plan left open), so the
 owner can compare the final build with the plan.
 
 ## Open questions
@@ -267,9 +286,9 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 
 | Phase | WP | Status |
 |---|---|---|
-| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | P0-1 … P0-7 **done**; **P0-8 done** 2026-11-25 (Copilot works with Triage's own sign-in); **P0-9 in progress** |
+| P0 Foundations, Windows + Linux | P0-1 skeleton · P0-2 VS Code fork · P0-3 entry points + patch queue · P0-4 engine connection · P0-5 project format · P0-6 dev env · P0-7 Windows nightlies · P0-8 own GitHub sign-in · P0-9 branding sweep | **done**: P0-1 … P0-7 2026-11-24, P0-8 2026-11-25, **P0-9 2026-11-26** (second sweep; App run 58 on both OSes) |
 | P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **done** 2026-11-26 on Windows and Linux in CI (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 accepted); **the owner's M1 run on Windows and the GPU 60 fps check next** |
-| P2 3D engine + enclosure from board | P2-1 … P2-5 | not started |
+| P2 3D engine + enclosure from board | P2-1 FreeCAD fork · P2-2 CAD engine RPC · P2-3 3D view · P2-4 enclosure · P2-5 fit checks | **in progress** (see "P2 so far" at the top) |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | not started |
 | PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | not started (after P3, before P4) |
 | P4 ESP32 + Raspberry Pi (M3) | P4-1 … P4-6 | not started |
