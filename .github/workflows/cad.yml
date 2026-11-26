@@ -1,0 +1,118 @@
+# Builds Triage's CAD engine from the pinned FreeCAD release (its App layer, no GUI)
+# on Linux (GCC, Ubuntu's libraries) and Windows (MSVC, FreeCAD's LibPack), then runs
+# FreeCAD's Part, Sketcher and PartDesign tests through the staged FreeCADCmd
+# (ROADMAP P2-1). The staged engine is uploaded for the App workflow to package.
+#
+# The compiler cache (ccache) is saved even when the build runs out of time, so the
+# next run continues where it stopped.
+name: CAD
+
+on:
+  push:
+    paths:
+      - engines/cad/**
+      - scripts/forks/**
+      - scripts/dev/**
+      - .github/workflows/cad.yml
+  pull_request:
+    paths:
+      - engines/cad/**
+      - scripts/forks/**
+      - scripts/dev/**
+      - .github/workflows/cad.yml
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cad-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CCACHE_MAXSIZE: 3G
+  CCACHE_COMPRESS: 'true'
+  CCACHE_SLOPPINESS: pch_defines,time_macros,include_file_mtime,include_file_ctime
+
+jobs:
+  build:
+    name: FreeCAD engine (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2022]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 300
+    env:
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Set up the build machine (Linux, scripts/dev/setup.sh --cad)
+        if: runner.os == 'Linux'
+        timeout-minutes: 20
+        run: |
+          df -h / && free -h
+          scripts/dev/setup.sh --cad
+
+      - name: Set up the build machine (Windows, scripts/dev/setup.ps1 -Cad -DevShell)
+        if: runner.os == 'Windows'
+        timeout-minutes: 30
+        shell: pwsh
+        run: ./scripts/dev/setup.ps1 -Cad -DevShell
+
+      - name: Fetch FreeCAD and apply Triage's patches
+        run: node engines/cad/build.mjs fetch prepare
+
+      - name: Cache key
+        id: key
+        shell: bash
+        run: |
+          pin=$(node -p "require('./engines/cad/upstream.json').commit")
+          echo "prefix=cad-ccache-${{ runner.os }}-$pin-" >> "$GITHUB_OUTPUT"
+
+      - name: Restore the compiler cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ccache
+          key: ${{ steps.key.outputs.prefix }}${{ github.run_id }}
+          restore-keys: |
+            ${{ steps.key.outputs.prefix }}
+            cad-ccache-${{ runner.os }}-
+
+      - name: Configure
+        run: node engines/cad/build.mjs configure --ccache
+
+      - name: Build
+        timeout-minutes: 240
+        shell: bash
+        run: |
+          ccache_exe="${CCACHE_EXE:-ccache}"
+          "$ccache_exe" --zero-stats
+          node engines/cad/build.mjs build --ccache
+          "$ccache_exe" --show-stats -v
+
+      - name: Save the compiler cache
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: .ccache
+          key: ${{ steps.key.outputs.prefix }}${{ github.run_id }}
+
+      - name: Stage
+        run: node engines/cad/build.mjs stage
+
+      - name: FreeCAD's Part, Sketcher and PartDesign tests (staged FreeCADCmd)
+        timeout-minutes: 45
+        run: node engines/cad/build.mjs test
+
+      - name: Upload the staged engine
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: triage-cad-${{ runner.os == 'Windows' && 'windows' || 'linux' }}
+          path: engines/cad/build/${{ runner.os == 'Windows' && 'windows' || 'linux' }}/stage/
+          retention-days: 7

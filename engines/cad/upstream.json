@@ -1,0 +1,6 @@
+{
+  "$comment": "Pinned upstream for the FreeCAD fork (GUIDELINES §6). scripts/forks/fetch.mjs checks out exactly this commit into engines/cad/upstream/ and refuses a tag that points elsewhere. Update it in its own work package.",
+  "repository": "https://github.com/FreeCAD/FreeCAD.git",
+  "tag": "1.1.4",
+  "commit": "4fd3bf320d9566a27e60069fc8387448aaa3a094"
+}

@@ -1,0 +1,25 @@
+Triage patch 0001-qt-linguist-tools-without-gui.
+
+diff --git a/cMake/FreeCAD_Helpers/SetupQt.cmake b/cMake/FreeCAD_Helpers/SetupQt.cmake
+index 7654ef39e9fcf6c496332713c013378670ae7916..1d080f040baa48e86c03eed1a388bccb670dce02 100644
+--- a/cMake/FreeCAD_Helpers/SetupQt.cmake
++++ b/cMake/FreeCAD_Helpers/SetupQt.cmake
+@@ -1,6 +1,8 @@
+ # -------------------------------- Qt --------------------------------
+ 
+-set(FREECAD_QT_COMPONENTS Core Concurrent Network Xml)
++# Triage: Base and the App modules compile their translations too, so a build
++# without the GUI also needs LinguistTools (qt_add_translation).
++set(FREECAD_QT_COMPONENTS Core Concurrent Network Xml LinguistTools)
+ if (FREECAD_QT_MAJOR_VERSION EQUAL 6)
+     set (Qt6Core_MOC_EXECUTABLE Qt6::moc)
+ endif()
+@@ -16,7 +18,7 @@ if(BUILD_GUI)
+         list (APPEND FREECAD_QT_COMPONENTS OpenGLWidgets)
+     endif()
+ 
+-    list (APPEND FREECAD_QT_COMPONENTS OpenGL PrintSupport Svg UiTools Widgets LinguistTools)
++    list (APPEND FREECAD_QT_COMPONENTS OpenGL PrintSupport Svg UiTools Widgets)
+ 
+     if(BUILD_DESIGNER_PLUGIN)
+         list (APPEND FREECAD_QT_COMPONENTS Designer)
