@@ -18,7 +18,8 @@
 //   build      FreeCADCmd and the modules' libraries
 //   stage      install into build/<os>/stage/ (bin/, lib/, Mod/, Ext/, data/) and add
 //              Triage's engine host (triage/engine/ as stage/triage/): one relocatable
-//              folder, which the app ships as resources/app/engines/cad/
+//              folder, which the app ships as resources/app/engines/cad/. On Windows,
+//              trim.mjs then drops the parts of FreeCAD's LibPack the engine never loads
 //
 // Commands:
 //   test [--update]                    tests/run.mjs: the module tests, against the golden
@@ -39,6 +40,7 @@ import {
   resetUpstream,
 } from '../../scripts/forks/patches.mjs';
 import { buildDir, stagedEngineDir, stageDir, stagedProgram } from './stage.mjs';
+import { trimWindowsStage } from './trim.mjs';
 
 const cadDir = import.meta.dirname;
 const upstreamDir = path.join(cadDir, 'upstream');
@@ -212,6 +214,13 @@ function stage() {
   run('cmake', ['--install', buildDir]);
   if (!existsSync(stagedProgram('FreeCADCmd'))) {
     throw new ForkError(`FreeCADCmd was not installed into ${stageDir}`);
+  }
+  if (isWindows) {
+    // FreeCAD's install copies the LibPack's whole bin/; keep what the engine loads.
+    const trimmed = trimWindowsStage(stageDir);
+    console.log(
+      `Trimmed the LibPack: kept ${trimmed.kept.length} DLLs, removed ${trimmed.removed} files and folders (${(trimmed.bytes / 1e6).toFixed(0)} MB).`,
+    );
   }
   // Triage's engine host (P2-2), which FreeCADCmd runs: stage/triage/.
   cpSync(engineDir, stagedEngineDir, {

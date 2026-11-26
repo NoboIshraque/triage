@@ -143,13 +143,40 @@ jobs:
           ls "engines/eda/build/$os/stage/bin" | head -20
           echo "run=$run_id" >> "$GITHUB_OUTPUT"
 
-      # The Linux engine uses KiCad's system libraries (wxWidgets, OpenCascade,
-      # libgit2, Python …), as KiCad's own Linux packages do; the Windows engine
-      # carries its DLLs. Linux installers declare or bundle them (ROADMAP P8-2).
-      - name: KiCad's libraries for the Linux engine
-        if: runner.os == 'Linux' && steps.eda.outcome == 'success'
+      # The CAD engine (FreeCAD's App layer, ROADMAP P2-1, P2-2) builds in cad.yml; the
+      # app takes the newest one built for its OS, as for the EDA engine.
+      - name: Download the newest CAD engine
+        id: cad
+        continue-on-error: true
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          os=$([ "$RUNNER_OS" = Windows ] && echo windows || echo linux)
+          branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          default=$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch || echo main)
+          run_id=""
+          for b in "$branch" "$default"; do
+            for id in $(gh run list -R "$GITHUB_REPOSITORY" --workflow cad.yml --branch "$b" --status completed --limit 15 --json databaseId -q '.[].databaseId' || true); do
+              if gh run download "$id" -R "$GITHUB_REPOSITORY" -n "triage-cad-$os" -D "engines/cad/build/$os/stage" 2>/dev/null; then
+                run_id=$id
+                break 2
+              fi
+            done
+          done
+          if [ -z "$run_id" ]; then echo "No CAD engine for $os has passed yet."; exit 1; fi
+          echo "CAD run $run_id"
+          du -sh "engines/cad/build/$os/stage"
+          echo "run=$run_id" >> "$GITHUB_OUTPUT"
+
+      # The Linux engines use the system's libraries (KiCad's: wxWidgets, OpenCascade,
+      # libgit2, Python …; FreeCAD's: OpenCascade, Qt 6, Python 3.12 …), as KiCad's and
+      # FreeCAD's own Linux packages do; the Windows engines carry their DLLs. Linux
+      # installers declare or bundle them (ROADMAP P8-2).
+      - name: KiCad's and FreeCAD's libraries for the Linux engines
+        if: runner.os == 'Linux' && (steps.eda.outcome == 'success' || steps.cad.outcome == 'success')
         timeout-minutes: 15
-        run: scripts/dev/setup.sh --eda
+        run: scripts/dev/setup.sh ${{ steps.eda.outcome == 'success' && '--eda' || '' }} ${{ steps.cad.outcome == 'success' && '--cad' || '' }}
 
       - name: Build the engines into the app (CMake, Ninja, Cargo)
         run: node app/build.mjs engines
@@ -161,6 +188,7 @@ jobs:
         if: runner.os == 'Linux'
         env:
           TRIAGE_REQUIRE_EDA: ${{ steps.eda.outcome == 'success' && '1' || '0' }}
+          TRIAGE_REQUIRE_CAD: ${{ steps.cad.outcome == 'success' && '1' || '0' }}
         run: |
           # Ubuntu 24.04 blocks the unprivileged user namespaces Chromium's sandbox uses.
           sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
@@ -170,6 +198,7 @@ jobs:
         if: runner.os == 'Windows'
         env:
           TRIAGE_REQUIRE_EDA: ${{ steps.eda.outcome == 'success' && '1' || '0' }}
+          TRIAGE_REQUIRE_CAD: ${{ steps.cad.outcome == 'success' && '1' || '0' }}
         run: corepack pnpm --filter @triage/app-smoke smoke
 
       - name: Upload screenshots and logs
