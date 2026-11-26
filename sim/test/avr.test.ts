@@ -98,6 +98,23 @@ describe.skipIf(!addonAvailable())('AVR unit', () => {
     if (timed) expect(2 / wall).toBeGreaterThanOrEqual(1);
   });
 
+  it('reaches targets that are not whole picoseconds or whole cycles', () => {
+    const runner = new Runner({
+      device: ledDevice(),
+      scope: WHOLE,
+      firmwareHex: asm('loop:\n  rjmp loop\n'),
+    });
+    // 0.0017 s is 1700000000.0000002 ps: the app's paced runs ask for such times.
+    for (let t = 0.001; t < 0.01; t += 0.0007) {
+      runner.runUntil(t);
+      expect(runner.now).toBeCloseTo(t, 12);
+    }
+    // Targets 10 ps apart, less than a CPU cycle (62.5 ps at 16 MHz).
+    const start = runner.now;
+    for (let i = 1; i <= 20; i++) runner.runUntil(start + i * 10e-12);
+    expect(Math.round((runner.now - start) * 1e12)).toBe(200);
+  });
+
   it('echoes serial input', () => {
     const runner = new Runner({ device: ledDevice(), scope: WHOLE, firmwareHex: asm(ECHO) });
     runner.runUntil(0.01);

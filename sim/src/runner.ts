@@ -98,18 +98,25 @@ export class Runner {
 
   /** Runs to `seconds` of virtual time. */
   runUntil(seconds: number): void {
-    const until = seconds * PS_PER_S;
+    // Whole picoseconds, as the kernel counts: a fractional target (0.104 s is
+    // 104000000000.00002 ps) rounds down to the time already reached, forever.
+    const until = Math.round(seconds * PS_PER_S);
     if (!this.avr) {
       if (this.sim.now() < until) this.sim.runUntil(until);
       return;
     }
     const empty = new Float64Array();
     while (this.sim.now() < until) {
+      const before = this.sim.now();
       const grant = this.sim.grant();
       const end = Math.min(grant[1] ?? until, until);
       const { reached, events } = this.avr.run(end);
       const unblock = this.sim.complete(0, reached, events.length ? events : empty);
       this.avr.apply(unblock);
+      // Each step advances time; one that doesn't would repeat forever.
+      if (this.sim.now() <= before) {
+        throw new Error(`the simulation stopped advancing at ${before / PS_PER_S} s`);
+      }
     }
   }
 

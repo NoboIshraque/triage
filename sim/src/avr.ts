@@ -177,7 +177,9 @@ export class AvrUnit {
     this.stop = false;
     this.finishAdc();
     this.feedSerial();
-    const untilCycles = Math.floor(untilPs / this.cyclePs);
+    // Every instruction that starts before `untilPs` (a grant shorter than a cycle
+    // still runs the next one, or time would not advance).
+    const untilCycles = Math.ceil(untilPs / this.cyclePs);
     const cpu = this.cpu;
     let count = 0;
     // `stop` is set by the port listeners and the ADC during an instruction.
