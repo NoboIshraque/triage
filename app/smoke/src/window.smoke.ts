@@ -575,6 +575,7 @@ describe('packaged Triage app', () => {
     })()`);
   const runScope = async (scope: string) => {
     await simView().locator('.triage-sim-button[data-action="stop"]').click();
+    await expect.poll(() => simView().getAttribute('data-state'), { timeout: 30_000 }).toBe('idle');
     await simView().locator('select.triage-sim-scope').selectOption({ label: scope });
     await simView().locator('.triage-sim-button[data-action="run"]').click();
     await expect

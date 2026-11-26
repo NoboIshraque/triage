@@ -12,11 +12,11 @@
 > If something went wrong, write it there too (or tell Claude in a session).
 > Claude reads this file at the start of every session and acts on what you wrote.
 
-**Current build branch:** `claude/busy-ptolemy-ijnsz7` (the branch the newest
-work is on; Claude updates this line when a session works on another branch).
-Everything on it up to P2 is also **merged into the default branch**
-(`claude/unified-engineering-platform-jn5rmk`, 2026-11-26), so the default
-branch's nightly build and ZIP download have it too.
+**Current build branch:** `claude/wizardly-johnson-kqaiv5` (P3, the simulation;
+Claude updates this line when a session works on another branch). P2 and
+everything before it is **merged into the default branch**
+(`claude/unified-engineering-platform-jn5rmk`), so the default branch's nightly
+build and ZIP download have it too; P3 joins it when the phase is merged.
 
 ## At a glance
 
@@ -27,6 +27,7 @@ branch's nightly build and ZIP download have it too.
 | [C3](#c3--m1-exit-demo-the-circuit-inside-triage-p1) | M1 exit demo: the circuit inside Triage | P1 (milestone M1) | no | |
 | [C4](#c4--frame-rates-on-your-gpu-dv-22) | Frame rates on your GPU (the 60 fps check) | P1-4, P2-3 | no | |
 | [C5](#c5--the-3d-tab-and-the-enclosure-p2) | The 3D tab and the enclosure | P2 | no | |
+| [C6](#c6--m2-exit-demo-the-smart-fan-runs-in-one-window-p3) | M2 exit demo: the Smart Fan runs in one window | P3 (milestone M2) | no | |
 
 "Blocks the next phase: no" means Claude can start the next phase before you run
 it. A milestone (M1, M2 …) only counts as finished once you have run its exit
@@ -144,8 +145,8 @@ Triage's own commands start with "Triage:".
      `MOTOR_SPEED`, press Enter. **Check:** within about 2 seconds
      `board_pins.h` says `MOTOR_SPEED` where it said `FAN_PWM`. Also open
      `firmware\src\main.cpp` and hover the mouse over the pin name `BUTTON`
-     (line 10) or `TEMP_SENSE` (line 15): a box shows its net, the Arduino pin
-     and what the pin can do.
+     (in `setup()`, about line 56) or `TEMP_SENSE` (in `loop()`, about line
+     78): a box shows its net, the Arduino pin and what the pin can do.
      (`main.cpp` still uses the old name `FAN_PWM`; renaming code is later
      work.)
   8. **The KiCad fallback window:** click in the Board tab, then run
@@ -231,14 +232,88 @@ Triage's own commands start with "Triage:".
   covering the view in a narrow tab, colours, speed), and screenshots.
 - [ ] Done
 
+## C6 · M2 exit demo: the Smart Fan runs in one window (P3)
+
+- **Why:** ROADMAP M2 exit demo: "PLAN §3 steps 1–6 and 9 inside Triage … The
+  owner runs it on Windows." P3 runs the Smart Fan's firmware on an emulated
+  Arduino Uno, with its circuit, the fan's rotor in MuJoCo and the room's
+  temperature, inside the **Sim** tab; the rotor turns in the **3D** tab; the
+  scope picker runs just the circuit, just the code or just the mechanism; the
+  scenarios run as tests. CI checks all of it on Windows and Linux; this is the
+  run on your laptop that finishes milestone M2 (together with C3, M1).
+- **You need:** a build and the example project (top of this file) from the
+  current build branch, made on **2026-11-26 or later** (once P3 is merged,
+  the nightly too), about 30 minutes, and **the Arduino IDE 2** (or
+  arduino-cli): Triage compiles the firmware with the AVR compiler it installs.
+  - **Install it once:** download the Arduino IDE 2 for Windows from
+    <https://www.arduino.cc/en/software> and install it. Start it once, open
+    **Tools → Board → Boards Manager…**, search **Arduino AVR Boards** and make
+    sure it is **installed** (the IDE usually installs it on first start). Close
+    the IDE. (With arduino-cli instead: `arduino-cli core install arduino:avr`.)
+- **Steps:**
+  1. Open the `smart-fan` copy in Triage and click **Open Engineering Layout**
+     (see "Opening the project"). The bottom-right tab is **Sim**. If the
+     layout is cramped, double-click the **Sim** tab title to make it big
+     (double-click again to go back).
+  2. **Run the whole device:** in the Sim tab, leave **Scope** on **Whole
+     device** and **Speed** on **1×**, and click **Run**. **Check:** the status
+     line says "Building the firmware…" for a few seconds, then shows
+     `t = … s · 1.00× real time · Whole device` with the time counting up. The
+     status bar at the bottom says "Sim: Whole device · … · 1.00× real time".
+     *If it says avr-gcc wasn't found:* the Arduino IDE (above) isn't
+     installed, or its AVR boards aren't; tell Claude the exact message.
+  3. **The display and the serial monitor:** under **Display**, the OLED
+     shows the temperature (about `24.0C 0%`) and `AUTO`. The **Serial
+     monitor** prints a line every 0.1 s, like `t=24.0 reading=491 duty=0%
+     mode=AUTO`.
+  4. **Warm the room (PLAN §3 step 6):** in **Environment**, drag **Room
+     temperature** to **35 °C**. **Check:** within a second the OLED shows
+     `35.0C 80%`, the plot under **Instruments** shows the fan's duty rising to
+     80%, the motor current and the rotor's speed (about 2,600 rpm), and in the
+     **3D** tab the fan's rotor turns. Take a screenshot (**Win+Shift+S**).
+  5. **Too hot:** drag the temperature to **40 °C**. **Check:** the OLED adds
+     `HOT` and shows 100%.
+  6. **The Mode button:** under **Parts**, click **Press** next to **SW1**
+     once. **Check:** the OLED says `MAX`. Press it again: `OFF`, and the rotor
+     in the 3D tab slows to a stop. Press once more for `AUTO`.
+  7. **Pause, step, stop:** click **Pause** (the Run button): the time stops
+     and so does the rotor. Click **Step 10 ms** a few times: the time moves 10
+     ms each click. Click **Run** to go on, then **Stop**.
+  8. **Circuit only:** pick **Scope → Circuit only** and click **Run**. The
+     firmware doesn't run: **Stubs at the scope's edge** lists `A1.D9.drive:
+     control` and others. Drag **A1.D9.drive PWM duty** to 0.8. **Check:** the
+     plot shows the motor current and the rotor's speed rising (no OLED: no
+     firmware). Click **Stop**.
+  9. **Code only:** pick **Scope → Code only** and click **Run**. Only the
+     firmware runs; the **Virtual I/O** panel stands in for the circuit. Drag
+     **TEMP_SENSE (A0)** to **3.03 V**. **Check:** the OLED shows about `35.0C
+     80%` and the **FAN_PWM (D9)** indicator shows about 80%. Click **Press** next
+     to **BUTTON (D2)**: the OLED says `MAX`. Click **Stop**.
+  10. **Mechanism only:** pick **Scope → Mechanism only**, click **Run**, and
+      drag the **J1.torque** slider to about **2 mN·m**. **Check:** the plot
+      shows the rotor's speed rising to about 1,900 rpm and the rotor turns in
+      the 3D tab. Click **Stop**.
+  11. **The saved scope:** pick **Scope → Power stage only** (from
+      `simulation/scopes/power-stage.toml`) and click **Run**: D9 is an 80%
+      PWM generator and the rotor spins up. Click **Stop**.
+  12. **Scenarios (PLAN §3 step 9):** at the bottom of the Sim tab, click **Run
+      all scenarios**. **Check:** after about half a minute all five show a
+      green ✓, `fan reacts to overheating` among them; each lists its checks.
+  13. **The Test Explorer:** click the flask icon in the left-hand bar
+      (**Testing**). **Check:** **Triage scenarios** lists the five scenario
+      files; click the ▶ next to **Triage scenarios**: all pass.
+- **Tell Claude:** which steps worked; the real-time ratio in step 2 (it
+  should stay at 1.00×; with Speed **max** it shows how fast your laptop can
+  go: tell Claude that number too); anything slow, odd or confusing in the Sim
+  tab; and screenshots.
+- [ ] Done
+
 ---
 
 ## Coming later
 
 Claude adds full steps when the work package is built. From the ROADMAP:
 
-- **M2 exit demo (end of P3):** the Smart Fan in one window: run the whole
-  device, or just the circuit, the code or the mechanism.
 - **PC exit demo and PC-6 (phone companion, after P3):** "Show on phone" from
   the laptop, then the simulation on your phone.
 - **M3 exit demo (end of P4):** the ESP32 Smart Fan serving its dashboard over

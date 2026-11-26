@@ -50,7 +50,7 @@ describe('SSD1306', () => {
     expect(d.text).toBe('');
   });
 
-  it('takes a command\'s parameters from later transactions, as drivers send them', () => {
+  it("takes a command's parameters from later transactions, as drivers send them", () => {
     const d = new Ssd1306();
     for (const byte of [0x20, 0x00, 0x21, 0, 127, 0x22, 3, 7, 0xaf]) send(d, 0x00, [byte]);
     send(d, 0x40, glyphs('MAX'));
