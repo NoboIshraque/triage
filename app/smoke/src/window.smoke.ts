@@ -345,6 +345,50 @@ describe('packaged Triage app', () => {
     await window.screenshot({ path: shot('cad-view') });
   });
 
+  // ROADMAP P2-3 (a board edit updates the 3D view) and P2-5 (a deliberately tall part
+  // gets a red highlight and a problem entry).
+  (cadShipped && edaShipped ? it : it.skip)(
+    'follows a board edit in 3D and reports a part too tall for the enclosure',
+    async () => {
+      const updates = async () => Number((await cadView().getAttribute('data-board-updates')) ?? 0);
+      const setHeight = async (reference: string, height: string) => {
+        const before = await updates();
+        await runCommand(window, "Triage: Set a Part's Height (3D and Fit Checks)");
+        const input = window.locator('.quick-input-widget .quick-input-box input');
+        const prompt = (text: string) =>
+          window
+            .locator('.quick-input-widget .quick-input-message', { hasText: text })
+            .waitFor({ state: 'visible', timeout: 30_000 });
+        await prompt('Part reference');
+        await input.fill(reference);
+        await window.keyboard.press('Enter');
+        await prompt(`Height of ${reference}`);
+        await input.fill(height);
+        await window.keyboard.press('Enter');
+        const started = Date.now();
+        await expect.poll(updates, { timeout: 60_000, interval: 50 }).toBeGreaterThan(before);
+        return Date.now() - started;
+      };
+      const problems = async () => Number((await cadView().getAttribute('data-problems')) ?? 0);
+      expect(await problems()).toBe(0);
+
+      const editToViewMs = await setHeight('R1', '60');
+      console.log(JSON.stringify({ boardEditTo3dMs: editToViewMs }));
+      await expect.poll(problems, { timeout: 30_000 }).toBeGreaterThan(0);
+      expect(await cadView().getAttribute('data-problem-objects')).toContain('R1');
+      await runCommand(window, 'View: Focus Problems (Errors, Warnings, Infos)');
+      await window
+        .locator('.markers-panel .marker-message', { hasText: 'R1' })
+        .first()
+        .waitFor({ state: 'visible', timeout: 30_000 });
+      await window.screenshot({ path: shot('cad-fit-problem') });
+
+      // Back to the height the footprint's kind gives (0 = not set).
+      await setHeight('R1', '0');
+      await expect.poll(problems, { timeout: 30_000 }).toBe(0);
+    },
+  );
+
   // ROADMAP P1-4: the Schematic and Board tabs drawn by KiCad's engine.
   const edaView = (kind: string) => window.locator(`.triage-eda-view[data-triage-eda="${kind}"]`);
 
