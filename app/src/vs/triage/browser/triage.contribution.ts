@@ -28,6 +28,8 @@ import { OpenEngineeringLayoutAction, OpenEngineeringWindowsAction, PopOutViewAc
 import { TriageOverviewView } from './triageOverviewView.js';
 import { TriageViewEditor, TriageViewInput, TriageViewInputSerializer } from './triageViewEditor.js';
 import { TriageWalkthroughContribution } from './triageWalkthrough.js';
+import { registerTriageMenus } from './triageMenus.js';
+import './arduino/arduino.contribution.js';
 
 // --- VS Code's built-in AI features ---
 
@@ -81,6 +83,9 @@ registerSimCommands();
 registerAction2(OpenEngineeringLayoutAction);
 registerAction2(OpenEngineeringWindowsAction);
 registerAction2(PopOutViewAction);
+
+// Buttons and mouse first (ROADMAP PA-1): the Triage menu and the buttons above code.
+registerTriageMenus();
 
 // --- Welcome page ---
 

@@ -30,6 +30,8 @@ export const SERIAL_MONITOR_CONTAINER_ID = 'workbench.panel.triageSerialMonitor'
 export const SERIAL_MONITOR_VIEW_ID = 'workbench.triage.serialMonitor';
 /** The setting with extra Boards Manager index URLs (the Arduino IDE's "Additional boards manager URLs"). */
 export const ARDUINO_BOARDS_URLS_SETTING = 'triage.arduino.additionalBoardsUrls';
+/** Where File → New Project and File → Examples create projects (default: Documents/Triage). */
+export const PROJECTS_FOLDER_SETTING = 'triage.projectsFolder';
 
 /** A board the Arduino engine can build for. */
 export interface IArduinoBoard {
@@ -161,8 +163,10 @@ export interface IArduinoEngine {
 	installPlatform(id: string, version?: string): Promise<void>;
 	uninstallPlatform(id: string): Promise<void>;
 	examples(fqbn?: string): Promise<IArduinoExample[]>;
-	/** Copies an example into a new Triage project folder (ROADMAP PA-6). */
+	/** Copies an example into a new Triage project in `folder` (ROADMAP PA-6); returns its folder. */
 	createProject(options: { folder: string; name: string; fqbn: string; example?: string }): Promise<string>;
+	/** Records (or, without a version, forgets) a library in the project's triage.toml (PA-4). */
+	setProjectLibrary(root: string, name: string, version?: string): Promise<readonly string[]>;
 	monitorOpen(port: string, baud: number, fqbn?: string): Promise<void>;
 	monitorSend(text: string): Promise<void>;
 	monitorClose(): Promise<void>;

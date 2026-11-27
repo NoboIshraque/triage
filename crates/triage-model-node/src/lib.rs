@@ -52,6 +52,10 @@ pub struct JsProject {
     pub domains: Vec<JsDomain>,
     /// `firmware.board`, the board profile id (`arduino-uno`).
     pub board: Option<String>,
+    /// `firmware.fqbn`, the board for builds and uploads (`arduino:avr:uno`).
+    pub fqbn: Option<String>,
+    /// `firmware.libraries`, `Name@version`.
+    pub libraries: Vec<String>,
 }
 
 /// Loads `<dir>/triage.toml`. Returns `null` when the folder is not a Triage
@@ -70,13 +74,16 @@ pub fn load_project(dir: String) -> napi::Result<Option<JsProject>> {
         Err(error) => return Err(napi::Error::from_reason(error.to_string())),
     };
     let summary = project.summary();
-    let board = project
-        .manifest
-        .firmware
-        .as_ref()
-        .and_then(|f| f.board.clone());
+    let firmware = project.manifest.firmware.as_ref();
+    let board = firmware.and_then(|f| f.board.clone());
+    let fqbn = firmware.and_then(|f| f.fqbn.clone());
+    let libraries = firmware
+        .and_then(|f| f.libraries.clone())
+        .unwrap_or_default();
     Ok(Some(JsProject {
         board,
+        fqbn,
+        libraries,
         root: dir,
         name: summary.name,
         description: summary.description,

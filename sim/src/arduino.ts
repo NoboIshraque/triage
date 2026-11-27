@@ -1048,3 +1048,57 @@ export function openMonitor(
     close: () => child.kill(),
   };
 }
+
+// --- a project's libraries in triage.toml ----------------------------------------------------
+
+/**
+ * Records (or with `version` undefined, forgets) a library in triage.toml's
+ * `[firmware] libraries`, so a copy of the project on another laptop builds with
+ * the same versions (ROADMAP PA-4). Edits the text, keeping the rest as it is.
+ */
+export function setProjectLibrary(
+  root: string,
+  name: string,
+  version: string | undefined,
+): string[] {
+  const file = path.join(root, 'triage.toml');
+  const text = readFileSync(file, 'utf8');
+  const lines = text.split('\n');
+  let section = '';
+  let firmwareAt = -1;
+  let librariesAt = -1;
+  for (const [i, line] of lines.entries()) {
+    const header = /^\s*\[([^\]]+)\]\s*$/.exec(line);
+    if (header) section = header[1]?.trim() ?? '';
+    else if (section === 'firmware' && /^\s*libraries\s*=/.test(line)) librariesAt = i;
+    if (header && section === 'firmware') firmwareAt = i;
+  }
+  let current: string[] = [];
+  if (librariesAt >= 0) {
+    const value = /=\s*(\[.*\])\s*$/.exec(lines[librariesAt] ?? '')?.[1];
+    if (!value) {
+      throw new ArduinoError(`${file}: write firmware.libraries on one line to let Triage edit it`);
+    }
+    current = JSON.parse(value) as string[];
+  }
+  const others = current.filter((entry) => {
+    const at = entry.lastIndexOf('@');
+    return (at > 0 ? entry.slice(0, at) : entry) !== name;
+  });
+  const next = version === undefined ? others : [...others, `${name}@${version}`].sort();
+  const line = `libraries = ${JSON.stringify(next).replace(/","/g, '", "')}`;
+  if (librariesAt >= 0) lines[librariesAt] = line;
+  else if (firmwareAt >= 0) lines.splice(firmwareAt + 1, 0, line);
+  else lines.push('', '[firmware]', line);
+  writeFileSync(file, lines.join('\n'));
+  return next;
+}
+
+/** A folder for a new project in `parent` that doesn't exist yet: `Blink`, `Blink_2` … */
+export function freeProjectName(parent: string, name: string): string {
+  const safe = name.replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'Sketch';
+  if (!existsSync(path.join(parent, safe))) return safe;
+  for (let i = 2; ; i++) {
+    if (!existsSync(path.join(parent, `${safe}_${i}`))) return `${safe}_${i}`;
+  }
+}

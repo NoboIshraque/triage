@@ -16,6 +16,8 @@ import { DisposableStore } from '../../base/common/lifecycle.js';
 import { ProxyChannel } from '../../base/parts/ipc/common/ipc.js';
 import { Server as UtilityProcessServer } from '../../base/parts/ipc/node/ipc.mp.js';
 import { isUtilityProcess } from '../../base/parts/sandbox/node/electronTypes.js';
+import { ARDUINO_ENGINE_CHANNEL } from '../common/arduino/arduino.js';
+import { ArduinoEngine } from './arduinoEngine.js';
 import { ISimEngine, ISimFrame, ISimModule, ISimProject, ISimRunInfo, ISimRunner, ISimScenarioResult, ISimScope, SIM_ENGINE_CHANNEL, SimState } from '../common/sim/simService.js';
 
 /** Virtual time per kernel call between checks of the wall clock, s. */
@@ -366,4 +368,8 @@ export class SimEngine implements ISimEngine {
 if (isUtilityProcess(process)) {
 	const server = new UtilityProcessServer();
 	server.registerChannel(SIM_ENGINE_CHANNEL, ProxyChannel.fromService(new SimEngine(), new DisposableStore()));
+	// The Arduino engine (ROADMAP PA) runs in a utility process of its own made from
+	// this module (the window starts one per engine), so builds and installs never
+	// hold up a running simulation.
+	server.registerChannel(ARDUINO_ENGINE_CHANNEL, ProxyChannel.fromService(new ArduinoEngine(), new DisposableStore()));
 }

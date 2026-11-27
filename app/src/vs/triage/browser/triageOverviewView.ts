@@ -23,6 +23,7 @@ import { describeEngineState, HELLO_ENGINE_COMMANDS, IHelloEngineBenchmark, ITri
 import { ITriageDomain, ITriageProjectService, TriageProjectState } from '../common/projectModel.js';
 import { ENGINEERING_LAYOUT_COMMAND_ID, ENGINEERING_WINDOWS_COMMAND_ID, TRIAGE_WALKTHROUGH_ID } from '../common/triage.js';
 import { URI } from '../../base/common/uri.js';
+import { ARDUINO_COMMANDS } from '../common/arduino/arduino.js';
 import { joinPath } from '../../base/common/resources.js';
 
 /** What each domain holds, for folders that are not Triage projects yet. */
@@ -76,6 +77,26 @@ export class TriageOverviewView extends ViewPane {
 		const walkthrough = this._register(new Button(root, { ...defaultButtonStyles, secondary: true, title: true }));
 		walkthrough.label = localize('triage.overview.walkthrough', "Get Started with Triage");
 		this._register(walkthrough.onDidClick(() => this.commandService.executeCommand('workbench.action.openWalkthrough', TRIAGE_WALKTHROUGH_ID, false)));
+
+		// The Arduino IDE built in (ROADMAP PA), with buttons (PA-1).
+		append(root, $('h3', undefined, localize('triage.overview.firmware', "Firmware")));
+		const firmware = append(root, $('.triage-overview-buttons'));
+		const firmwareButtons: [string, string, boolean][] = [
+			[localize('triage.overview.build', "Build"), ARDUINO_COMMANDS.build, false],
+			[localize('triage.overview.upload', "Upload"), ARDUINO_COMMANDS.upload, false],
+			[localize('triage.overview.monitor', "Serial Monitor"), ARDUINO_COMMANDS.serialMonitor, true],
+			[localize('triage.overview.board', "Board and Port…"), ARDUINO_COMMANDS.selectBoard, true],
+			[localize('triage.overview.libraries', "Library Manager"), ARDUINO_COMMANDS.libraryManager, true],
+			[localize('triage.overview.boards', "Boards Manager"), ARDUINO_COMMANDS.boardsManager, true],
+			[localize('triage.overview.examples', "Examples…"), ARDUINO_COMMANDS.examples, true],
+			[localize('triage.overview.newProject', "New Project…"), ARDUINO_COMMANDS.newProject, true],
+		];
+		for (const [label, command, secondary] of firmwareButtons) {
+			const button = this._register(new Button(firmware, { ...defaultButtonStyles, secondary, title: true }));
+			button.label = label;
+			button.element.dataset['command'] = command;
+			this._register(button.onDidClick(() => this.commandService.executeCommand(command)));
+		}
 
 		// The hello engine (ROADMAP P0-4) starts when this view first shows.
 		append(root, $('h3', undefined, localize('triage.overview.engines', "Engines")));

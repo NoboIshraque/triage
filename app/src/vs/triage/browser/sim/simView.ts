@@ -9,6 +9,8 @@
  *  monitor); and the project's scenarios with their results.
  *--------------------------------------------------------------------------------------------*/
 
+import { ICommandService } from '../../../platform/commands/common/commands.js';
+import { ARDUINO_COMMANDS } from '../../common/arduino/arduino.js';
 import { $, addDisposableListener, append, EventType, getWindow, reset } from '../../../base/browser/dom.js';
 import { Disposable, DisposableStore } from '../../../base/common/lifecycle.js';
 import { basename } from '../../../base/common/path.js';
@@ -55,6 +57,7 @@ export class SimView extends Disposable {
 	constructor(
 		@ITriageSimService private readonly sim: ITriageSimService,
 		@ILogService private readonly logService: ILogService,
+		@ICommandService private readonly commandService: ICommandService,
 	) {
 		super();
 		this.element = $('.triage-sim-view');
@@ -65,6 +68,9 @@ export class SimView extends Disposable {
 		this.runButton = this.button(this.toolbar, localize('triage.sim.run', "Run"), () => this.toggleRun(), 'run');
 		this.button(this.toolbar, localize('triage.sim.step', "Step 10 ms"), () => this.step(), 'step');
 		this.button(this.toolbar, localize('triage.sim.stop', "Stop"), () => this.sim.stop(), 'stop');
+		// ROADMAP PA-1: Build (and Upload) here too, not only above the code; Run builds by itself.
+		this.button(this.toolbar, localize('triage.sim.build', "Build"), () => this.commandService.executeCommand(ARDUINO_COMMANDS.build), 'build');
+		this.button(this.toolbar, localize('triage.sim.upload', "Upload"), () => this.commandService.executeCommand(ARDUINO_COMMANDS.upload), 'upload');
 		append(this.toolbar, $('span.triage-sim-label', undefined, localize('triage.sim.scope', "Scope")));
 		this.scopeSelect = append(this.toolbar, $('select.triage-sim-scope')) as HTMLSelectElement;
 		this.scopeSelect.title = localize('triage.sim.scopeTitle', "What runs: the whole device, or one part with stubs for the rest (PLAN §4.7)");

@@ -17,8 +17,13 @@
           "minLength": 1,
           "description": "Shown in Triage's project explorer."
         },
-        "format": { "const": 0, "description": "Manifest format version. Triage reads format 0." },
-        "description": { "type": "string" }
+        "format": {
+          "const": 0,
+          "description": "Manifest format version. Triage reads format 0."
+        },
+        "description": {
+          "type": "string"
+        }
       }
     },
     "firmware": {
@@ -26,11 +31,28 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "path": { "$ref": "#/$defs/relativePath", "default": "firmware" },
+        "path": {
+          "$ref": "#/$defs/relativePath",
+          "default": "firmware"
+        },
         "board": {
           "type": "string",
           "minLength": 1,
           "description": "Board profile, e.g. arduino-uno, esp32-devkitc, pico."
+        },
+        "fqbn": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The board for builds and uploads, as arduino-cli names it (fully qualified board name), e.g. arduino:avr:nano:cpu=atmega328old. Default: the board profile's."
+        },
+        "libraries": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true,
+          "description": "Arduino libraries the firmware uses, as Name@version (the Library Manager writes them), e.g. \"Adafruit SSD1306@2.5.17\"."
         },
         "build": {
           "enum": [
@@ -51,7 +73,10 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "path": { "$ref": "#/$defs/relativePath", "default": "electronics" },
+        "path": {
+          "$ref": "#/$defs/relativePath",
+          "default": "electronics"
+        },
         "kicad_project": {
           "$ref": "#/$defs/relativePath",
           "pattern": "\\.kicad_pro$",
@@ -64,10 +89,16 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "path": { "$ref": "#/$defs/relativePath", "default": "mechanical" },
+        "path": {
+          "$ref": "#/$defs/relativePath",
+          "default": "mechanical"
+        },
         "documents": {
           "type": "array",
-          "items": { "$ref": "#/$defs/relativePath", "pattern": "\\.FCStd$" },
+          "items": {
+            "$ref": "#/$defs/relativePath",
+            "pattern": "\\.FCStd$"
+          },
           "description": "Relative to path."
         }
       }
@@ -77,7 +108,10 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "path": { "$ref": "#/$defs/relativePath", "default": "simulation" }
+        "path": {
+          "$ref": "#/$defs/relativePath",
+          "default": "simulation"
+        }
       }
     }
   },

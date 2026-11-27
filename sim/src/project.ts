@@ -115,6 +115,33 @@ function str(value: unknown, fallback: string): string {
   return typeof value === 'string' ? value : fallback;
 }
 
+/** What a project's firmware build needs (triage.toml's [firmware]), without the link graph. */
+export interface FirmwareConfig {
+  readonly root: string;
+  readonly name: string;
+  readonly board: string;
+  readonly fqbn?: string;
+  readonly libraries: readonly string[];
+  readonly firmwareDir: string;
+}
+
+export function loadFirmwareConfig(folder: string): FirmwareConfig {
+  const root = path.resolve(folder);
+  const manifest = readToml(path.join(root, 'triage.toml'));
+  if (!manifest['project']) throw new Error(`${root} has no triage.toml`);
+  const firmware = section(manifest, 'firmware');
+  return {
+    root,
+    name: str(section(manifest, 'project')['name'], path.basename(root)),
+    board: str(firmware['board'], 'arduino-uno'),
+    ...(typeof firmware['fqbn'] === 'string' ? { fqbn: firmware['fqbn'] } : {}),
+    libraries: Array.isArray(firmware['libraries'])
+      ? firmware['libraries'].filter((l): l is string => typeof l === 'string')
+      : [],
+    firmwareDir: path.join(root, str(firmware['path'], 'firmware')),
+  };
+}
+
 /** Loads a project's simulation inputs. */
 export function loadProject(folder: string): Project {
   const root = path.resolve(folder);

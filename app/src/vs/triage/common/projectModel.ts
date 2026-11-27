@@ -20,6 +20,10 @@ export interface ITriageProject {
 	readonly domains: readonly ITriageDomain[];
 	/** firmware.board, the board profile id (arduino-uno). */
 	readonly board?: string;
+	/** firmware.fqbn, the board for builds and uploads (arduino:avr:uno). */
+	readonly fqbn?: string;
+	/** firmware.libraries, Name@version. */
+	readonly libraries?: readonly string[];
 }
 
 export interface ITriageDomain {
