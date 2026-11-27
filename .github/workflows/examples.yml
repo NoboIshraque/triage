@@ -69,6 +69,9 @@ jobs:
         timeout-minutes: 30
         run: scripts/dev/setup.sh --eda --cad
 
+      - name: KiCad's pinned source (the generator takes the board's header from its demos)
+        run: node engines/eda/build.mjs fetch
+
       - name: The schematic and the board (kicad-cli writes them; ERC, DRC, schematic parity)
         run: node scripts/examples/smart-fan-kicad.mjs
 
