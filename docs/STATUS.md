@@ -11,6 +11,22 @@ checks still open: **C3** (M1 demo), **C4** (60 fps on a real GPU), **C5** (the
 3D tab, optional) and **C6** (the M2 exit demo). Every owner step is in
 [CHECKS.md](CHECKS.md).
 
+### PA: Arduino built in (in progress, 2026-11-27)
+
+| WP | State | Evidence |
+|---|---|---|
+| PA-1 Buttons for every action | built | A **Triage** menu in the menu bar with every Triage command (`browser/triageMenus.ts`); **File → New Triage Project…** and **Examples…**; **✓ Build**, **→ Upload** and **Serial Monitor** buttons above firmware files; **Build** and **Upload** in the Sim tab; **Rename Net…**, **Edit in KiCad** and a **right-click menu** (Rename Net on a net, select a part, Fit, Undo, Redo, Save) in the Schematic and Board tabs; **Part Height…** and a height row for board parts in the 3D tab; firmware buttons in the Triage side bar. `scripts/checks/buttons.test.mjs` fails when a user-facing command has no menu entry. The smoke test opens no command palette any more: PLAN §3 (open, build, run, warm the room by mouse, the Mode button, scenarios, Export STL) with clicks (DV-42) |
+| PA-2 Arduino toolchain built in | built; CI pending | `engines/arduino/`: arduino-cli 1.6.0 (the IDE 2's), serial-discovery, serial-monitor, mdns-discovery, arduinoOTA, ctags 5.8-arduino12, avrdude 8.0 and avr-gcc 7.3.0-atmel3.6.1-arduino7 (Arduino's recipe: GCC 7.3.0 + Atmel's patches, binutils 2.26, avr-libc 2.0.0) built from pinned sources for Linux and, cross-built, Windows (DV-35, DV-36). In this session: Blink compiles for Uno, Nano and Mega with it; the Smart Fan builds (10,634 bytes, Wire); all 13 sketch and scenario tests pass with arduino-cli-built firmware (LTO). Firmware builds go through arduino-cli everywhere (DV-37, DV-38; DV-29 closed); the Sim and App workflows take the engine from the new **Arduino** workflow and check that no Arduino software is installed |
+| PA-3 Upload to a real board | built; CI pending | The board and port picker in the status bar (plugged-in boards first, board options such as a Nano's **Old Bootloader**), Upload with plain-words errors, the **Serial Monitor** panel (baud rate, line ending, send box). `sim/src/board.ts`: an emulated Uno with Optiboot (SPM, watchdog, BOOTRST) behind TCP; `sim/test/upload.test.ts` uploads a serial Blink with `arduino-cli upload` over `net:` (both OSes) and a socat pty (Linux), checks the flash byte for byte and reads its output (DV-39). **Owner check C7** |
+| PA-4 Library Manager | built; CI pending | Search, install (with dependencies), versions, remove; installs record `Name@version` in triage.toml's `[firmware] libraries` (schema and model updated), Build installs listed ones first; `compile_commands.json` for C++ servers (DV-40). `sim/test/managers.test.ts`: Adafruit SSD1306 installs, a sketch using it builds and draws on the simulated OLED; the smoke test installs it from the Library Manager and runs such a sketch in the Sim tab |
+| PA-5 Boards Manager | built; CI pending | Installed and available platforms, AVR built in and offline, **Refresh**, **More URLs…** (extra index URLs setting), install and remove with arduino-cli's checksum checks; the board picker marks boards Triage simulates. `managers.test.ts` installs a platform from a local test index and compiles Blink for it. **Owner check C7** (ESP32) |
+| PA-6 Examples and New Project | built; CI pending | The IDE 2's built-in examples (arduino-examples 1.10.3) and each library's, in File → Examples… and the Examples view; an example is copied into `Documents/Triage` and opens in a new window as a sketch-folder project; New Project with a board picker; a project without electronics simulates the bare board (DV-41). The smoke test opens Blink from File → Examples, sees D13 blink in Code only and builds it |
+
+**This session's environment.** Unlike earlier sessions, `apt-get` works here,
+so mingw-w64, socat and VS Code's system libraries were installed and the
+toolchain was built and tested locally. Go 1.27.4 and Node 24.22.1 were built
+from source in the session (CLAUDE.md: no downloaded binaries).
+
 ### P3 done (2026-11-27)
 
 | WP | State | Evidence |
@@ -307,7 +323,7 @@ The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt
 ## Deviations from the plan
 
 Every place the build differs from the plan is logged in
-[DEVIATIONS.md](DEVIATIONS.md) (27 entries, DV-01 … DV-27, plus choices the plan left open), so the
+[DEVIATIONS.md](DEVIATIONS.md) (DV-01 … DV-42, plus choices the plan left open), so the
 owner can compare the final build with the plan.
 
 ## Open questions
