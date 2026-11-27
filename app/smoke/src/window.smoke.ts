@@ -78,9 +78,13 @@ async function answerPrompt(window: Page, prompt: string, value: string): Promis
   await window.keyboard.press('Enter');
 }
 
-/** Clicks an item of an open quick pick list. */
+/** Clicks the item of an open quick pick list whose label is exactly `label`. */
 async function pickItem(window: Page, label: string): Promise<void> {
-  const row = window.locator('.quick-input-widget .monaco-list-row', { hasText: label }).first();
+  const exact = new RegExp(`^\\s*${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`);
+  const row = window
+    .locator('.quick-input-widget .monaco-list-row')
+    .filter({ has: window.locator('.label-name', { hasText: exact }) })
+    .first();
   await row.waitFor({ state: 'visible', timeout: 30_000 });
   await row.click();
 }
