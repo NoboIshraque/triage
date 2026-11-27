@@ -22,6 +22,8 @@ export const ARDUINO_COMMANDS = {
 } as const;
 
 export const ARDUINO_ENGINE_CHANNEL = 'triageArduinoEngine';
+/** The Arduino engine's utility process module (its own: VS Code keys workers by module). */
+export const ARDUINO_ENGINE_MODULE = 'vs/triage/node/arduinoEngineMain';
 export const ARDUINO_VIEW_CONTAINER_ID = 'workbench.view.triageArduino';
 export const ARDUINO_LIBRARIES_VIEW_ID = 'workbench.triage.arduino.libraries';
 export const ARDUINO_BOARDS_VIEW_ID = 'workbench.triage.arduino.boards';

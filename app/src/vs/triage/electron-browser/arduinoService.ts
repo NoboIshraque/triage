@@ -20,9 +20,8 @@ import { IStorageService, StorageScope, StorageTarget } from '../../platform/sto
 import { INativeWorkbenchEnvironmentService } from '../../workbench/services/environment/electron-browser/environmentService.js';
 import { IStatusbarEntryAccessor, IStatusbarService, StatusbarAlignment } from '../../workbench/services/statusbar/browser/statusbar.js';
 import { IUtilityProcessWorkerWorkbenchService } from '../../workbench/services/utilityProcess/electron-browser/utilityProcessWorkerWorkbenchService.js';
-import { ARDUINO_BOARDS_URLS_SETTING, ARDUINO_COMMANDS, ARDUINO_ENGINE_CHANNEL, ArduinoTask, IArduinoBuild, IArduinoEngine, IArduinoOutput, IArduinoPort, IArduinoProjectRef, ITriageArduinoService } from '../common/arduino/arduino.js';
+import { ARDUINO_BOARDS_URLS_SETTING, ARDUINO_COMMANDS, ARDUINO_ENGINE_CHANNEL, ARDUINO_ENGINE_MODULE, ArduinoTask, IArduinoBuild, IArduinoEngine, IArduinoOutput, IArduinoPort, IArduinoProjectRef, ITriageArduinoService } from '../common/arduino/arduino.js';
 import { ITriageProjectService } from '../common/projectModel.js';
-import { SIM_ENGINE_MODULE } from '../common/sim/simService.js';
 
 /** The board profiles Triage simulates, and their boards (sim/src/arduino.ts BOARD_FQBNS). */
 const PROFILE_FQBNS: Record<string, { fqbn: string; name: string }> = {
@@ -188,7 +187,7 @@ export class TriageArduinoService extends Disposable implements ITriageArduinoSe
 
 	private async createEngine(): Promise<IArduinoEngine> {
 		const worker = await this.workerService.createWorker({
-			moduleId: SIM_ENGINE_MODULE,
+			moduleId: ARDUINO_ENGINE_MODULE,
 			type: 'triageArduinoEngine',
 			name: 'triage-arduino-engine',
 		});

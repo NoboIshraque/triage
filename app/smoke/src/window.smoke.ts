@@ -49,8 +49,13 @@ const ENGINEERING_TABS = ['code', 'schematic', 'board', '3d', 'sim'];
  * item. On a narrow screen VS Code folds menus into "More", which this follows.
  */
 async function clickMenu(window: Page, path: readonly string[]): Promise<void> {
+  // A menu left open (or a pick list) would swallow the first click.
+  await window.keyboard.press('Escape');
+  await window.keyboard.press('Escape');
+  const label = (text: string) =>
+    new RegExp(`^\\s*${text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
   const [top, ...rest] = path;
-  const button = window.locator(`.menubar .menubar-menu-button[aria-label="${top}"]`);
+  const button = window.locator('.menubar .menubar-menu-button', { hasText: label(top ?? '') });
   const items = [...rest];
   if (await button.isVisible()) {
     await button.click();
@@ -58,15 +63,25 @@ async function clickMenu(window: Page, path: readonly string[]): Promise<void> {
     await window.locator('.menubar .menubar-menu-button[aria-label="More"]').click();
     items.unshift(top ?? '');
   }
-  for (const [i, label] of items.entries()) {
+  for (const [i, text] of items.entries()) {
     const item = window
       .locator('.monaco-menu .action-menu-item')
-      .filter({ has: window.locator(`.action-label[aria-label="${label}"]`) })
+      .filter({ has: window.locator('.action-label', { hasText: label(text) }) })
       .last();
     await item.waitFor({ state: 'visible', timeout: 30_000 });
-    if (i < items.length - 1) await item.hover();
-    else await item.click();
+    if (i < items.length - 1) {
+      await item.hover();
+      await item.click();
+    } else {
+      await item.click();
+    }
   }
+  // The menu closes once the item runs.
+  await window
+    .locator('.monaco-menu-container')
+    .first()
+    .waitFor({ state: 'hidden', timeout: 10_000 })
+    .catch(() => undefined);
 }
 
 /** A quick input's prompt (a value to type: a net's name, a height), then the value. */
@@ -80,7 +95,7 @@ async function answerPrompt(window: Page, prompt: string, value: string): Promis
 
 /** Clicks the item of an open quick pick list whose label is exactly `label`. */
 async function pickItem(window: Page, label: string): Promise<void> {
-  const exact = new RegExp(`^\\s*${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`);
+  const exact = new RegExp(`^\\s*${label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*$`, 'i');
   const row = window
     .locator('.quick-input-widget .monaco-list-row')
     .filter({ has: window.locator('.label-name', { hasText: exact }) })
@@ -748,7 +763,7 @@ describe('packaged Triage app', () => {
   // for a real board (CI has none plugged in: it says so).
   it('picks the board and port in the status bar and opens the Serial Monitor (ROADMAP PA-3)', async () => {
     const status = window.locator('.part.statusbar [id="triage.arduino.status"]');
-    await expect.poll(() => status.textContent(), { timeout: 60_000 }).toContain('Arduino Uno');
+    await expect.poll(() => status.textContent(), { timeout: 60_000 }).toMatch(/Arduino Uno/i);
     await status.click();
     await pickItem(window, 'Arduino Nano');
     // The Nano's Processor menu (the Arduino IDE's Tools menu): the old bootloader.
@@ -759,7 +774,7 @@ describe('packaged Triage app', () => {
     await status.click();
     await pickItem(window, 'Arduino Uno');
     await pickItem(window, 'No port: build only');
-    await expect.poll(() => status.textContent(), { timeout: 30_000 }).toContain('Arduino Uno');
+    await expect.poll(() => status.textContent(), { timeout: 30_000 }).toMatch(/Arduino Uno/i);
     await clickMenu(window, ['Triage', 'Serial Monitor']);
     const monitor = window.locator('.triage-serial-monitor');
     await monitor.waitFor({ state: 'visible', timeout: 30_000 });
@@ -833,6 +848,9 @@ describe('packaged Triage app', () => {
     expect(await avr.textContent()).toContain('built into Triage');
     expect(await avr.textContent()).toContain('Triage simulates some');
     await window.screenshot({ path: shot('boards-manager') });
+    // Back to the Triage side bar for the checks that follow.
+    await window.locator('.part.activitybar [aria-label^="Triage"]').first().click();
+    await window.locator('.triage-overview').waitFor({ state: 'visible', timeout: 30_000 });
   });
 
   // ROADMAP PA-6: Blink from the examples opens as a new project in a new window; it runs

@@ -75,7 +75,9 @@ export function registerTriageMenus(): void {
 	MenuRegistry.appendMenuItem(MenuId.MenubarMainMenu, {
 		submenu: TriageMenu,
 		title: { value: 'Triage', original: 'Triage', mnemonicTitle: localize({ key: 'triage.menu.main', comment: ['&& denotes a mnemonic'] }, "Tri&&age") },
-		order: 6.5,
+		// Right after Edit, where the Arduino IDE has Sketch and Tools: it stays in the menu
+		// bar on narrow screens, where VS Code folds the last menus into "…".
+		order: 2.5,
 	} satisfies ISubmenuItem);
 	const submenus: [MenuId, string, string][] = [
 		[TriageElectronicsMenu, localize('triage.menu.electronics', "Electronics"), '4_domains'],
