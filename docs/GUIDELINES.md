@@ -210,6 +210,26 @@ For source trees we have (the forks), read the source. REA is for shipped artifa
   `xvfb-run -a pnpm --filter @triage/app-smoke smoke` on Linux. CI stays the
   check of record on both systems.
 
+**From the PA session (2026-11-27):**
+- **`apt-get` worked in this session** (it was refused in earlier ones), so
+  check before assuming it is blocked. Toolchains that would be downloaded as
+  binaries were **built from source** instead: Go 1.27 (with the preinstalled Go
+  1.24 as bootstrap, about 5 minutes) and Node 24 (about an hour on 4 cores).
+- **Old compilers on new systems:** GCC 7.3 and binutils 2.26 build with GCC 13
+  given `-fcommon` (C) and `-std=gnu++98` (C++); the mingw-w64 cross-build of
+  GCC 7.3 needs `--disable-win32-registry`. CI's Ubuntu image has SWIG, which
+  made avrdude's CMake add Python bindings that install into the system's
+  Python: turn optional features off explicitly rather than relying on what the
+  machine lacks.
+- **arduino-cli** waits for discovery when `--protocol` is given; leave it out
+  for ports no discovery lists (avrdude's `net:host:port`, a pty). Its
+  serial-monitor can't open a pty (it reads modem lines).
+- **Emulated serial links should be lossless:** Optiboot blinks its LED before
+  reading, so a UART that overwrites unread bytes loses avrdude's first sync.
+- **Cache long builds per stage and save the cache even when a job fails**
+  (`actions/cache/restore` + `save` with `if: always()`), so a failure late in
+  a 45-minute build doesn't throw the finished stages away.
+
 ## 11. When Claude stops and asks
 
 - A decision changes product scope, user-visible behavior or architecture (ADR level).

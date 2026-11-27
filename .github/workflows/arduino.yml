@@ -46,17 +46,26 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
-      # The compiler takes about 20 minutes per OS; it is rebuilt only when a pin
-      # or the build script changes.
+      # The compiler takes about 20 minutes per OS; each stage is stamped
+      # (build.mjs), so a run keeps what earlier runs finished, even failed ones.
       - name: Restore the engine build
-        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: |
             engines/arduino/build
             engines/arduino/upstream/downloads
-          key: arduino-${{ hashFiles('engines/arduino/upstream.json', 'engines/arduino/build.mjs', 'engines/arduino/*.json', 'engines/arduino-avr/upstream.json') }}
+          key: arduino-${{ hashFiles('engines/arduino/upstream.json', 'engines/arduino/*.json', 'engines/arduino-avr/upstream.json') }}-${{ github.run_id }}
+          restore-keys: arduino-${{ hashFiles('engines/arduino/upstream.json', 'engines/arduino/*.json', 'engines/arduino-avr/upstream.json') }}-
       - name: Build from source
         run: node engines/arduino/build.mjs --os linux,windows
+      - name: Save the engine build (also after a failure)
+        if: always()
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            engines/arduino/build
+            engines/arduino/upstream/downloads
+          key: arduino-${{ hashFiles('engines/arduino/upstream.json', 'engines/arduino/*.json', 'engines/arduino-avr/upstream.json') }}-${{ github.run_id }}
       - name: The Linux engine compiles Blink for the Uno, Nano and Mega
         run: node engines/arduino/build.mjs verify
       # Artifacts don't keep executable bits: each engine travels as a tarball.

@@ -150,7 +150,8 @@ function seed(from: string, to: string, first: boolean): void {
           const target = path.join(to, 'packages', packager, kind, name, version);
           const temp = `${target}.triage-new`;
           rmSync(temp, { recursive: true, force: true });
-          cpSync(path.join(kindDir, name, version), temp, { recursive: true });
+          // Links are copied as files (cpSync would point them into the engine folder).
+          cpSync(path.join(kindDir, name, version), temp, { recursive: true, dereference: true });
           rmSync(target, { recursive: true, force: true });
           renameSync(temp, target);
         }

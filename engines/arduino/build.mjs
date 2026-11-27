@@ -346,7 +346,8 @@ const HOST_FLAGS = "CFLAGS='-w -O2 -g0 -fcommon' CXXFLAGS='-w -O2 -g0 -std=gnu++
 
 function buildToolchain(target) {
   const version = pins.avrGcc.version;
-  const key = keyOf(pins.avrGcc, HOST_FLAGS, 4);
+  // Bump a stamp's number when its build changes (Windows: 5, the LTO plugin as a DLL).
+  const key = keyOf(pins.avrGcc, HOST_FLAGS, target === 'windows' ? 5 : 4);
   const work = path.join(buildRoot, target, 'avr-gcc-work');
   const prefix = path.join(buildRoot, target, 'avr-gcc');
   const linuxPrefix = path.join(buildRoot, 'linux', 'avr-gcc');
@@ -362,10 +363,10 @@ function buildToolchain(target) {
     // Windows: no registry lookup (GCC 7's prefix.c then includes windows.h after its own
     // abort() macro, which newer mingw-w64 headers reject).
     const host = target === 'windows' ? `--host=${MINGW} --disable-win32-registry` : '';
+    // Windows: not -static, or libtool makes the LTO plugin a static library only,
+    // and Arduino's -fuse-linker-plugin needs liblto_plugin-0.dll.
     const ldflags =
-      target === 'windows'
-        ? "LDFLAGS='-s -static -static-libgcc -static-libstdc++'"
-        : "LDFLAGS='-s'";
+      target === 'windows' ? "LDFLAGS='-s -static-libgcc -static-libstdc++'" : "LDFLAGS='-s'";
     const path_ = `${path.join(linuxPrefix, 'bin')}:${process.env.PATH}`;
     const env = { PATH: path_ };
     const common = `--prefix=${prefix} --target=avr --disable-nls ${host}`;
@@ -410,6 +411,17 @@ function buildToolchain(target) {
         `find lib/gcc avr/lib \\( -name '*.a' -o -name '*.o' \\) -print0 | xargs -0 -n 200 bin/avr-strip --strip-debug`,
         prefix,
       );
+    }
+    const plugin = path.join(
+      prefix,
+      'libexec',
+      'gcc',
+      'avr',
+      '7.3.0',
+      target === 'windows' ? 'liblto_plugin-0.dll' : 'liblto_plugin.so',
+    );
+    if (!existsSync(plugin)) {
+      throw new ForkError(`the compiler has no LTO plugin (${plugin}); Arduino's builds need it`);
     }
     // Not needed to compile: documentation, GCC's plugin headers, GDB's libcc1.
     rmSync(path.join(prefix, 'share'), { recursive: true, force: true });
@@ -468,7 +480,11 @@ function stage(target) {
   if (!existsSync(path.join(core, 'platform.txt'))) {
     throw new ForkError('the Arduino AVR core is missing: run the fetch step');
   }
-  cpSync(core, platformDir, { recursive: true, filter: (f) => path.basename(f) !== '.git' });
+  cpSync(core, platformDir, {
+    recursive: true,
+    dereference: true,
+    filter: (f) => path.basename(f) !== '.git',
+  });
   cpSync(path.join(dir, p.installedJson), path.join(platformDir, 'installed.json'));
 
   const toolDir = (packager, name, version) =>
@@ -476,23 +492,29 @@ function stage(target) {
   cpSync(
     path.join(buildRoot, target, 'avr-gcc'),
     toolDir('arduino', 'avr-gcc', pins.avrGcc.version),
-    { recursive: true, filter: (f) => path.basename(f) !== '.triage-build' },
+    { recursive: true, dereference: true, filter: (f) => path.basename(f) !== '.triage-build' },
   );
   cpSync(path.join(tools, 'avrdude'), toolDir('arduino', 'avrdude', pins.avrdude.version), {
     recursive: true,
+    dereference: true,
   });
   for (const tool of pins.goTools) {
     cpSync(path.join(tools, tool.name), toolDir(tool.package, tool.name, tool.version), {
       recursive: true,
+      dereference: true,
     });
   }
   cpSync(path.join(tools, 'ctags'), toolDir('builtin', 'ctags', pins.ctags.version), {
     recursive: true,
+    dereference: true,
   });
 
+  // Symbolic links (liblto_plugin.so …) are copied as files: Node's cpSync would
+  // otherwise point them at this build folder, which a user's machine doesn't have.
   // The Arduino IDE's built-in examples (File → Examples).
   cpSync(path.join(upstreamDir, 'arduino-examples', 'examples'), path.join(out, 'examples'), {
     recursive: true,
+    dereference: true,
   });
 
   // Empty indexes: arduino-cli then starts offline instead of downloading Arduino's
