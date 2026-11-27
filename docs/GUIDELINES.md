@@ -70,6 +70,11 @@ before continuing.
 - CI is green on **Windows and Linux** (macOS from P8).
 - **One window:** the feature works inside Triage. Needing the stock KiCad or
   FreeCAD window is allowed only where the ROADMAP lists the fallback.
+- **Buttons and mouse first** (the owner, 2026-11-27; PLAN §1, D13): every user
+  action the WP adds has a button, a menu entry or a mouse gesture in Triage's
+  window, and the smoke test uses it. A command-palette entry, a keyboard
+  shortcut or a `triage` CLI command may come in addition, never instead. The
+  CLI is for CI and scripted grading.
 - **Milestone WPs:** the owner has run the exit demo on their Windows laptop
   (a check in `docs/CHECKS.md`, which the owner marks done).
 - No performance budget from PLAN §4.14 regresses (benchmarks for touched areas).

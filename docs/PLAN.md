@@ -56,7 +56,9 @@ or tablet (§4.16).
 1. Design a device end to end without juggling 3–4 tools and manual exports.
 2. **See it working before buying parts**: catch wiring, firmware, fit and power
    mistakes in simulation, for the whole device or one part at a time.
-3. Hand off to manufacturing: Gerbers, BOM, pick-and-place, STEP, STL/3MF, firmware.
+3. Hand off to manufacturing: Gerbers, BOM, pick-and-place, STEP, STL/3MF, firmware;
+   and **upload the firmware to the real board** over USB, as the Arduino IDE does
+   (the owner, 2026-11-27; ADR 0006).
 4. (Instructors) ship templates and auto-graded test scenarios.
 5. **Check or continue the design on a phone or tablet** (the owner, 2026-11-25):
    the PCB, the 3D model or the running simulation, with simple edits, while the
@@ -71,6 +73,14 @@ or tablet (§4.16).
   a paired phone or tablet the same way (§4.16).
 - **Check together or separately:** simulate the whole device, or just the circuit,
   the code or the mechanism, whenever you like (§4.7).
+- **Buttons and mouse first** (the owner, 2026-11-27): everything a user does has a
+  button, a menu entry or a mouse gesture, as in KiCad's or the Arduino IDE's
+  windows. The command palette, keyboard shortcuts and the `triage` command line
+  are extras for those who want them; the command line exists for CI and scripted
+  grading, and a user never needs it.
+- **No other tools to install:** the Arduino IDE is built in (compiler, upload,
+  Library and Boards Managers, examples; ADR 0006), like KiCad's and FreeCAD's
+  engines.
 - **One project, one truth, many views.**
 - **Links, not exports.**
 - **Progressive fidelity:** a game-like interactive sim by default, accurate
@@ -508,7 +518,7 @@ expect:
 | CAD engine | **FreeCAD fork** (C++/Python, CMake), App layer + RPC server |
 | Render engine | Blender release build, driven by Python scripts |
 | Simulation | ngspice, MuJoCo, avr8js, rp2040js, QEMU (Espressif fork) + Triage peripheral models, Renode, Raspberry Pi Python bridge, virtual network gateway |
-| Toolchains | arduino-cli and PlatformIO Core (AVR, Arduino-ESP32, Arduino-Pico), ESP-IDF, Pico SDK, MicroPython, Python 3 (Raspberry Pi), CMake + Arm GNU, Zephyr; clangd |
+| Toolchains | **arduino-cli built from source**, run as a daemon behind Triage's Build, Upload, Library and Boards Managers (as in the Arduino IDE 2; ADR 0006, proposed); **GCC for AVR, binutils, avr-libc and avrdude built from source** and shipped for Uno, Nano and Mega; other boards' compilers downloaded on demand from Arduino's package index, checksums checked (the owner, 2026-11-27); PlatformIO Core, ESP-IDF, Pico SDK, MicroPython, Python 3 (Raspberry Pi), CMake + Arm GNU, Zephyr; clangd |
 | Build | pnpm + Turborepo (TS), Cargo (Rust), CMake + Ninja + ccache (C++; MSVC on Windows), vcpkg (KiCad on Windows), LibPack or conda/pixi (FreeCAD on Windows), MSYS2 (QEMU on Windows), GitHub Actions matrix: **Windows and Linux from P0**, macOS by P8 |
 | Tests | Vitest, Playwright for Electron, cargo test, KiCad/FreeCAD golden files, sim regression scenarios |
 
@@ -544,7 +554,10 @@ owner's laptop): a per-user installer built the way VS Code builds its "User
 Setup" (Inno Setup, no admin rights needed), x64 first and arm64 later. Then Linux
 (AppImage, deb) and macOS (dmg). Expect a large download (on the order of 1–2 GB
 with engines and libraries). Optional components download on demand (Blender
-render engine, ESP32 QEMU, Renode, Raspberry Pi Python packages). Auto-update via
+render engine, ESP32 QEMU, Renode, Raspberry Pi Python packages, and other boards'
+compilers from the Boards Manager). The Arduino toolchain for Uno, Nano and Mega
+(arduino-cli, the AVR compiler, avrdude, the AVR core) is inside the installer, so
+no Arduino IDE is needed (ADR 0006). Auto-update via
 the VS Code update mechanism pointed at Triage's release feed. Unsigned Windows
 installers trigger SmartScreen warnings; signing needs a certificate, an owner
 decision before P8.
@@ -565,7 +578,10 @@ decision before P8.
 
 ### 4.15 Security
 
-- Firmware runs **only inside emulators**. Part models are **WASM** (sandboxed).
+- Firmware runs **inside emulators**, or on the user's own board after they press
+  **Upload**; it never runs on the laptop itself. Boards Manager downloads are
+  checked against the checksums in Arduino's package index. Part models are
+  **WASM** (sandboxed).
 - Engines are separate processes with narrow, schema-validated message contracts.
   The renderer keeps VS Code's sandbox and narrow preload.
 - **Workspace Trust** gates building or running a cloned project's toolchain,
@@ -740,7 +756,9 @@ simulation updates at 30 Hz on the LAN and 10 Hz through a relay.
 | D8 | **Name:** Triage | **confirmed** 2026-11-24 |
 | D9 | **Integration:** everything in one window, with any tab poppable into a separate Triage window (§1); stock KiCad/FreeCAD windows only as a temporary fallback (§4.3); simulation scopes for checking together or separately (§4.7) | **confirmed** 2026-11-24 (the owner's requirement; separate windows added by the owner the same day, DV-14) |
 | D10 | **Editing path** for KiCad's interactive tools: remote tools vs direct hosting | **confirmed** 2026-11-25: direct hosting, Triage owns the tool front ends ([ADR 0004](adr/0004-editing-path.md), from the P1-6 spike) |
-| D11 | **Phone and tablet companion:** a web app paired by QR code that views, and with permission edits, any tab while the laptop does the work; WebTransport on the LAN, a relay elsewhere (§4.16, [ADR 0005](adr/0005-phone-companion.md)) | **confirmed** 2026-11-25: accepted with a relay, GitHub Pages then the owner's domain, iOS 26.4+, phase PC between P3 and P4, permission asked each time and changeable during a session ([ADR 0005](adr/0005-phone-companion.md)) |
+| D11 | **Phone and tablet companion:** a web app paired by QR code that views, and with permission edits, any tab while the laptop does the work; WebTransport on the LAN, a relay elsewhere (§4.16, [ADR 0005](adr/0005-phone-companion.md)) | **confirmed** 2026-11-25: accepted with a relay, GitHub Pages then the owner's domain, iOS 26.4+, phase PC between P3 and P4 (after PA since 2026-11-27, D12), permission asked each time and changeable during a session ([ADR 0005](adr/0005-phone-companion.md)) |
+| D12 | **Arduino built in:** compile, upload to a real board with its serial monitor, Library Manager, Boards Manager and examples inside Triage, so no Arduino IDE is needed; the Uno/Nano/Mega compiler and avrdude built from source and shipped, other boards' compilers downloaded like the IDE's ([ADR 0006](adr/0006-arduino-built-in.md)) | **confirmed** 2026-11-27 by the owner (scope, order: phase PA after P3 and before PC; downloads like the IDE); the backend (arduino-cli built from source) **proposed** |
+| D13 | **Buttons and mouse first:** every user action has a button, menu or mouse gesture; the command palette and the `triage` CLI are extras (§1) | **confirmed** 2026-11-27 (the owner) |
 
 ## 6. Risks and mitigations
 
