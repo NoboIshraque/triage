@@ -256,7 +256,7 @@ function buildTools(target) {
   });
 
   // avrdude 8.0 with Arduino's version patch, serial programmers only.
-  stamped(path.join(out, '.avrdude'), keyOf(pins.avrdude, pins.avrdudePacking, 1), () => {
+  stamped(path.join(out, '.avrdude'), keyOf(pins.avrdude, pins.avrdudePacking, 2), () => {
     const src = freshCopy(
       path.join(upstreamDir, 'avrdude'),
       path.join(buildRoot, target, 'avrdude-src'),
@@ -279,6 +279,8 @@ function buildTools(target) {
       `-DCMAKE_INSTALL_PREFIX=${prefix}`,
       `-DEXTRA_VERSION=${pins.avrdude.extraVersion}`,
       '-DUSE_STATIC_LIBS=ON',
+      // No Python bindings (they install into the system's Python).
+      '-DCMAKE_DISABLE_FIND_PACKAGE_SWIG=ON',
       ...[
         'LIBELF',
         'LIBUSB',
