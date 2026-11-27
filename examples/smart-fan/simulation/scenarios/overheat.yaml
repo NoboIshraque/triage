@@ -1,0 +1,13 @@
+# PLAN §3 step 9: the room warms from 20 to 40 °C over 10 s; the fan must be at
+# 80% or more by 8 s, the OLED must say "HOT" between 9 and 12 s, and the 12 V
+# supply must never deliver 1.5 A. Runs in the Test Explorer and as `triage test`.
+name: fan reacts to overheating
+scope: whole-device
+duration: 12s
+environment: { temperature_C: { ramp: [20, 40], over: 10s } }
+expect:
+  - at: 8s
+    that: pwm_duty(net: FAN_PWM) >= 0.8
+  - within: [9s, 12s]
+    that: oled(J3).text contains "HOT"
+  - always: current(net: +12V) < 1.5A

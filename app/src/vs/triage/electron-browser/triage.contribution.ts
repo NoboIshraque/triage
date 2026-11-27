@@ -19,6 +19,9 @@ import { ITriageEdaEngineService } from '../common/eda/edaEngine.js';
 import { TriageEdaEngineService } from './edaEngineService.js';
 import { ITriageCadEngineService } from '../common/cad/cadEngineService.js';
 import { TriageCadEngineService } from './cadEngineService.js';
+import { ITriageSimService } from '../common/sim/simService.js';
+import { TriageSimService } from './simEngineService.js';
+import { TriageScenarioTesting } from './simTesting.js';
 import { registerWorkbenchContribution2, WorkbenchPhase } from '../../workbench/common/contributions.js';
 import { TriagePinMapContribution } from './pinMapContribution.js';
 import { ICommandService } from '../../platform/commands/common/commands.js';
@@ -28,6 +31,7 @@ registerSingleton(ITriageHelloEngineService, TriageHelloEngineService, Instantia
 registerSingleton(ITriageProjectService, TriageProjectService, InstantiationType.Delayed);
 registerSingleton(ITriageEdaEngineService, TriageEdaEngineService, InstantiationType.Delayed);
 registerSingleton(ITriageCadEngineService, TriageCadEngineService, InstantiationType.Delayed);
+registerSingleton(ITriageSimService, TriageSimService, InstantiationType.Delayed);
 
 registerAction2(class extends Action2 {
 	constructor() {
@@ -60,6 +64,7 @@ registerAction2(class extends Action2 {
 });
 
 registerWorkbenchContribution2(TriagePinMapContribution.ID, TriagePinMapContribution, WorkbenchPhase.AfterRestored);
+registerWorkbenchContribution2(TriageScenarioTesting.ID, TriageScenarioTesting, WorkbenchPhase.Eventually);
 
 // Board build tasks (ROADMAP P1-5): the project's board profile names the board for
 // arduino-cli or PlatformIO, run in a terminal.

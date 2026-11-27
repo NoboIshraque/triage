@@ -1,0 +1,9 @@
+# A saved scope (PLAN §4.7): the fan's power stage on its own. The firmware is
+# left out, so D9 (the FAN_PWM net) is a PWM generator you set in the Sim tab;
+# the rotor runs in MuJoCo. Run it from the scope picker or with
+# `triage sim run --scope power-stage`.
+name = "Power stage only"
+run = ["circuit", "mechanics", "environment"]
+
+[stubs]
+"net:FAN_PWM" = { kind = "control", value = "low", generator = { signal = "pwm", duty = 0.8, freq_hz = 490 } }

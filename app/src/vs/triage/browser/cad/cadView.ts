@@ -29,7 +29,8 @@ import { CadDocument, CadMeshInfo, CadProperty, CadTessellation, CadTreeItem } f
 import { ITriageCadEngineService } from '../../common/cad/cadEngineService.js';
 import { ITriageEdaEngineService } from '../../common/eda/edaEngine.js';
 import { Message } from '../../common/eda/protobuf.js';
-import { CadRenderer, SceneObject } from './cadRenderer.js';
+import { ISimFrame, ITriageSimService, SimState } from '../../common/sim/simService.js';
+import { CadRenderer, rotationAbout, SceneObject } from './cadRenderer.js';
 
 /** The board document the CAD engine builds (engines/cad/triage/engine/triage_cad/board.py). */
 export const BOARD_DOCUMENT = 'TriageBoard';
@@ -130,9 +131,14 @@ export class CadView extends Disposable {
 		@IFileService private readonly fileService: IFileService,
 		@ILogService private readonly logService: ILogService,
 		@IMarkerService private readonly markerService: IMarkerService,
+		@ITriageSimService private readonly sim: ITriageSimService,
 	) {
 		super();
 		this._register(toDisposable(() => this.markerService.changeAll(FIT_MARKERS, [])));
+		// Simulation playback (ROADMAP P3-4): bodies turn, LEDs glow.
+		this._register(this.sim.onDidFrame(frame => this.onSimFrame(frame)));
+		this._register(this.sim.onDidChangeState(state => this.onSimState(state)));
+		this._register(toDisposable(() => this.disposed = true));
 		this.element = $('.triage-cad-view');
 		this.element.dataset['state'] = 'empty';
 		this.element.tabIndex = 0;
@@ -438,6 +444,97 @@ export class CadView extends Disposable {
 		// In a narrow tab the outliner and properties would leave the model no room.
 		this.element.classList.toggle('narrow', width < 640);
 		this.scheduleRender();
+	}
+
+	// ---- Simulation playback (ROADMAP P3-4) ----------------------------------------------
+
+	private simFrame: { frame: ISimFrame; at: number } | undefined;
+	private simAnimating = false;
+	private disposed = false;
+
+	/** The drawn objects of a simulated body's 3D object ("fan.FCStd#Rotor"). */
+	private keysFor(object: string): string[] {
+		const [file, name] = object.split('#');
+		const doc = [...this.documents.values()].find(d => d.path !== undefined && (d.path.endsWith(`/${file}`) || d.path.endsWith(`\\${file}`) || d.path === file));
+		if (!doc) {
+			return [];
+		}
+		const exact = `${doc.name}/${name}`;
+		const keys = this.objects.map(o => o.key);
+		return keys.includes(exact) ? [exact] : keys.filter(key => key.startsWith(`${doc.name}/`));
+	}
+
+	private onSimState(state: SimState): void {
+		if (state.kind === 'idle' || state.kind === 'error') {
+			this.simFrame = undefined;
+			for (const object of this.objects) {
+				object.model = undefined;
+				object.emissive = undefined;
+			}
+			this.element.dataset['simAngle'] = '';
+			this.scheduleRender();
+		}
+	}
+
+	private onSimFrame(frame: ISimFrame): void {
+		this.simFrame = { frame, at: performance.now() };
+		this.applySim();
+		this.scheduleRender();
+		if (frame.running && !this.simAnimating) {
+			this.simAnimating = true;
+			this.animateSim();
+		}
+	}
+
+	/** Draws at the display's rate while a run is going, turning bodies between frames by their speed. */
+	private animateSim(): void {
+		getWindow(this.element).requestAnimationFrame(() => {
+			if (!this.simFrame?.frame.running || this.disposed) {
+				this.simAnimating = false;
+				return;
+			}
+			this.applySim();
+			if (this.renderer) {
+				this.lastFrameMs = this.renderer.render();
+			}
+			this.animateSim();
+		});
+	}
+
+	private applySim(): void {
+		const state = this.sim.state;
+		const current = this.simFrame;
+		if (!current || !('info' in state)) {
+			return;
+		}
+		const { frame, at } = current;
+		// Ahead of the last frame by the time since, at the run's speed (at most 0.1 s).
+		const ahead = frame.running ? Math.min((performance.now() - at) / 1000 * frame.ratio, 0.1) : 0;
+		const angles: string[] = [];
+		for (const body of state.info.bodies) {
+			if (!body.object) {
+				continue;
+			}
+			const angle = (frame.values[body.angle] ?? 0) + (frame.values[body.omega] ?? 0) * ahead;
+			const origin = body.origin.map(v => v * 1000);
+			const model = rotationAbout(body.axis, origin, angle);
+			for (const key of this.keysFor(body.object)) {
+				const object = this.renderer?.getObject(key);
+				if (object) {
+					object.model = model;
+				}
+			}
+			angles.push(`${body.name}=${angle.toFixed(3)}`);
+		}
+		for (const [reference, signal] of state.info.leds) {
+			const object = this.renderer?.getObject(`${BOARD_DOCUMENT}/Part_${reference.replace(/[^A-Za-z0-9_]/g, '_')}`);
+			const brightness = Math.max(0, Math.min(1, frame.values[signal] ?? 0));
+			if (object) {
+				object.emissive = brightness > 0.01 ? [0.9 * brightness, 0.1 * brightness, 0.05 * brightness] : undefined;
+			}
+		}
+		this.element.dataset['simAngle'] = angles.join(' ');
+		this.element.dataset['simT'] = frame.t.toFixed(3);
 	}
 
 	private scheduleRender(): void {

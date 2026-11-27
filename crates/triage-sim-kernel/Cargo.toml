@@ -1,0 +1,18 @@
+[package]
+name = "triage-sim-kernel"
+description = "Triage's co-simulation kernel: picosecond clock, units, quantum scheduler (grant/sync/unblock), signal bus, record/replay, scopes and stubs (ROADMAP P3-1, PLAN §4.7)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+proptest = "1"
+
+[lints]
+workspace = true

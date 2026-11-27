@@ -1,0 +1,16 @@
+# Code only (PLAN §4.7): the firmware with the virtual I/O panel instead of the
+# circuit. A0 is held at 3.03 V (35 °C); pressing Mode once switches to Max.
+name: the Mode button switches to full speed
+scope: code
+duration: 2s
+inputs:
+  - { at: 0s, set: { net:/TEMP_SENSE.value: 3.03 } }
+  - { at: 0.5s, set: { net:/BUTTON.value: 0 } }
+  - { at: 0.6s, set: { net:/BUTTON.value: 5 } }
+expect:
+  - at: 0.4s
+    that: oled(J3).text contains "AUTO"
+  - within: [0.6s, 1.2s]
+    that: oled(J3).text contains "MAX"
+  - at: 1.5s
+    that: pwm_duty(net: FAN_PWM) >= 0.99

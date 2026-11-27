@@ -1,0 +1,16 @@
+[package]
+name = "triage-mujoco"
+description = "MuJoCo for Triage's mechanics unit: rotors built with MuJoCo's mjs_* model API, torques applied in mjcb_control (ROADMAP P3-4, PLAN §4.7)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+links = "mujoco"
+
+[build-dependencies]
+cc = "1"
+
+[lints]
+workspace = true

@@ -1,0 +1,11 @@
+# Mechanism only: the rotor in MuJoCo with the motor's torque as a control; at
+# 2 mN·m its speed settles where the air's drag takes it all.
+name: the rotor under a steady torque
+scope: mechanism
+duration: 3s
+inputs:
+  - { at: 0s, set: { J1.torque.value: 0.002 } }
+expect:
+  - within: [1s, 3s]
+    that: rpm(part: J1) > 1800
+  - always: rpm(part: J1) < 2200

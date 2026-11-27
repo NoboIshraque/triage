@@ -1,0 +1,484 @@
+{
+	"format": 1,
+	"generator": "Triage (ROADMAP P1-5, P3)",
+	"schematic": "electronics/smart-fan.kicad_sch",
+	"board": {
+		"profile": "arduino-uno",
+		"symbol": "A1"
+	},
+	"components": [
+		{
+			"reference": "A1",
+			"symbol": "smart_fan:Arduino_UNO_R3",
+			"value": "Arduino_UNO_R3",
+			"footprint": "smart_fan:Arduino_UNO_R3",
+			"pins": [
+				{
+					"number": "1",
+					"name": "NC",
+					"net": ""
+				},
+				{
+					"number": "2",
+					"name": "IOREF",
+					"net": ""
+				},
+				{
+					"number": "3",
+					"name": "~{RESET}",
+					"net": ""
+				},
+				{
+					"number": "4",
+					"name": "3V3",
+					"net": ""
+				},
+				{
+					"number": "5",
+					"name": "+5V",
+					"net": "/+5V"
+				},
+				{
+					"number": "6",
+					"name": "GND",
+					"net": "/GND"
+				},
+				{
+					"number": "7",
+					"name": "GND",
+					"net": "/GND"
+				},
+				{
+					"number": "8",
+					"name": "VIN",
+					"net": "/+12V"
+				},
+				{
+					"number": "9",
+					"name": "A0",
+					"net": "/TEMP_SENSE"
+				},
+				{
+					"number": "10",
+					"name": "A1",
+					"net": ""
+				},
+				{
+					"number": "11",
+					"name": "A2",
+					"net": ""
+				},
+				{
+					"number": "12",
+					"name": "A3",
+					"net": ""
+				},
+				{
+					"number": "13",
+					"name": "SDA/A4",
+					"net": "/I2C_SDA"
+				},
+				{
+					"number": "14",
+					"name": "SCL/A5",
+					"net": "/I2C_SCL"
+				},
+				{
+					"number": "15",
+					"name": "D0/RX",
+					"net": ""
+				},
+				{
+					"number": "16",
+					"name": "D1/TX",
+					"net": ""
+				},
+				{
+					"number": "17",
+					"name": "D2",
+					"net": "/BUTTON"
+				},
+				{
+					"number": "18",
+					"name": "D3",
+					"net": ""
+				},
+				{
+					"number": "19",
+					"name": "D4",
+					"net": ""
+				},
+				{
+					"number": "20",
+					"name": "D5",
+					"net": ""
+				},
+				{
+					"number": "21",
+					"name": "D6",
+					"net": ""
+				},
+				{
+					"number": "22",
+					"name": "D7",
+					"net": ""
+				},
+				{
+					"number": "23",
+					"name": "D8",
+					"net": ""
+				},
+				{
+					"number": "24",
+					"name": "D9",
+					"net": "/FAN_PWM"
+				},
+				{
+					"number": "25",
+					"name": "D10",
+					"net": ""
+				},
+				{
+					"number": "26",
+					"name": "D11",
+					"net": ""
+				},
+				{
+					"number": "27",
+					"name": "D12",
+					"net": ""
+				},
+				{
+					"number": "28",
+					"name": "D13",
+					"net": ""
+				},
+				{
+					"number": "29",
+					"name": "GND",
+					"net": "/GND"
+				},
+				{
+					"number": "30",
+					"name": "AREF",
+					"net": ""
+				},
+				{
+					"number": "31",
+					"name": "SDA/A4",
+					"net": ""
+				},
+				{
+					"number": "32",
+					"name": "SCL/A5",
+					"net": ""
+				}
+			]
+		},
+		{
+			"reference": "D1",
+			"symbol": "smart_fan:D",
+			"value": "1N4007",
+			"footprint": "smart_fan:D_DO-41_SOD81_P10.16mm_Horizontal",
+			"pins": [
+				{
+					"number": "1",
+					"name": "K",
+					"net": "/+12V"
+				},
+				{
+					"number": "2",
+					"name": "A",
+					"net": "/FAN_NEG"
+				}
+			]
+		},
+		{
+			"reference": "J1",
+			"symbol": "smart_fan:Conn_01x02",
+			"value": "Fan 12V",
+			"footprint": "smart_fan:PinHeader_1x02_P2.54mm_Vertical",
+			"pins": [
+				{
+					"number": "1",
+					"name": "Pin_1",
+					"net": "/+12V"
+				},
+				{
+					"number": "2",
+					"name": "Pin_2",
+					"net": "/FAN_NEG"
+				}
+			]
+		},
+		{
+			"reference": "J2",
+			"symbol": "smart_fan:Barrel_Jack",
+			"value": "12V in",
+			"footprint": "smart_fan:BarrelJack_Horizontal",
+			"pins": [
+				{
+					"number": "1",
+					"name": "",
+					"net": "/+12V"
+				},
+				{
+					"number": "2",
+					"name": "",
+					"net": "/GND"
+				}
+			]
+		},
+		{
+			"reference": "J3",
+			"symbol": "smart_fan:Conn_01x04",
+			"value": "SSD1306 OLED",
+			"footprint": "smart_fan:PinHeader_1x04_P2.54mm_Vertical",
+			"pins": [
+				{
+					"number": "1",
+					"name": "Pin_1",
+					"net": "/GND"
+				},
+				{
+					"number": "2",
+					"name": "Pin_2",
+					"net": "/+5V"
+				},
+				{
+					"number": "3",
+					"name": "Pin_3",
+					"net": "/I2C_SCL"
+				},
+				{
+					"number": "4",
+					"name": "Pin_4",
+					"net": "/I2C_SDA"
+				}
+			]
+		},
+		{
+			"reference": "Q1",
+			"symbol": "smart_fan:Q_NMOS_GDS",
+			"value": "IRLZ44N",
+			"footprint": "smart_fan:TO-220-3_Vertical",
+			"pins": [
+				{
+					"number": "1",
+					"name": "G",
+					"net": "/FAN_GATE"
+				},
+				{
+					"number": "2",
+					"name": "D",
+					"net": "/FAN_NEG"
+				},
+				{
+					"number": "3",
+					"name": "S",
+					"net": "/GND"
+				}
+			]
+		},
+		{
+			"reference": "R1",
+			"symbol": "smart_fan:R",
+			"value": "10k",
+			"footprint": "smart_fan:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+			"pins": [
+				{
+					"number": "1",
+					"name": "",
+					"net": "/TEMP_SENSE"
+				},
+				{
+					"number": "2",
+					"name": "",
+					"net": "/GND"
+				}
+			]
+		},
+		{
+			"reference": "R2",
+			"symbol": "smart_fan:R",
+			"value": "220",
+			"footprint": "smart_fan:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+			"pins": [
+				{
+					"number": "1",
+					"name": "",
+					"net": "/FAN_PWM"
+				},
+				{
+					"number": "2",
+					"name": "",
+					"net": "/FAN_GATE"
+				}
+			]
+		},
+		{
+			"reference": "R3",
+			"symbol": "smart_fan:R",
+			"value": "100k",
+			"footprint": "smart_fan:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+			"pins": [
+				{
+					"number": "1",
+					"name": "",
+					"net": "/FAN_GATE"
+				},
+				{
+					"number": "2",
+					"name": "",
+					"net": "/GND"
+				}
+			]
+		},
+		{
+			"reference": "SW1",
+			"symbol": "smart_fan:SW_Push",
+			"value": "Mode",
+			"footprint": "smart_fan:SW_PUSH_6mm",
+			"pins": [
+				{
+					"number": "1",
+					"name": "1",
+					"net": "/BUTTON"
+				},
+				{
+					"number": "2",
+					"name": "2",
+					"net": "/GND"
+				}
+			]
+		},
+		{
+			"reference": "TH1",
+			"symbol": "smart_fan:Thermistor_NTC",
+			"value": "10k NTC",
+			"footprint": "smart_fan:R_Axial_DIN0204_L3.6mm_D1.6mm_P7.62mm_Horizontal",
+			"pins": [
+				{
+					"number": "1",
+					"name": "",
+					"net": "/+5V"
+				},
+				{
+					"number": "2",
+					"name": "",
+					"net": "/TEMP_SENSE"
+				}
+			]
+		}
+	],
+	"nets": [
+		{
+			"name": "/+12V",
+			"pins": [
+				"A1.8",
+				"D1.1",
+				"J1.1",
+				"J2.1"
+			]
+		},
+		{
+			"name": "/+5V",
+			"pins": [
+				"A1.5",
+				"J3.2",
+				"TH1.1"
+			]
+		},
+		{
+			"name": "/BUTTON",
+			"pins": [
+				"A1.17",
+				"SW1.1"
+			],
+			"firmware": {
+				"constant": "BUTTON",
+				"pin": "D2",
+				"number": 2
+			}
+		},
+		{
+			"name": "/FAN_GATE",
+			"pins": [
+				"Q1.1",
+				"R2.2",
+				"R3.1"
+			]
+		},
+		{
+			"name": "/FAN_NEG",
+			"pins": [
+				"D1.2",
+				"J1.2",
+				"Q1.2"
+			]
+		},
+		{
+			"name": "/FAN_PWM",
+			"pins": [
+				"A1.24",
+				"R2.1"
+			],
+			"firmware": {
+				"constant": "FAN_PWM",
+				"pin": "D9",
+				"number": 9
+			}
+		},
+		{
+			"name": "/GND",
+			"pins": [
+				"A1.6",
+				"A1.7",
+				"A1.29",
+				"J2.2",
+				"J3.1",
+				"Q1.3",
+				"R1.2",
+				"R3.2",
+				"SW1.2"
+			]
+		},
+		{
+			"name": "/I2C_SCL",
+			"pins": [
+				"A1.14",
+				"J3.3"
+			],
+			"firmware": {
+				"constant": "I2C_SCL",
+				"pin": "A5",
+				"number": 19
+			}
+		},
+		{
+			"name": "/I2C_SDA",
+			"pins": [
+				"A1.13",
+				"J3.4"
+			],
+			"firmware": {
+				"constant": "I2C_SDA",
+				"pin": "A4",
+				"number": 18
+			}
+		},
+		{
+			"name": "/TEMP_SENSE",
+			"pins": [
+				"A1.9",
+				"R1.1",
+				"TH1.2"
+			],
+			"firmware": {
+				"constant": "TEMP_SENSE",
+				"pin": "A0",
+				"number": 14
+			}
+		}
+	]
+}

@@ -75,7 +75,7 @@ export const ENGINEERING_VIEWS: readonly ITriageView[] = [
 		label: localize('triage.view.sim', "Sim"),
 		icon: Codicon.play,
 		summary: localize('triage.view.sim.summary', "Run the whole device, or just the circuit, the code or the mechanism."),
-		arrives: localize('triage.view.sim.arrives', "Simulation on Arduino arrives in P3, ESP32 and Raspberry Pi in P4."),
+		arrives: localize('triage.view.sim.arrives', "Arduino Uno and Nano simulate now (P3); ESP32 and Raspberry Pi arrive in P4."),
 	},
 ];
 

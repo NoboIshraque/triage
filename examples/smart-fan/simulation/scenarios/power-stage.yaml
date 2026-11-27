@@ -1,0 +1,10 @@
+# The saved scope "Power stage only" (scopes/power-stage.toml): D9 is an 80%
+# PWM generator, the MOSFET drives the motor, MuJoCo turns the rotor.
+name: the power stage spins the fan
+scope: power-stage
+duration: 3s
+expect:
+  - within: [1s, 3s]
+    that: rpm(part: J1) > 2000
+  - always: current(net: +12V) < 1.5A
+  - always: current(part: J1) < 0.6A

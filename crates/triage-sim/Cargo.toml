@@ -1,0 +1,23 @@
+[package]
+name = "triage-sim"
+description = "Triage's simulated device: builds the kernel's units (circuit islands, parts, environment, mechanics) from a device description and a scope (ROADMAP P3-3 to P3-5, PLAN §4.7)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[features]
+# Mechanics through MuJoCo (crates/triage-mujoco); without it a built-in rotor model runs.
+mujoco = ["dep:triage-mujoco"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+triage-mna = { path = "../triage-mna" }
+triage-sim-kernel = { path = "../triage-sim-kernel" }
+triage-mujoco = { path = "../triage-mujoco", optional = true }
+
+[lints]
+workspace = true

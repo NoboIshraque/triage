@@ -23,6 +23,10 @@ export interface SceneObject {
 	problem: boolean;
 	/** Faces to emphasise (problem faces), by index. */
 	highlightFaces?: ReadonlySet<number>;
+	/** Where the simulation has moved it (ROADMAP P3-4): a column-major 4×4 matrix in mm. */
+	model?: Float32Array;
+	/** Light it gives off (an LED in a running simulation), 0..1 RGB. */
+	emissive?: readonly [number, number, number];
 }
 
 export interface OrbitCamera {
@@ -47,6 +51,7 @@ const MESH_VS = /* glsl */ `#version 300 es
 precision highp float;
 uniform mat4 u_viewProj;
 uniform mat4 u_view;
+uniform mat4 u_model;
 // Fixed locations: the pick program shares this shader and the vertex layout.
 layout(location = 0) in vec3 a_pos;
 layout(location = 1) in vec3 a_normal;
@@ -55,15 +60,17 @@ out vec3 v_normal;
 out vec3 v_viewPos;
 flat out float v_face;
 void main() {
-	v_normal = mat3(u_view) * a_normal;
-	v_viewPos = (u_view * vec4(a_pos, 1.0)).xyz;
+	vec4 world = u_model * vec4(a_pos, 1.0);
+	v_normal = mat3(u_view) * mat3(u_model) * a_normal;
+	v_viewPos = (u_view * world).xyz;
 	v_face = a_face;
-	gl_Position = u_viewProj * vec4(a_pos, 1.0);
+	gl_Position = u_viewProj * world;
 }`;
 
 const MESH_FS = /* glsl */ `#version 300 es
 precision highp float;
 uniform vec3 u_colour;
+uniform vec3 u_emissive;
 uniform float u_tint;      // 0 none, 1 selected, 2 problem
 uniform float u_highlightFace;
 in vec3 v_normal;
@@ -88,16 +95,17 @@ void main() {
 	} else if (u_tint > 0.5) {
 		base = mix(base, vec3(1.0, 0.63, 0.12), 0.45);
 	}
-	o_color = vec4(base * (ambient + diffuse) + vec3(specular), 1.0);
+	o_color = vec4(base * (ambient + diffuse) + vec3(specular) + u_emissive, 1.0);
 }`;
 
 const EDGE_VS = /* glsl */ `#version 300 es
 precision highp float;
 uniform mat4 u_viewProj;
+uniform mat4 u_model;
 layout(location = 0) in vec3 a_pos;
 void main() {
 	// Faces are pushed back by polygon offset, so their edges win the depth test.
-	gl_Position = u_viewProj * vec4(a_pos, 1.0);
+	gl_Position = u_viewProj * u_model * vec4(a_pos, 1.0);
 }`;
 
 const EDGE_FS = /* glsl */ `#version 300 es
@@ -252,6 +260,31 @@ export function edgeSegments(mesh: CadMesh): Float32Array {
 		}
 	}
 	return out;
+}
+
+const IDENTITY = new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+
+/**
+ * A rotation by `angle` radians about the axis through `origin` (mm) along
+ * `axis`, as a column-major 4×4 matrix (Rodrigues' formula).
+ */
+export function rotationAbout(axis: readonly number[], origin: readonly number[], angle: number): Float32Array {
+	const length = Math.hypot(axis[0], axis[1], axis[2]) || 1;
+	const [x, y, z] = [axis[0] / length, axis[1] / length, axis[2] / length];
+	const c = Math.cos(angle);
+	const s = Math.sin(angle);
+	const t = 1 - c;
+	const r = [
+		t * x * x + c, t * x * y + s * z, t * x * z - s * y,
+		t * x * y - s * z, t * y * y + c, t * y * z + s * x,
+		t * x * z + s * y, t * y * z - s * x, t * z * z + c,
+	];
+	const [ox, oy, oz] = origin;
+	// p' = R (p − o) + o
+	const tx = ox - (r[0] * ox + r[3] * oy + r[6] * oz);
+	const ty = oy - (r[1] * ox + r[4] * oy + r[7] * oz);
+	const tz = oz - (r[2] * ox + r[5] * oy + r[8] * oz);
+	return new Float32Array([r[0], r[1], r[2], 0, r[3], r[4], r[5], 0, r[6], r[7], r[8], 0, tx, ty, tz, 1]);
 }
 
 interface GpuObject {
@@ -489,6 +522,8 @@ export class CadRenderer {
 		const colourAt = gl.getUniformLocation(this.meshProgram, 'u_colour');
 		const tintAt = gl.getUniformLocation(this.meshProgram, 'u_tint');
 		const faceAt = gl.getUniformLocation(this.meshProgram, 'u_highlightFace');
+		const modelAt = gl.getUniformLocation(this.meshProgram, 'u_model');
+		const emissiveAt = gl.getUniformLocation(this.meshProgram, 'u_emissive');
 		gl.enable(gl.POLYGON_OFFSET_FILL);
 		gl.polygonOffset(1.5, 2);
 		for (const gpu of this.objects.values()) {
@@ -498,6 +533,9 @@ export class CadRenderer {
 			}
 			const colour = object.colour ?? [0.62, 0.64, 0.68];
 			gl.uniform3f(colourAt, colour[0], colour[1], colour[2]);
+			gl.uniformMatrix4fv(modelAt, false, object.model ?? IDENTITY);
+			const glow = object.emissive ?? [0, 0, 0];
+			gl.uniform3f(emissiveAt, glow[0], glow[1], glow[2]);
 			gl.uniform1f(tintAt, object.problem ? 2 : object.selected ? 1 : 0);
 			const highlight = object.highlightFaces && object.highlightFaces.size > 0 ? [...object.highlightFaces][0] : -1;
 			gl.uniform1f(faceAt, highlight);
@@ -509,10 +547,12 @@ export class CadRenderer {
 		gl.useProgram(this.edgeProgram);
 		gl.uniformMatrix4fv(gl.getUniformLocation(this.edgeProgram, 'u_viewProj'), false, this.viewProj);
 		const edgeColourAt = gl.getUniformLocation(this.edgeProgram, 'u_colour');
+		const edgeModelAt = gl.getUniformLocation(this.edgeProgram, 'u_model');
 		for (const gpu of this.objects.values()) {
 			if (!gpu.object.visible || gpu.edgeCount === 0) {
 				continue;
 			}
+			gl.uniformMatrix4fv(edgeModelAt, false, gpu.object.model ?? IDENTITY);
 			if (gpu.object.selected) {
 				gl.uniform4f(edgeColourAt, 1.0, 0.6, 0.1, 1);
 			} else {
@@ -549,11 +589,13 @@ export class CadRenderer {
 		gl.uniformMatrix4fv(gl.getUniformLocation(this.pickProgram, 'u_viewProj'), false, this.viewProj);
 		gl.uniformMatrix4fv(gl.getUniformLocation(this.pickProgram, 'u_view'), false, this.view);
 		const objectAt = gl.getUniformLocation(this.pickProgram, 'u_object');
+		const pickModelAt = gl.getUniformLocation(this.pickProgram, 'u_model');
 		const keys: string[] = [];
 		for (const gpu of this.objects.values()) {
 			if (!gpu.object.visible) {
 				continue;
 			}
+			gl.uniformMatrix4fv(pickModelAt, false, gpu.object.model ?? IDENTITY);
 			keys.push(gpu.object.key);
 			gl.uniform1ui(objectAt, keys.length);
 			gl.bindVertexArray(gpu.vao);

@@ -1,0 +1,29 @@
+[package]
+name = "triage-sim-node"
+description = "Node binding (napi) of Triage's simulation kernel and device, loaded by the sim engine and the triage CLI (ROADMAP P3-2 to P3-6)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+
+[lib]
+crate-type = ["cdylib"]
+
+[features]
+# Step the mechanism with MuJoCo (engines/mujoco must be built).
+mujoco = ["triage-sim/mujoco"]
+
+[dependencies]
+napi = { version = "3", default-features = false, features = ["napi4"] }
+napi-derive = "3"
+serde_json = "1"
+triage-sim = { path = "../triage-sim" }
+triage-sim-kernel = { path = "../triage-sim-kernel" }
+
+[build-dependencies]
+napi-build = "2"
+
+[lints]
+workspace = true

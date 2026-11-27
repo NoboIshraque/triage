@@ -1,0 +1,29 @@
+# How the simulation models what the schematic can't describe (PLAN §4.6): the
+# parts plugged into headers, and parameters that differ from a model's
+# defaults. Every other part's model comes from its symbol and value (a resistor's
+# "10k", the MOSFET's "IRLZ44N"). Read by Triage's simulation (sim/src/project.ts).
+
+# The 12 V fan on the 2-pin header J1: a brushed DC motor (R, L, back-EMF).
+[parts.J1]
+model = "dc-motor"
+pins = { "1" = "+", "2" = "-" }
+params = { ohms = 24.0, henries = 0.0015, ke = 0.03, kt = 0.03 }
+
+# An SSD1306 128x64 OLED module on the I2C header J3, at address 0x3C.
+[parts.J3]
+model = "ssd1306"
+pins = { "1" = "gnd", "2" = "vcc", "3" = "scl", "4" = "sda" }
+params = { address = 60 }
+
+# The fan's rotor (mechanical/fan.FCStd, about 10 g of PLA and 45 mm to the
+# blade tips), turned by J1's shaft; its air drag loads the motor.
+[[mechanics]]
+name = "rotor"
+driven_by = "J1"
+object = "fan.FCStd#Rotor"
+radius_m = 0.033
+mass_kg = 0.01
+damping = 2e-6
+drag = 4e-8
+axis = [0, 0, 1]
+origin = [0, 0, 0]

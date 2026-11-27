@@ -2,8 +2,8 @@
  *  Triage. Licensed under GPL-3.0-or-later (see docs/PLAN.md §5).
  *  The tabs of the Engineering layout. Schematic and Board show the project's
  *  KiCad files through the EDA engine (ROADMAP P1-4); 3D shows its FreeCAD
- *  documents and the board through the CAD engine (P2-3); Sim is still a
- *  placeholder that says which work package fills it.
+ *  documents and the board through the CAD engine (P2-3); Sim runs the device,
+ *  or part of it, in Triage's simulation (P3).
  *--------------------------------------------------------------------------------------------*/
 
 import { $, append, Dimension, reset } from '../../base/browser/dom.js';
@@ -26,6 +26,7 @@ import { ITriageProjectService, TriageProjectState } from '../common/projectMode
 import { ITriageView, TRIAGE_VIEW_SCHEME, TriageViewKind, triageView } from '../common/triage.js';
 import { CadView } from './cad/cadView.js';
 import { EdaDocumentView } from './eda/edaDocumentView.js';
+import { SimView } from './sim/simView.js';
 
 export class TriageViewInput extends EditorInput {
 	static readonly ID = 'workbench.input.triageView';
@@ -117,6 +118,7 @@ export class TriageViewEditor extends EditorPane {
 	private container!: HTMLElement;
 	private readonly eda = this._register(new MutableDisposable<EdaDocumentView>());
 	private readonly cad = this._register(new MutableDisposable<CadView>());
+	private readonly simView = this._register(new MutableDisposable<SimView>());
 	/** What the 3D view shows, so a project refresh that changes nothing keeps it. */
 	private cadSources = '';
 	private readonly projectListener = this._register(new MutableDisposable());
@@ -141,6 +143,9 @@ export class TriageViewEditor extends EditorPane {
 		await super.setInput(input, options, context, token);
 		const view = input.view;
 		this.container.dataset['triageView'] = view.kind;
+		if (view.kind !== TriageViewKind.Sim) {
+			this.simView.clear();
+		}
 		if (view.kind === TriageViewKind.Schematic || view.kind === TriageViewKind.Board) {
 			this.projectListener.value = this.projectService.onDidChangeState(() => this.showKicad(view));
 			if (this.projectService.state.kind === 'none') {
@@ -157,10 +162,43 @@ export class TriageViewEditor extends EditorPane {
 			this.showCad(view);
 			return;
 		}
+		if (view.kind === TriageViewKind.Sim) {
+			this.eda.clear();
+			this.cad.clear();
+			this.projectListener.value = this.projectService.onDidChangeState(() => this.showSim(view));
+			if (this.projectService.state.kind === 'none') {
+				void this.projectService.refresh();
+			}
+			this.showSim(view);
+			return;
+		}
 		this.eda.clear();
 		this.cad.clear();
+		this.simView.clear();
 		this.projectListener.clear();
 		this.showCard(view);
+	}
+
+	/** The Sim tab; the card until a project is open. */
+	private showSim(view: ITriageView): void {
+		const state = this.projectService.state;
+		if (state.kind !== 'project') {
+			this.simView.clear();
+			this.showCard(view, state.kind === 'loading'
+				? localize('triage.view.loadingProject', "Loading the project…")
+				: localize('triage.view.noProjectSim', "Open a Triage project (a folder with a triage.toml) to simulate it."));
+			return;
+		}
+		if (this.simView.value) {
+			void this.simView.value.load();
+			return;
+		}
+		const simView = this.instantiationService.createInstance(SimView);
+		this.simView.value = simView;
+		reset(this.container, simView.element);
+		if (this.dimension) {
+			simView.layout(this.dimension.width, this.dimension.height);
+		}
 	}
 
 	/** The 3D view of the project's FreeCAD documents and board; the card without them. */
@@ -235,10 +273,16 @@ export class TriageViewEditor extends EditorPane {
 		return this.cad.value;
 	}
 
+	/** The Sim tab's view, if this tab shows it (commands and tests use it). */
+	get sim(): SimView | undefined {
+		return this.simView.value;
+	}
+
 	override focus(): void {
 		super.focus();
 		this.eda.value?.element.focus();
 		this.cad.value?.element.focus();
+		this.simView.value?.element.focus();
 	}
 
 	override layout(dimension: Dimension): void {
@@ -247,5 +291,6 @@ export class TriageViewEditor extends EditorPane {
 		this.container.style.height = `${dimension.height}px`;
 		this.eda.value?.layout(dimension.width, dimension.height);
 		this.cad.value?.layout(dimension.width, dimension.height);
+		this.simView.value?.layout(dimension.width, dimension.height);
 	}
 }

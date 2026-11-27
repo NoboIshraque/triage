@@ -10,6 +10,8 @@ folder for Triage-only code.
 | [`hello/`](hello/) | The smallest Triage engine process, built by the root `CMakeLists.txt` | P0-1 (seed), P0-4 (connection pattern) |
 | [`eda/`](eda/) | KiCad fork: headless engine host, Stream GAL, remote tools, API | P1-1 … P1-6 |
 | [`cad/`](cad/) | FreeCAD fork: App layer, RPC server | P2-1, P2-2 |
+| [`mujoco/`](mujoco/) | MuJoCo 4.0.1, pinned and built from source (not a fork) for the mechanics unit | P3-4 |
+| [`arduino-avr/`](arduino-avr/) | Arduino's AVR core 1.8.8, pinned (not a fork), compiled with firmware and shipped in the app | P3-2 |
 | [`qemu-esp32/`](qemu-esp32/) | Espressif QEMU fork plus Triage peripheral models | P4-1 |
 | [`render/`](render/) | Blender scripts and RPC | P8-1 |
 
