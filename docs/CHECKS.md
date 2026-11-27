@@ -262,7 +262,7 @@ Triage's own commands start with "Triage:".
      *If it says avr-gcc wasn't found:* the Arduino IDE (above) isn't
      installed, or its AVR boards aren't; tell Claude the exact message.
      *If the ratio stays below 1.00×:* tell Claude the number. On CI's Windows
-     machine (4 slow cores, no graphics card) the app reached only 0.2–0.3×,
+     machine (4 slow cores, no graphics card) the app reached about 0.7×,
      while the same firmware runs at 1.3× outside the app there; your laptop
      is the real measure.
   3. **The display and the serial monitor:** under **Display**, the OLED

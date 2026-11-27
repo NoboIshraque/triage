@@ -51,8 +51,9 @@ s of samples, not the full history. **In the
 app on CI's Windows machine** (4 slow cores, software graphics, KiCad's and
 FreeCAD's engines running) the whole device reached only about 0.2–0.3× real
 time, against 1.02× in the app on Linux and 1.3× for the same firmware outside
-the app on Windows; the laptop run (C6 step 2) is the real measure, and the
-owner reports the number.
+the app on Windows; 0.72× in App run 86 after the engine stopped waiting on 0 ms
+timers. The laptop run (C6 step 2) is the real measure, and the owner reports
+the number.
 
 ### P2 done (2026-11-26)
 
@@ -593,4 +594,10 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   the KiCad files and the enclosure with Triage's engines in CI (this session
   has no KiCad), the firmware, a Rust test that the committed `board_pins.h`
   matches the schematic's pin map, the CAD engine's LED height, a sixth
-  scenario and a 3D glow check in the smoke test.
+  scenario and a 3D glow check in the smoke test. CI: Examples run 2 (ERC 0,
+  DRC 0, schematic parity 0), Sim run 15 (the sim test files now run one at a
+  time: in run 14 the Smart Fan's speed check overlapped the decoder test and
+  read 0.98x), CAD runs 12 and 13, App run 86 (second attempt, once CAD 12's
+  engine with the LED height was built; D2 glows in the 3D tab on both OSes),
+  CI run 122. The Windows app reached **0.72x** real time in App run 86, up
+  from 0.31x before the engine stopped waiting on 0 ms timers.
