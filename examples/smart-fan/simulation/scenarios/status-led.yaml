@@ -1,0 +1,11 @@
+# The status LED (D2 on D13): lit while the fan runs, blinking when it's hot. Its
+# glow also shows on the board in the 3D tab (ROADMAP P3-4).
+name: the status LED shows the fan running
+scope: whole-device
+duration: 2s
+environment: { temperature_C: 35 }
+expect:
+  - at: 1.5s
+    that: pwm_duty(net: FAN_PWM) >= 0.7
+  - at: 1.5s
+    that: brightness(led: D2) > 0.3

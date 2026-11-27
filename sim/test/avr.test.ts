@@ -149,15 +149,50 @@ describe.skipIf(!addonAvailable())('AVR unit', () => {
     }
   });
 
+  it("lights the Smart Fan's status LED from D13", () => {
+    const LED_ON_OFF = `
+  sbi 0x04, 5        ; DDRB: D13 (PB5) is an output
+  sbi 0x05, 5        ; on
+  ldi r18, 0         ; about 0.05 s: 256 x 256 x 3 cycles x 4
+  ldi r20, 4
+w1:
+  ldi r19, 0
+w2:
+  dec r18
+  brne w2
+  dec r19
+  brne w2
+  dec r20
+  brne w1
+  cbi 0x05, 5        ; off
+done:
+  rjmp done
+`;
+    const runner = new Runner({
+      device: smartFanDevice(),
+      scope: WHOLE,
+      firmwareHex: asm(LED_ON_OFF),
+    });
+    expect(runner.info.leds).toEqual([['D2', 'D2.brightness']]);
+    runner.runUntil(0.02);
+    // D13 drives about 5 V into 330 Ω and the LED: about 9 mA, close to half
+    // its rated 20 mA (brightness is current over the rated current).
+    expect(runner.value('net:/STATUS_LED')).toBeGreaterThan(4.5);
+    expect(runner.value('D2.brightness')).toBeGreaterThan(0.35);
+    runner.runUntil(0.2);
+    expect(runner.value('D2.brightness')).toBeLessThan(0.01);
+  });
+
   it('sees a slider move on the next conversion (code-only scope)', () => {
     const device = smartFanDevice();
     const scope = { name: 'Code only', run: ['firmware', 'parts'], stubs: {} };
     const runner = new Runner({ device, scope, firmwareHex: asm(ADC_DUMP) });
     expect(runner.info.left_out).toContain('circuit');
-    expect(runner.info.io_panel.map((e) => e.kind).sort()).toEqual([
-      'button',
-      'indicator',
-      'slider',
+    expect(runner.info.io_panel.map((e) => e.label)).toEqual([
+      'BUTTON (D2)',
+      'FAN_PWM (D9)',
+      'STATUS_LED (D13)',
+      'TEMP_SENSE (A0)',
     ]);
     runner.runUntil(0.01);
     runner.input('net:/TEMP_SENSE.value', 1.25);

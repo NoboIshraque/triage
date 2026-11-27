@@ -4,7 +4,8 @@
 //
 // The fan follows the room's temperature: off below 25 C, 80% at 35 C, full at
 // 37.5 C. The Mode button cycles Auto -> Max -> Off. The OLED shows the
-// temperature, the fan's duty and the mode, and "HOT" from 38 C.
+// temperature, the fan's duty and the mode, and "HOT" from 38 C. The status LED
+// is on while the fan runs and blinks when it's hot.
 #include "../generated/board_pins.h"
 #include "oled.h"
 
@@ -27,6 +28,7 @@ const char *const MODE_NAMES[] = {"AUTO", "MAX", "OFF"};
 Mode mode = AUTO;
 bool displayOk = false;
 bool lastButton = HIGH;
+bool blink = false;
 unsigned long lastChange = 0;
 unsigned long lastUpdate = 0;
 
@@ -53,6 +55,7 @@ uint8_t dutyFor(float celsius) {
 
 void setup() {
   pinMode(FAN_PWM, OUTPUT);
+  pinMode(STATUS_LED, OUTPUT);
   pinMode(BUTTON, INPUT_PULLUP);
   Serial.begin(115200);
   displayOk = oled::begin();
@@ -79,6 +82,10 @@ void loop() {
   const float celsius = temperatureC(reading);
   const uint8_t duty = mode == MAX ? 255 : mode == OFF ? 0 : dutyFor(celsius);
   analogWrite(FAN_PWM, duty);
+  // The status LED: off with the fan, on while it runs, blinking (2.5 Hz) when hot.
+  blink = !blink;
+  const bool hot = celsius >= HOT_C;
+  digitalWrite(STATUS_LED, duty == 0 ? LOW : hot && blink ? LOW : HIGH);
   const int percent = (duty * 100 + 127) / 255;
 
   char line[22];

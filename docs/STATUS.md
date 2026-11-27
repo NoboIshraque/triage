@@ -21,7 +21,7 @@ running in the Sim tab on the Windows laptop. Every owner step is in
 | P3-1 Sim kernel core | **done** | `crates/triage-sim-kernel`: picosecond clock, unit contract, conservative quantum scheduler in grant / sync / unblock phases, hosts (producers outside Rust), adaptive quantum (1 ms … 1 µs), signal bus with traces, inputs recorded where they took effect, scopes and control / hold / trace / ideal / open stubs. Tests: replay reproduces a run's trace hash exactly; a host producer matches an in-kernel one; scheduler property tests (proptest, 64 cases: contiguous steps, every edge once at its time, exact integrals, quantum bounds); each stub kind |
 | P3-2 AVR unit | **done** | `sim/src/avr.ts`: ATmega328P (Uno, Nano) in avr8js as the kernel's host: pins, ADC synced on demand, PWM, USART, TWI (I²C at transaction level), SPI; a 64K-table decoder generated from avr8js (all 65,536 opcodes checked); the Sim tab's serial monitor. Compiled Arduino sketches in the Sim workflow (`sim/test/sketches.test.ts`): Blink 1.3× and serial echo 2.3× real time on Windows (Sim run 8), 2.8× and 4.1× on Linux (Sim run 9); the Smart Fan's whole device 1.3× and 2.5× |
 | P3-3 T0 circuit + parts | **done** | `crates/triage-mna` (Newton–Raphson MNA, backward Euler) and `crates/triage-sim` (rails, logic nets, analog islands; resistor, NTC, pot, button, LED, diode, MOSFET, DC motor, capacitor, inductor, servo; the SSD1306 in `sim/`). The thermistor divider reads the ADC's own counts from 20 to 40 °C (511/512 at 25 °C, 620 at 35 °C; also through the AVR's ADC); LED current matches Kirchhoff and Shockley for 220, 330 and 1 kΩ |
-| P3-4 Mechanics + 3D playback | **done**, one point open (DV-31) | `crates/triage-mujoco` (MuJoCo 4.0.1 built from source, rotors with `mjs_*`, torques in `mjcb_control`; analytic spin-up within 1%); fan speed follows PWM (0 → 100% duty, torque balance at full duty); MuJoCo and the built-in rotor agree within 1%. The 3D tab turns the rotor by the simulation's angle at the display's rate (smoke test). **The Smart Fan has no LED**, so the LED glow in 3D isn't shown on it (DV-31) |
+| P3-4 Mechanics + 3D playback | **done** (the LED point closed 2026-11-27, DV-31) | `crates/triage-mujoco` (MuJoCo 4.0.1 built from source, rotors with `mjs_*`, torques in `mjcb_control`; analytic spin-up within 1%); fan speed follows PWM (0 → 100% duty, torque balance at full duty); MuJoCo and the built-in rotor agree within 1%. The 3D tab turns the rotor by the simulation's angle at the display's rate, and lights the Smart Fan's **status LED (D2 on D13, added 2026-11-27)** by its simulated brightness (smoke test; `status-led.yaml`) |
 | P3-5 Run UX and scopes | **done** | The Sim tab: Run / Pause / Step / Stop, speed, scope picker (whole device, circuit only, code only, mechanism only, the saved "Power stage only"), environment and parts' controls, virtual I/O panel, stubs, plots, OLED, serial monitor; the status bar; a narrow Sim tab stacks its columns. PLAN §3 step 6 (35 °C → 80%, "35.0C 80%" on the OLED, the rotor turning in 3D) and each scope on its own pass as smoke checks in the packaged app on both OSes (App run 80) |
 | P3-6 Scenario tests | **done** | YAML v0 (`at`, `within`, `always`, `scope`, environment ramps, timed inputs; `sim/src/scenario.ts`), `triage test` / `triage sim run`, the Test Explorer (VS Code's testing service) and the Sim tab's scenario list; five Smart Fan scenarios, `overheat.yaml` as in PLAN §4.7. `triage test examples/smart-fan` passes all five headless on Windows (overheat 12 s in 5.8 s) and Linux (in 3.2 s) in the Sim workflow (Sim runs 8 and 9), and from the Sim tab in the app (App run 80) |
 
@@ -47,7 +47,7 @@ uses their compiler); on Linux Ubuntu's `gcc-avr` and `avr-libc` (the app ships
 Arduino's AVR core). Times cross into
 JavaScript as picoseconds in numbers, exact for about 2.5 hours of virtual time.
 Traces are trimmed to the last half second in interactive runs, so plots keep 10
-s of samples, not the full history. The Smart Fan has no LED (DV-31). **In the
+s of samples, not the full history. **In the
 app on CI's Windows machine** (4 slow cores, software graphics, KiCad's and
 FreeCAD's engines running) the whole device reached only about 0.2–0.3× real
 time, against 1.02× in the app on Linux and 1.3× for the same firmware outside
@@ -582,3 +582,15 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
     stop their runs even when they fail, and accept 79% at 34.9 °C.
   CI: Sim run 9, App run 80 and CI run 114 green on both OSes. P3 merged into
   the default branch through a pull request.
+- **2026-11-27 (same session, after P3's merge, PR #8).** The owner answered the
+  open questions: arduino-cli in CI is fine; **add the LED**; C6 later. They
+  asked for **the Arduino IDE built in** (upload to a real board, Library and
+  Boards Managers, examples; now, before PC; other boards' compilers download
+  like the IDE's) and for **buttons and mouse first** everywhere. Planned as
+  phase **PA** (ROADMAP, ADR 0006 proposed, PLAN D12 and D13, DV-33, DV-34),
+  which the owner starts in a new session. Added the Smart Fan's status LED
+  (DV-31 closed): the generator, a new **Examples** workflow that regenerates
+  the KiCad files and the enclosure with Triage's engines in CI (this session
+  has no KiCad), the firmware, a Rust test that the committed `board_pins.h`
+  matches the schematic's pin map, the CAD engine's LED height, a sixth
+  scenario and a 3D glow check in the smoke test.

@@ -101,6 +101,8 @@ describe.skipIf(!ready)('compiled sketches', () => {
       expect(display?.text).not.toContain('HOT');
       expect(runner.serialText).toContain('duty=80% mode=AUTO');
       expect(runner.value('J1.omega')).toBeGreaterThan(150);
+      // The status LED (D2 on D13) is lit while the fan runs.
+      expect(runner.value('D2.brightness')).toBeGreaterThan(0.35);
       console.log(
         `Smart Fan, whole device: ${ratio.toFixed(1)}× real time; rotor ${((runner.value('J1.omega') * 60) / (2 * Math.PI)).toFixed(0)} rpm`,
       );
@@ -111,6 +113,8 @@ describe.skipIf(!ready)('compiled sketches', () => {
       runner.runFor(0.5);
       expect(display?.text).toContain('HOT');
       expect(display?.text.split('\n')[0]).toMatch(/100%$/);
+      // Hot: the status LED blinks (it changes every 0.1 s).
+      expect(runner.trace('A1.D13.drive', runner.now - 0.45).t.length).toBeGreaterThanOrEqual(3);
       // The Mode button: Auto -> Max -> Off.
       runner.input('SW1.pressed', 1);
       runner.runFor(0.1);
@@ -123,6 +127,7 @@ describe.skipIf(!ready)('compiled sketches', () => {
       expect(display?.text).toContain('OFF');
       runner.runFor(2);
       expect(runner.value('J1.omega')).toBeLessThan(30);
+      expect(runner.value('D2.brightness')).toBeLessThan(0.01);
     });
 
     it('runs code only, with the virtual I/O panel standing in for the circuit', () => {

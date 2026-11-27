@@ -316,6 +316,8 @@ describe.skipIf(!available)('CAD engine (FreeCAD App layer over JSON-RPC)', () =
     const built = (await client.call<BoardResult>('board.update', { board })).result;
     expect(built.parts.filter((p) => p.object).length).toBeGreaterThan(3);
     expect(built.mountingHoles.length).toBeGreaterThan(0);
+    // The status LED (D2, a 3 mm THT LED) gets a box, so the 3D tab can light it.
+    expect(built.parts.find((p) => p.reference === 'D2')?.object).toBeTruthy();
 
     const enclosurePath = path.join(work, 'mechanical', 'enclosure.FCStd');
     const doc = (await client.call<CadDocument>('document.open', { path: enclosurePath })).result

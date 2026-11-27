@@ -151,7 +151,7 @@
 				{
 					"number": "28",
 					"name": "D13",
-					"net": ""
+					"net": "/STATUS_LED"
 				},
 				{
 					"number": "29",
@@ -190,6 +190,24 @@
 					"number": "2",
 					"name": "A",
 					"net": "/FAN_NEG"
+				}
+			]
+		},
+		{
+			"reference": "D2",
+			"symbol": "smart_fan:LED",
+			"value": "Status",
+			"footprint": "smart_fan:LED_D3.0mm",
+			"pins": [
+				{
+					"number": "1",
+					"name": "K",
+					"net": "/GND"
+				},
+				{
+					"number": "2",
+					"name": "A",
+					"net": "/LED_A"
 				}
 			]
 		},
@@ -335,6 +353,24 @@
 			]
 		},
 		{
+			"reference": "R4",
+			"symbol": "smart_fan:R",
+			"value": "330",
+			"footprint": "smart_fan:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
+			"pins": [
+				{
+					"number": "1",
+					"name": "",
+					"net": "/STATUS_LED"
+				},
+				{
+					"number": "2",
+					"name": "",
+					"net": "/LED_A"
+				}
+			]
+		},
+		{
 			"reference": "SW1",
 			"symbol": "smart_fan:SW_Push",
 			"value": "Mode",
@@ -435,6 +471,7 @@
 				"A1.6",
 				"A1.7",
 				"A1.29",
+				"D2.1",
 				"J2.2",
 				"J3.1",
 				"Q1.3",
@@ -465,6 +502,25 @@
 				"constant": "I2C_SDA",
 				"pin": "A4",
 				"number": 18
+			}
+		},
+		{
+			"name": "/LED_A",
+			"pins": [
+				"D2.2",
+				"R4.2"
+			]
+		},
+		{
+			"name": "/STATUS_LED",
+			"pins": [
+				"A1.28",
+				"R4.1"
+			],
+			"firmware": {
+				"constant": "STATUS_LED",
+				"pin": "D13",
+				"number": 13
 			}
 		},
 		{

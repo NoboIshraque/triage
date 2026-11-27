@@ -257,11 +257,13 @@ fn scopes_of_the_smart_fan() {
     let whole = build(&fan, &Scope::whole_device(), &BuildOptions::default()).unwrap();
     assert!(whole.info.stubs.is_empty(), "{:?}", whole.info.stubs);
     assert_eq!(whole.info.hosts.len(), 1);
-    assert_eq!(whole.info.hosts[0].pins.len(), 5);
+    // D2 (button), D9 (fan), D13 (status LED), A0 (thermistor), A4 and A5 (I²C).
+    assert_eq!(whole.info.hosts[0].pins.len(), 6);
     assert!(whole.info.io_panel.is_empty());
 
     // Code only: the circuit, mechanism and environment are stubbed; the I/O
-    // panel has the button, the thermistor's slider and the fan's indicator.
+    // panel has the button, the thermistor's slider and the fan's and the status
+    // LED's indicators.
     let code = build(
         &fan,
         &Scope::only("Code only", &[Domain::Firmware, Domain::Parts]),
@@ -278,6 +280,10 @@ fn scopes_of_the_smart_fan() {
     assert!(kinds.contains(&("button", "BUTTON (D2)")), "{kinds:?}");
     assert!(kinds.contains(&("slider", "TEMP_SENSE (A0)")), "{kinds:?}");
     assert!(kinds.contains(&("indicator", "FAN_PWM (D9)")), "{kinds:?}");
+    assert!(
+        kinds.contains(&("indicator", "STATUS_LED (D13)")),
+        "{kinds:?}"
+    );
     // The slider starts at the circuit's own voltage at 24 °C.
     let slider = code
         .info
