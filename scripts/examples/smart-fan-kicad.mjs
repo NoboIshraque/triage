@@ -2,7 +2,8 @@
 // Generates the Smart Fan's KiCad project (examples/smart-fan/electronics/,
 // ROADMAP P1-4/P1-5, PLAN §3 step 2): an Arduino Uno shield with an NTC
 // thermistor divider on A0, a logic-level MOSFET with flyback diode driving a
-// 12 V fan from D9, an SSD1306 OLED on I²C and a button on D2.
+// 12 V fan from D9, an SSD1306 OLED on I²C, a button on D2 and a status LED on
+// D13 (lit while the fan runs, blinking when it's hot; the owner, 2026-11-27).
 //
 //   node scripts/examples/smart-fan-kicad.mjs
 //
@@ -129,6 +130,7 @@ const SYMBOLS = {
   R: 'Device',
   Thermistor_NTC: 'Device',
   D: 'Device',
+  LED: 'Device',
   Q_NMOS_GDS: 'Transistor_FET',
   Conn_01x02: 'Connector_Generic',
   Conn_01x04: 'Connector_Generic',
@@ -143,6 +145,7 @@ const FOOTPRINTS = {
   'R_Axial_DIN0204_L3.6mm_D1.6mm_P7.62mm_Horizontal': 'Resistor_THT',
   'TO-220-3_Vertical': 'Package_TO_SOT_THT',
   'D_DO-41_SOD81_P10.16mm_Horizontal': 'Diode_THT',
+  'LED_D3.0mm': 'LED_THT',
   'PinHeader_1x02_P2.54mm_Vertical': 'Connector_PinHeader_2.54mm',
   'PinHeader_1x04_P2.54mm_Vertical': 'Connector_PinHeader_2.54mm',
   BarrelJack_Horizontal: 'Connector_BarrelJack',
@@ -221,6 +224,7 @@ const PARTS = [
       14: 'I2C_SCL',
       17: 'BUTTON',
       24: 'FAN_PWM',
+      28: 'STATUS_LED',
     },
   },
   {
@@ -304,6 +308,22 @@ const PARTS = [
     nets: { 1: 'BUTTON', 2: 'GND' },
   },
   {
+    ref: 'R4',
+    symbol: 'R',
+    value: '330',
+    footprint: 'R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal',
+    at: [210.82, 116.84],
+    nets: { 1: 'STATUS_LED', 2: 'LED_A' },
+  },
+  {
+    ref: 'D2',
+    symbol: 'LED',
+    value: 'Status',
+    footprint: 'LED_D3.0mm',
+    at: [228.6, 116.84],
+    nets: { 1: 'GND', 2: 'LED_A' },
+  },
+  {
     ref: '#FLG01',
     symbol: 'PWR_FLAG',
     value: 'PWR_FLAG',
@@ -326,6 +346,8 @@ const PLACEMENT = {
   J1: [30.48, 6.35, 0],
   J3: [30.48, 17.78, 0],
   J2: [16.51, 36.83, 0],
+  R4: [6.35, 21.59, 0],
+  D2: [21.59, 21.59, 0],
 };
 
 /**

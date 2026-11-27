@@ -1,0 +1,86 @@
+# Regenerates the Smart Fan example's KiCad files, its enclosure and the CAD
+# engine's board fixture with Triage's own engines (scripts/examples/), on Linux,
+# from the newest EDA and CAD engines the EDA and CAD workflows built:
+#
+#   1. scripts/examples/smart-fan-kicad.mjs writes the schematic and the board;
+#      KiCad's kicad-cli re-saves them (so the files are exactly what KiCad
+#      writes) and runs ERC, DRC and the schematic-parity check;
+#   2. scripts/examples/smart-fan-enclosure.mjs reads the board with KiCad's
+#      engine, rebuilds the enclosure around it with FreeCAD's and checks the fit.
+#
+# CI can't push, so the files come back as the "smart-fan-regenerated" artifact
+# for a session to download and commit. The job fails if ERC, schematic parity
+# or the enclosure's fit check fails.
+name: Examples
+
+on:
+  push:
+    paths:
+      - scripts/examples/**
+      - .github/workflows/examples.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  # gh run download: the engines from the EDA and CAD workflows.
+  actions: read
+
+concurrency:
+  group: examples-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smart-fan:
+    name: Smart Fan (KiCad files, enclosure)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+
+      - name: Download the newest EDA and CAD engines
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          # Else the default branch (it isn't called main in this repository).
+          default=$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch || echo main)
+          fetch() { # workflow file, artifact name, folder
+            for b in "$branch" "$default"; do
+              for id in $(gh run list -R "$GITHUB_REPOSITORY" --workflow "$1" --branch "$b" --status completed --limit 15 --json databaseId -q '.[].databaseId' || true); do
+                if gh run download "$id" -R "$GITHUB_REPOSITORY" -n "$2" -D "$3" 2>/dev/null; then
+                  echo "$1: run $id"
+                  return 0
+                fi
+              done
+            done
+            echo "No $2 artifact found"
+            return 1
+          }
+          fetch eda.yml triage-eda-linux engines/eda/build/linux/stage
+          fetch cad.yml triage-cad-linux engines/cad/build/linux/stage
+          # Artifacts lose the executable bit.
+          chmod +x engines/eda/build/linux/stage/bin/* engines/cad/build/linux/stage/bin/*
+
+      - name: KiCad's and FreeCAD's libraries
+        # About 220 MB from Ubuntu's mirror (see app.yml).
+        timeout-minutes: 30
+        run: scripts/dev/setup.sh --eda --cad
+
+      - name: The schematic and the board (kicad-cli writes them; ERC, DRC, schematic parity)
+        run: node scripts/examples/smart-fan-kicad.mjs
+
+      - name: The enclosure around the board (and the CAD engine's board fixture)
+        run: node scripts/examples/smart-fan-enclosure.mjs
+
+      - name: Upload the regenerated files
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: smart-fan-regenerated
+          path: |
+            examples/smart-fan/electronics/
+            examples/smart-fan/mechanical/enclosure.FCStd
+            engines/cad/tests/fixtures/smart-fan-board3d.json
+          retention-days: 7
