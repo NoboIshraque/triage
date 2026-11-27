@@ -14,9 +14,9 @@
 
 **Current build branch:** `claude/unified-engineering-platform-jn5rmk`, the
 **default branch** (Claude updates this line when a session works on another
-branch). P0 to P3 are **merged into it**; phase **PA** (the Arduino IDE built
-in) is being built on `claude/nifty-babbage-mixxtm` and is merged once CI is
-green: C7 needs a build made after that merge.
+branch). P0 to P3 and **PA** (the Arduino IDE built in, 2026-11-27) are
+**merged into it**: every check uses a build from it (C7 needs one made after
+PA's merge, which the nightly or the App workflow on this branch gives).
 
 ## At a glance
 

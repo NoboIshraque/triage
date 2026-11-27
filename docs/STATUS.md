@@ -2,30 +2,47 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-27 · **Phase PA, "Arduino built in": in progress**
-(this session; ROADMAP PA, [ADR 0006](adr/0006-arduino-built-in.md), **accepted**
-by the owner at PA's start: arduino-cli 1.6.0 built from source is Triage's
-Arduino engine). The owner has an Arduino **Nano or Mega** for the upload check
-(PA-3). P3 is done and merged (PR #8); then PC (phone), then P4. The owner's
-checks still open: **C3** (M1 demo), **C4** (60 fps on a real GPU), **C5** (the
-3D tab, optional) and **C6** (the M2 exit demo). Every owner step is in
+**Last updated:** 2026-11-27 · **Phase PA, "Arduino built in": done** and
+merged into the default branch through a pull request (ROADMAP PA,
+[ADR 0006](adr/0006-arduino-built-in.md), **accepted** by the owner at PA's
+start: arduino-cli 1.6.0 built from source is Triage's Arduino engine). **Next:
+PC (phone and tablet companion)**, which the owner starts in a new session; then
+P4. The owner's checks still open: **C3** (M1 demo), **C4** (60 fps on a real
+GPU), **C5** (the 3D tab, optional), **C6** (the M2 exit demo) and the new
+**C7** (PA's exit demo on the owner's Nano or Mega). Every owner step is in
 [CHECKS.md](CHECKS.md).
 
-### PA: Arduino built in (in progress, 2026-11-27)
+### PA done (2026-11-27)
+
+CI on the last commits: **Arduino run 6** (the engine built from source and
+checked on clean Linux and Windows machines), **Sim run 30**, **App run 102**
+(35 of 35 smoke checks, by mouse, in the packaged app on Windows and Linux) and
+**CI run 142**, all green on both OSes.
 
 | WP | State | Evidence |
 |---|---|---|
-| PA-1 Buttons for every action | built | A **Triage** menu in the menu bar with every Triage command (`browser/triageMenus.ts`); **File → New Triage Project…** and **Examples…**; **✓ Build**, **→ Upload** and **Serial Monitor** buttons above firmware files; **Build** and **Upload** in the Sim tab; **Rename Net…**, **Edit in KiCad** and a **right-click menu** (Rename Net on a net, select a part, Fit, Undo, Redo, Save) in the Schematic and Board tabs; **Part Height…** and a height row for board parts in the 3D tab; firmware buttons in the Triage side bar. `scripts/checks/buttons.test.mjs` fails when a user-facing command has no menu entry. The smoke test opens no command palette any more: PLAN §3 (open, build, run, warm the room by mouse, the Mode button, scenarios, Export STL) with clicks (DV-42). For the mouse: a narrow Sim tab gives each slider a line of its own (it was 60 px), and a click on a part's button is held for at least 0.15 s of simulated time, so debouncing firmware sees it however slowly the simulation runs |
-| PA-2 Arduino toolchain built in | built; **Arduino run 6 green** (both engines built from source in 18 minutes on Linux; on clean Linux and Windows machines each compiles Blink for Uno, Nano and Mega and the Smart Fan for Uno and Nano); Sim and App pending | `engines/arduino/`: arduino-cli 1.6.0 (the IDE 2's), serial-discovery, serial-monitor, mdns-discovery, arduinoOTA, ctags 5.8-arduino12, avrdude 8.0 and avr-gcc 7.3.0-atmel3.6.1-arduino7 (Arduino's recipe: GCC 7.3.0 + Atmel's patches, binutils 2.26, avr-libc 2.0.0) built from pinned sources for Linux and, cross-built, Windows (DV-35, DV-36). In this session: Blink compiles for Uno, Nano and Mega with it; the Smart Fan builds (10,634 bytes, Wire); all 13 sketch and scenario tests pass with arduino-cli-built firmware (LTO). Firmware builds go through arduino-cli everywhere (DV-37, DV-38; DV-29 closed); the Sim and App workflows take the engine from the new **Arduino** workflow and check that no Arduino software is installed |
-| PA-3 Upload to a real board | built; CI pending | The board and port picker in the status bar (plugged-in boards first, board options such as a Nano's **Old Bootloader**), Upload with plain-words errors, the **Serial Monitor** panel (baud rate, line ending, send box). `sim/src/board.ts`: an emulated Uno with Optiboot (SPM, watchdog, BOOTRST) behind TCP; `sim/test/upload.test.ts` uploads a serial Blink with `arduino-cli upload` over `net:` (both OSes) and a socat pty (Linux), checks the flash byte for byte and reads its output (DV-39). **Owner check C7** |
-| PA-4 Library Manager | built; CI pending | Search, install (with dependencies), versions, remove; installs record `Name@version` in triage.toml's `[firmware] libraries` (schema and model updated), Build installs listed ones first; `compile_commands.json` for C++ servers (DV-40). `sim/test/managers.test.ts`: Adafruit SSD1306 installs, a sketch using it builds and draws on the simulated OLED; the smoke test installs it from the Library Manager and runs such a sketch in the Sim tab |
-| PA-5 Boards Manager | built; CI pending | Installed and available platforms, AVR built in and offline, **Refresh**, **More URLs…** (extra index URLs setting), install and remove with arduino-cli's checksum checks; the board picker marks boards Triage simulates. `managers.test.ts` installs a platform from a local test index and compiles Blink for it. **Owner check C7** (ESP32) |
-| PA-6 Examples and New Project | built; CI pending | The IDE 2's built-in examples (arduino-examples 1.10.3) and each library's, in File → Examples… and the Examples view; an example is copied into `Documents/Triage` and opens in a new window as a sketch-folder project; New Project with a board picker; a project without electronics simulates the bare board (DV-41). The smoke test opens Blink from File → Examples, sees D13 blink in Code only and builds it |
+| PA-1 Buttons for every action | **done** (App run 102) | A **Triage** menu in the menu bar with every Triage command (`browser/triageMenus.ts`); **File → New Triage Project…** and **Examples…**; **✓ Build**, **→ Upload** and **Serial Monitor** buttons above firmware files; **Build** and **Upload** in the Sim tab; **Rename Net…**, **Edit in KiCad** and a **right-click menu** (Rename Net on a net, select a part, Fit, Undo, Redo, Save) in the Schematic and Board tabs; **Part Height…** and a height row for board parts in the 3D tab; firmware buttons in the Triage side bar. `scripts/checks/buttons.test.mjs` fails when a user-facing command has no menu entry. The smoke test opens no command palette any more: PLAN §3 (open, build, run, warm the room by mouse, the Mode button, scenarios, Export STL) with clicks (DV-42). For the mouse: a narrow Sim tab gives each slider a line of its own (it was 60 px), and a click on a part's button is held for at least 0.15 s of simulated time, so debouncing firmware sees it however slowly the simulation runs |
+| PA-2 Arduino toolchain built in | **done**: Arduino run 6 (both engines built from source in 18 minutes on Linux; on clean Linux and Windows machines each compiles Blink for Uno, Nano and Mega and the Smart Fan for Uno and Nano); Sim run 30 and App run 102 build all firmware with it | `engines/arduino/`: arduino-cli 1.6.0 (the IDE 2's), serial-discovery, serial-monitor, mdns-discovery, arduinoOTA, ctags 5.8-arduino12, avrdude 8.0 and avr-gcc 7.3.0-atmel3.6.1-arduino7 (Arduino's recipe: GCC 7.3.0 + Atmel's patches, binutils 2.26, avr-libc 2.0.0) built from pinned sources for Linux and, cross-built, Windows (DV-35, DV-36). In this session: Blink compiles for Uno, Nano and Mega with it; the Smart Fan builds (10,634 bytes, Wire); all 13 sketch and scenario tests pass with arduino-cli-built firmware (LTO). Firmware builds go through arduino-cli everywhere (DV-37, DV-38; DV-29 closed); the Sim and App workflows take the engine from the new **Arduino** workflow and check that no Arduino software is installed |
+| PA-3 Upload to a real board | **done** in CI (Sim run 30: the emulated Uno on both OSes, the pty on Linux; App run 102); the real board is **owner check C7** | The board and port picker in the status bar (plugged-in boards first, board options such as a Nano's **Old Bootloader**), Upload with plain-words errors, the **Serial Monitor** panel (baud rate, line ending, send box). `sim/src/board.ts`: an emulated Uno with Optiboot (SPM, watchdog, BOOTRST) behind TCP; `sim/test/upload.test.ts` uploads a serial Blink with `arduino-cli upload` over `net:` (both OSes) and a socat pty (Linux), checks the flash byte for byte and reads its output (DV-39). **Owner check C7** |
+| PA-4 Library Manager | **done** (Sim run 30, App run 102) | Search, install (with dependencies), versions, remove; installs record `Name@version` in triage.toml's `[firmware] libraries` (schema and model updated), Build installs listed ones first; `compile_commands.json` for C++ servers (DV-40). `sim/test/managers.test.ts`: Adafruit SSD1306 installs, a sketch using it builds and draws on the simulated OLED; the smoke test installs it from the Library Manager and runs such a sketch in the Sim tab |
+| PA-5 Boards Manager | **done** (Sim run 30, App run 102); ESP32 from Espressif's index is **owner check C7** | Installed and available platforms, AVR built in and offline, **Refresh**, **More URLs…** (extra index URLs setting), install and remove with arduino-cli's checksum checks; the board picker marks boards Triage simulates. `managers.test.ts` installs a platform from a local test index and compiles Blink for it. **Owner check C7** (ESP32) |
+| PA-6 Examples and New Project | **done** (App run 102) | The IDE 2's built-in examples (arduino-examples 1.10.3) and each library's, in File → Examples… and the Examples view; an example is copied into `Documents/Triage` and opens in a new window as a sketch-folder project; New Project with a board picker; a project without electronics simulates the bare board (DV-41). The smoke test opens Blink from File → Examples, sees D13 blink in Code only and builds it |
 
 **This session's environment.** Unlike earlier sessions, `apt-get` works here,
 so mingw-w64, socat and VS Code's system libraries were installed and the
 toolchain was built and tested locally. Go 1.27.4 and Node 24.22.1 were built
 from source in the session (CLAUDE.md: no downloaded binaries).
+
+**Known issues.** In the packaged app on CI's Windows machine, the whole device
+ran at **0.14× and 0.17×** real time in App runs 101 and 102 (0.29× to 0.72×
+before PA, runs 86 to 88; Linux 0.97× now). No PA code runs per frame; the
+Arduino engine's port watcher and a first index download run beside the
+simulation there, and CI's Windows machine varies run to run. The laptop runs
+(C6 step 2, C7) are the real measure. The Smart Fan's status-LED check in the
+smoke test failed once on the default branch after PR #9 (App run 88) and passed
+in runs 87, 101 and 102. Not built in PA (DV-36): avrdude for USB programmers
+(Burn Bootloader) and dfu-discovery, which arduino-cli downloads the first time
+the indexes update, as the IDE does.
 
 ### P3 done (2026-11-27)
 
@@ -54,10 +71,8 @@ the app: compiled firmware runs only in CI (the Sim and App workflows install
 the toolchain), and hand-assembled AVR programs test the AVR unit locally.
 Triage's workbench code was type-checked here against the VS Code tree.
 
-**Known issues.** Building firmware needs avr-gcc until PA-2 builds it into
-Triage: on Windows the Arduino IDE 2 or arduino-cli with the AVR core (Triage
-uses their compiler); on Linux Ubuntu's `gcc-avr` and `avr-libc` (the app ships
-Arduino's AVR core). Times cross into
+**Known issues.** Building firmware needed an installed avr-gcc until PA-2 built
+it into Triage (closed in PA: no Arduino software needs to be installed). Times cross into
 JavaScript as picoseconds in numbers, exact for about 2.5 hours of virtual time.
 Traces are trimmed to the last half second in interactive runs, so plots keep 10
 s of samples, not the full history. **In the
@@ -345,8 +360,8 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **done** 2026-11-26 on Windows and Linux in CI (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 accepted); **the owner's M1 run on Windows and the GPU 60 fps check next** |
 | P2 3D engine + enclosure from board | P2-1 FreeCAD fork · P2-2 CAD engine RPC · P2-3 3D view · P2-4 enclosure · P2-5 fit checks | **done** 2026-11-26 on Windows and Linux in CI (DV-25 … DV-27; see "P2 done" at the top) |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | **done** 2026-11-27 on Windows and Linux in CI (Sim run 9, App run 80; DV-28 … DV-32); **the owner's M2 run (C6) next** |
-| PA Arduino built in ([ADR 0006](adr/0006-arduino-built-in.md)) | PA-1 … PA-6 | **in progress** since 2026-11-27 (ADR 0006 accepted; DV-33, DV-34) |
-| PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | not started (after PA, before P4) |
+| PA Arduino built in ([ADR 0006](adr/0006-arduino-built-in.md)) | PA-1 … PA-6 | **done** 2026-11-27 on Windows and Linux in CI (Arduino run 6, Sim run 30, App run 102; ADR 0006 accepted; DV-33 … DV-42); **the owner's PA exit demo (C7) next** |
+| PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | **next** (the owner starts it in a new session) |
 | P4 ESP32 + Raspberry Pi (M3) | P4-1 … P4-6 | not started |
 | P5 In-app electronics editing | P5-1 … P5-7 | not started |
 | P6 In-app 3D design (M4) | P6-1 … P6-5 | not started |
@@ -613,3 +628,25 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   engine with the LED height was built; D2 glows in the 3D tab on both OSes),
   CI run 122. The Windows app reached **0.72x** real time in App run 86, up
   from 0.31x before the engine stopped waiting on 0 ms timers.
+- **2026-11-27 (PA session).** The owner said "Start with PA now", accepted ADR
+  0006 (arduino-cli 1.6.0 built from source) and has a **Nano or Mega** for the
+  upload check. Built phase PA: the Arduino engine from pinned sources (Go 1.27.4
+  and Node 24.22.1 built from source here; arduino-cli and its tools, ctags,
+  avrdude 8.0 and Arduino's avr-gcc 7.3.0 recipe, cross-built for Windows with
+  mingw-w64) in a new **Arduino** workflow that the Sim and App workflows take
+  the engine from; firmware builds through arduino-cli everywhere; the board
+  and port picker, Upload and the Serial Monitor; the Library and Boards
+  Managers; examples and New Project; a Triage menu, in-tab buttons and a
+  right-click menu so every action has a button (PA-1), with a test that fails
+  when a command has none. Upload is tested against an emulated Uno running
+  Optiboot behind TCP and a pty. Fixed on the way: relative symlinks in the
+  staged engine; GNU tar on Windows reading `D:\…` as a remote host; GCC 7.3's
+  Windows build (`--disable-win32-registry`, the LTO plugin as a DLL); the
+  Arduino engine replacing the sim engine (same utility-process module); VS
+  Code ignoring menu clicks in their first 100 ms; a 60 px slider in a narrow
+  Sim tab; clicks shorter than the firmware's debounce (now held 0.15 s of
+  simulated time). DV-35 … DV-42; DV-29 and DV-33 closed. Owner checks: **C7**
+  new (PA's exit demo on the Nano or Mega, with an ESP32 compile); **C3, C4, C5
+  and C6** updated to clicks (no command palette) and to need no Arduino
+  install. CI: Arduino run 6, Sim run 30, App run 102 (35/35), CI run 142.
+  PA merged into the default branch through a pull request.
