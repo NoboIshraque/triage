@@ -1,0 +1,46 @@
+# The newest Arduino engine (ROADMAP PA-2) that passed the Arduino workflow
+# (arduino.yml) for this OS, from this branch or else from the default branch,
+# unpacked into engines/arduino/build/<os>/stage, where sim/src/arduino.ts and
+# app/build.mjs look for it. The calling job needs `actions: read`.
+name: Arduino engine
+description: Download and unpack the newest Arduino engine built from source
+inputs:
+  token:
+    description: A token that can read the repository's Actions runs
+    required: true
+outputs:
+  run:
+    description: The Arduino workflow run the engine came from
+    value: ${{ steps.download.outputs.run }}
+runs:
+  using: composite
+  steps:
+    - id: download
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+      run: |
+        os=$([ "$RUNNER_OS" = Windows ] && echo windows || echo linux)
+        branch="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+        default=$(gh api "repos/$GITHUB_REPOSITORY" --jq .default_branch || echo main)
+        work="$RUNNER_TEMP/arduino-engine"
+        run_id=""
+        for b in "$branch" "$default"; do
+          for id in $(gh run list -R "$GITHUB_REPOSITORY" --workflow arduino.yml --branch "$b" --status completed --limit 15 --json databaseId -q '.[].databaseId' || true); do
+            rm -rf "$work"
+            if gh run download "$id" -R "$GITHUB_REPOSITORY" -n "triage-arduino-$os" -D "$work" 2>/dev/null; then
+              run_id=$id
+              break 2
+            fi
+          done
+        done
+        if [ -z "$run_id" ]; then
+          echo "::error::No Arduino engine for $os has passed the Arduino workflow yet (it builds the compiler from source, about 45 minutes the first time). Re-run this job once it has."
+          exit 1
+        fi
+        stage="engines/arduino/build/$os/stage"
+        rm -rf "$stage" && mkdir -p "$stage"
+        tar -xzf "$work/triage-arduino-$os.tar.gz" -C "$stage"
+        echo "Arduino engine from Arduino run $run_id:"
+        cat "$stage/triage-arduino.json"
+        echo "run=$run_id" >> "$GITHUB_OUTPUT"

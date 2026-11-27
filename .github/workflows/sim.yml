@@ -1,9 +1,10 @@
 # Simulation (ROADMAP P3): MuJoCo built from source, the kernel and device crates
-# tested with it, the sim addon (triage_sim.node), Arduino firmware compiled
-# (Linux: Ubuntu's avr-gcc and the pinned Arduino AVR core; Windows: arduino-cli
-# and its toolchain, as the owner's laptop has it), the sim package's tests with
-# compiled sketches, and `triage test` on the Smart Fan's scenarios
-# (P3-6 done-when: overheat.yaml passes headless on both OSes).
+# tested with it, the sim addon (triage_sim.node), Arduino firmware compiled with
+# Triage's own Arduino engine (arduino-cli and the AVR compiler built from source
+# by the Arduino workflow, ROADMAP PA-2; no Arduino IDE, arduino-cli or avr-gcc
+# is installed on these machines), the sim package's tests with compiled
+# sketches, and `triage test` on the Smart Fan's scenarios (P3-6 done-when:
+# overheat.yaml passes headless on both OSes).
 name: Sim
 
 on:
@@ -14,6 +15,8 @@ on:
 
 permissions:
   contents: read
+  # gh run download: the Arduino engine from the Arduino workflow.
+  actions: read
 
 concurrency:
   group: sim-${{ github.ref }}
@@ -23,8 +26,6 @@ env:
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: '0'
   TURBO_TELEMETRY_DISABLED: '1'
-  ARDUINO_CLI_VERSION: '1.6.0'
-  ARDUINO_CLI_SHA256: '2769b9b282ce597db9679d8ec14d726d57004ca4205ef4d7a795bf36b6cdc9d8'
 
 jobs:
   sim:
@@ -50,31 +51,24 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
-      - name: Build tools and the AVR toolchain (Linux, Ubuntu's packages)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ninja-build gcc-avr avr-libc binutils-avr
-          avr-gcc --version | head -1
-          node engines/arduino-avr/fetch.mjs
-      - name: Ninja and arduino-cli with the Arduino AVR core (Windows)
+      - name: Ninja (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
+        run: if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) { choco install ninja -y --no-progress }
+      - name: Ninja (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: sudo apt-get update && sudo apt-get install -y ninja-build
+      - name: Triage's Arduino engine (built from source, ROADMAP PA-2)
+        uses: ./.github/actions/arduino-engine
+        with:
+          token: ${{ github.token }}
+      - name: No Arduino IDE, arduino-cli or avr-gcc on this machine
+        shell: bash
         run: |
-          $ErrorActionPreference = 'Stop'
-          if (-not (Get-Command ninja -ErrorAction SilentlyContinue)) { choco install ninja -y --no-progress }
-          $zip = Join-Path $env:RUNNER_TEMP 'arduino-cli.zip'
-          $url = "https://github.com/arduino/arduino-cli/releases/download/v$env:ARDUINO_CLI_VERSION/arduino-cli_$($env:ARDUINO_CLI_VERSION)_Windows_64bit.zip"
-          for ($i = 1; $i -le 4; $i++) { try { Invoke-WebRequest $url -OutFile $zip; break } catch { if ($i -eq 4) { throw }; Start-Sleep (2 * $i) } }
-          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
-          if ($hash -ne $env:ARDUINO_CLI_SHA256) { throw "arduino-cli checksum $hash" }
-          $dir = Join-Path $env:RUNNER_TEMP 'arduino-cli'
-          Expand-Archive $zip -DestinationPath $dir -Force
-          $dir | Out-File -FilePath $env:GITHUB_PATH -Append -Encoding utf8
-          & "$dir\arduino-cli.exe" core update-index
-          & "$dir\arduino-cli.exe" core install arduino:avr
-          & "$dir\arduino-cli.exe" core list
+          for p in avr-gcc arduino-cli avrdude; do
+            if command -v "$p"; then echo "$p is installed here; the firmware must build with Triage's own engine"; exit 1; fi
+          done
       - name: Install the pinned Rust toolchain (rust-toolchain.toml)
         run: rustup toolchain install
       - uses: Swatinem/rust-cache@v2
