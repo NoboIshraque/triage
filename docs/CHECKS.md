@@ -348,9 +348,8 @@ menu sits between **Edit** and **Selection**.) Typing a command
     lists, or what's under **Other devices** with a yellow mark.
 - **Steps:**
   1. **Open an example.** Start Triage. Click **File → Examples…** in the menu
-     bar (or the **Triage** menu → **Examples…**). A list opens: scroll to
-     **02.Digital** or type `Blink` in the box at the top, and click **Blink**
-     (under **01.Basics**). **Check:** a new Triage window opens with the project
+     bar (or the **Triage** menu → **Examples…**). A list opens: type `Blink` in the box at the top (or
+     scroll to **01.Basics**), and click **Blink** (under **01.Basics**). **Check:** a new Triage window opens with the project
      **Blink** (the Triage icon at the top left of the activity bar shows it), and
      `Documents\Triage\Blink\` now holds `triage.toml` and `Blink\Blink.ino`.
   2. **Try it in the simulator first.** In the new window, click the **Triage**
