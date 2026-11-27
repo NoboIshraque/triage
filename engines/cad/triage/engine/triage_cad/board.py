@@ -25,6 +25,8 @@ LAST = {}
 
 # Footprint names that tell a part's height (mm above its side of the board).
 ESTIMATES = [
+    # Round through-hole LEDs: a 3 mm LED stands about 5.3 mm, a 5 mm one 8.7 mm.
+    (re.compile(r"LED_D(\d+(?:\.\d+)?)mm"), lambda m: 1.75 * float(m.group(1))),
     (re.compile(r"Pin(?:Header|Socket)_\d+x\d+_P2\.54mm_Vertical"), lambda m: 8.5),
     (re.compile(r"TO-220"), lambda m: 19.0),
     (re.compile(r"TO-92"), lambda m: 5.0),

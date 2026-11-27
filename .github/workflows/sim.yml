@@ -115,7 +115,9 @@ jobs:
         env:
           TRIAGE_REQUIRE_SIM: '1'
           TRIAGE_REQUIRE_TOOLCHAIN: '1'
-        run: pnpm --filter @triage/sim exec vitest run --reporter=verbose
+        # One test file at a time: the speed checks (≥ 1× real time) measure the
+        # simulation alone, not beside the decoder test's 65,536 opcodes (Sim run 14).
+        run: pnpm --filter @triage/sim exec vitest run --reporter=verbose --no-file-parallelism
       - name: triage test on the Smart Fan (P3-6 done-when)
         timeout-minutes: 15
         run: >-

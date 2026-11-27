@@ -2,7 +2,7 @@
 	(version 20260306)
 	(generator "eeschema")
 	(generator_version "10.0")
-	(uuid "5a6eaf36-e102-4cc5-997b-f577bcbe80de")
+	(uuid "0798c1fe-f5c8-4315-9d96-6a0e0f1145a4")
 	(paper "A4")
 	(title_block
 		(title "Smart Fan")
@@ -1446,6 +1446,207 @@
 			)
 			(embedded_fonts no)
 		)
+		(symbol "smart_fan:LED"
+			(pin_numbers
+				(hide yes)
+			)
+			(pin_names
+				(offset 1.016)
+				(hide yes)
+			)
+			(exclude_from_sim no)
+			(in_bom yes)
+			(on_board yes)
+			(in_pos_files yes)
+			(duplicate_pin_numbers_are_jumpers no)
+			(property "Reference" "D"
+				(at 0 2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Value" "LED"
+				(at 0 -2.54 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Footprint" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Datasheet" ""
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Description" "Light emitting diode"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "Sim.Pins" "1=K 2=A"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_keywords" "LED diode"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(property "ki_fp_filters" "LED* LED_SMD:* LED_THT:*"
+				(at 0 0 0)
+				(show_name no)
+				(do_not_autoplace no)
+				(hide yes)
+				(effects
+					(font
+						(size 1.27 1.27)
+					)
+				)
+			)
+			(symbol "LED_0_1"
+				(polyline
+					(pts
+						(xy -3.048 -0.762) (xy -4.572 -2.286) (xy -3.81 -2.286) (xy -4.572 -2.286) (xy -4.572 -1.524)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.778 -0.762) (xy -3.302 -2.286) (xy -2.54 -2.286) (xy -3.302 -2.286) (xy -3.302 -1.524)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 0) (xy 1.27 0)
+					)
+					(stroke
+						(width 0)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy -1.27 -1.27) (xy -1.27 1.27)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+				(polyline
+					(pts
+						(xy 1.27 -1.27) (xy 1.27 1.27) (xy -1.27 0) (xy 1.27 -1.27)
+					)
+					(stroke
+						(width 0.254)
+						(type default)
+					)
+					(fill
+						(type none)
+					)
+				)
+			)
+			(symbol "LED_1_1"
+				(pin passive line
+					(at -3.81 0 0)
+					(length 2.54)
+					(name "K"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "1"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+				(pin passive line
+					(at 3.81 0 180)
+					(length 2.54)
+					(name "A"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+					(number "2"
+						(effects
+							(font
+								(size 1.27 1.27)
+							)
+						)
+					)
+				)
+			)
+			(embedded_fonts no)
+		)
 		(symbol "smart_fan:PWR_FLAG"
 			(power global)
 			(pin_numbers
@@ -2441,238 +2642,84 @@
 		)
 	)
 	(no_connect
-		(at 63.5 83.82)
-		(uuid "190592c4-0e11-499c-8b67-2e6e7cd3aaa3")
-	)
-	(no_connect
-		(at 63.5 101.6)
-		(uuid "27ba7423-9da1-403c-9ee0-9e0fdd921b6b")
-	)
-	(no_connect
-		(at 63.5 91.44)
-		(uuid "34d61783-a82a-4e9f-8f21-87f0ebafba14")
-	)
-	(no_connect
-		(at 88.9 73.66)
-		(uuid "40a2bca4-0a79-4f85-9b98-ac9bd98b9e26")
-	)
-	(no_connect
-		(at 63.5 88.9)
-		(uuid "413751ed-0d98-41a9-bafb-092e84ebb8a0")
-	)
-	(no_connect
-		(at 88.9 106.68)
-		(uuid "42d27be0-d1c7-4ef2-818b-aa6ddcb66af0")
-	)
-	(no_connect
-		(at 63.5 86.36)
-		(uuid "4a974e3f-0416-4654-bdce-8b3c679a8505")
-	)
-	(no_connect
-		(at 63.5 73.66)
-		(uuid "567e7179-bc8a-4aaa-abf7-8e7a706ce23e")
-	)
-	(no_connect
-		(at 88.9 93.98)
-		(uuid "59b0665d-fc5f-4f64-ad69-1340b54869f0")
-	)
-	(no_connect
-		(at 88.9 109.22)
-		(uuid "876f7cee-ce15-4165-b0f4-9153946d9f8e")
-	)
-	(no_connect
-		(at 78.74 63.5)
-		(uuid "9247617d-59e9-4db8-9a07-d499060c06da")
-	)
-	(no_connect
-		(at 88.9 78.74)
-		(uuid "b8be24c1-c30b-4c57-bd3f-b24eac88262c")
-	)
-	(no_connect
 		(at 88.9 83.82)
-		(uuid "bf228c5f-05b8-49c1-90b5-61f42688d770")
-	)
-	(no_connect
-		(at 88.9 91.44)
-		(uuid "cc2b9837-da93-4499-b9c0-5dae28bbf310")
-	)
-	(no_connect
-		(at 63.5 104.14)
-		(uuid "df0d9e78-0297-4575-bec2-590c3dc83cba")
-	)
-	(no_connect
-		(at 63.5 81.28)
-		(uuid "dfe6f6a2-48d7-4acf-bbaa-08f2f3b1fb29")
+		(uuid "10afc7b6-3f20-4095-a27a-b1d5c08d0f4d")
 	)
 	(no_connect
 		(at 88.9 96.52)
-		(uuid "e09de055-4a22-4466-9512-b5cc72db99f9")
+		(uuid "17eb8b02-8a44-47f7-a613-f100fb6bdfbb")
 	)
 	(no_connect
-		(at 63.5 106.68)
-		(uuid "e91e0df7-826a-4237-a25b-517fc3476351")
+		(at 63.5 91.44)
+		(uuid "24ea4279-74f3-4898-88de-ee5e4722bc1c")
+	)
+	(no_connect
+		(at 78.74 63.5)
+		(uuid "256ac773-9a0b-4044-ae50-ba8c6e354d77")
+	)
+	(no_connect
+		(at 88.9 91.44)
+		(uuid "318cf264-3576-4be7-81d6-8af89471c29f")
 	)
 	(no_connect
 		(at 63.5 93.98)
-		(uuid "f4e70226-952a-4eae-8e02-867d8d937424")
+		(uuid "500bf0a3-da22-453f-9997-b230e4deac53")
 	)
 	(no_connect
-		(at 63.5 99.06)
-		(uuid "fc137e62-f9a8-4fd2-ae73-c169d85f9872")
+		(at 88.9 78.74)
+		(uuid "50ac3bd6-c9e0-46fe-9dd5-9023f9482ef8")
 	)
 	(no_connect
 		(at 63.5 76.2)
-		(uuid "fc4fcbd1-cd45-41d3-8111-d6a91720b0e9")
+		(uuid "5655f0e1-fd40-4a80-9fc1-64b0d9ce4c5c")
 	)
-	(wire
-		(pts
-			(xy 73.66 116.84) (xy 73.66 119.38)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "1ede56f3-aeda-4fa3-bfd5-15970c3a0f60")
+	(no_connect
+		(at 63.5 88.9)
+		(uuid "6c7b77f2-2708-4fc1-912b-8c2c8392902f")
 	)
-	(wire
-		(pts
-			(xy 124.46 85.09) (xy 124.46 87.63)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "40833a22-e174-4e51-b1c6-72af8c59f3d6")
+	(no_connect
+		(at 88.9 109.22)
+		(uuid "7bcdf8d5-bca4-4ab9-8a4a-cba6c7d9f7c2")
 	)
-	(wire
-		(pts
-			(xy 124.46 59.69) (xy 124.46 57.15)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "46703f3b-7cd9-4200-aae8-5f7ee7add3c3")
+	(no_connect
+		(at 63.5 73.66)
+		(uuid "7fbc7b5c-5aef-42b0-b07c-499af76e8fd8")
 	)
-	(wire
-		(pts
-			(xy 147.32 77.47) (xy 147.32 74.93)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "48109802-97d5-4ac4-adf7-3c714d69ccf0")
+	(no_connect
+		(at 63.5 81.28)
+		(uuid "8cc20654-5fc1-4fdd-8c83-3947978a2146")
 	)
-	(wire
-		(pts
-			(xy 139.7 132.08) (xy 139.7 134.62)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "4f515f69-7773-4109-bcf7-76d849fec256")
+	(no_connect
+		(at 88.9 73.66)
+		(uuid "903edecf-6831-4292-8319-133b872257b3")
 	)
-	(wire
-		(pts
-			(xy 147.32 67.31) (xy 147.32 69.85)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "61370818-e063-44cd-9ea4-4e118772776f")
+	(no_connect
+		(at 63.5 99.06)
+		(uuid "a360d9a0-4350-49b2-984b-c89f42efaa6d")
 	)
-	(wire
-		(pts
-			(xy 124.46 132.08) (xy 124.46 134.62)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "6fe156d7-56b4-47ec-a70f-f12200cb3edf")
+	(no_connect
+		(at 88.9 93.98)
+		(uuid "bce71966-1210-438f-9847-233953d6dfc6")
 	)
-	(wire
-		(pts
-			(xy 147.32 85.09) (xy 147.32 87.63)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "7e689f9a-16c2-41b1-9a18-45fc716072e9")
+	(no_connect
+		(at 88.9 106.68)
+		(uuid "cdb8f986-d93d-48a0-9272-117995603578")
 	)
-	(wire
-		(pts
-			(xy 124.46 77.47) (xy 124.46 74.93)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "8f15c489-097b-4db6-a17a-7f3909858e07")
+	(no_connect
+		(at 63.5 86.36)
+		(uuid "d9957ad5-7f39-4935-8159-bdb5a0500886")
 	)
-	(wire
-		(pts
-			(xy 124.46 67.31) (xy 124.46 69.85)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "94eee47a-5f82-42d5-aa29-3ecbc0e8cf01")
+	(no_connect
+		(at 63.5 83.82)
+		(uuid "e4eb64f1-a311-4e60-853f-a023ec92db52")
 	)
-	(wire
-		(pts
-			(xy 73.66 63.5) (xy 73.66 60.96)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "a60eb471-8263-4ad6-aae8-108d995ee208")
+	(no_connect
+		(at 63.5 104.14)
+		(uuid "f76fa793-0dff-4215-9032-48930a5ebf0c")
 	)
-	(wire
-		(pts
-			(xy 81.28 63.5) (xy 81.28 60.96)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "adbc27b0-2999-427c-989d-e05f98f473f8")
-	)
-	(wire
-		(pts
-			(xy 172.72 83.82) (xy 172.72 81.28)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c01fca51-d10c-4b9c-94f3-1c6d4a1eb1e9")
-	)
-	(wire
-		(pts
-			(xy 78.74 116.84) (xy 78.74 119.38)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "c5268bbb-c8b7-4913-8f7b-e8861530aa01")
-	)
-	(wire
-		(pts
-			(xy 172.72 93.98) (xy 172.72 96.52)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d0a2ab01-caa4-4b69-bf42-d2757324a08e")
+	(no_connect
+		(at 63.5 101.6)
+		(uuid "f8ba7e72-cfbf-4876-a067-9294af9d0cb4")
 	)
 	(wire
 		(pts
@@ -2682,7 +2729,157 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "e751fea7-73a3-4d7a-9e30-a0f919d22b0a")
+		(uuid "1b396c53-d361-4a59-b540-75ac04cab855")
+	)
+	(wire
+		(pts
+			(xy 147.32 77.47) (xy 147.32 74.93)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "284939d3-3a71-4803-9381-376518f68f1d")
+	)
+	(wire
+		(pts
+			(xy 81.28 63.5) (xy 81.28 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2918d772-c0d7-4c75-938e-907981f929be")
+	)
+	(wire
+		(pts
+			(xy 73.66 116.84) (xy 73.66 119.38)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "29da1a69-ea56-42a3-9ebb-26adbcb0e2fc")
+	)
+	(wire
+		(pts
+			(xy 73.66 63.5) (xy 73.66 60.96)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "2ee1cc73-ea63-4acb-9c28-01a631ce2dbe")
+	)
+	(wire
+		(pts
+			(xy 147.32 85.09) (xy 147.32 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "4013c3df-761c-4b2a-872e-0e900a7ff8ef")
+	)
+	(wire
+		(pts
+			(xy 124.46 67.31) (xy 124.46 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "527b01cb-0b20-4473-afea-e38c6ee7e471")
+	)
+	(wire
+		(pts
+			(xy 139.7 132.08) (xy 139.7 134.62)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "6176b93d-3ec7-44b7-bfa1-3f5720017f39")
+	)
+	(wire
+		(pts
+			(xy 124.46 132.08) (xy 124.46 134.62)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "8363149b-296d-4d13-9dda-9cddeccd86fe")
+	)
+	(wire
+		(pts
+			(xy 210.82 113.03) (xy 210.82 110.49)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "83f47fea-c2f0-4533-8d18-62b7190b4418")
+	)
+	(wire
+		(pts
+			(xy 147.32 67.31) (xy 147.32 69.85)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "94c76d9a-8348-44d6-9e5e-14a4cd5e133e")
+	)
+	(wire
+		(pts
+			(xy 172.72 83.82) (xy 172.72 81.28)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c33cdda8-00c9-4d7f-85c9-64f15774f2fb")
+	)
+	(wire
+		(pts
+			(xy 124.46 59.69) (xy 124.46 57.15)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "d7084d6c-b215-43b3-a509-19cb386cacda")
+	)
+	(wire
+		(pts
+			(xy 172.72 93.98) (xy 172.72 96.52)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "ee95d7b0-7b9d-4bc1-9f65-b542ed06a18c")
+	)
+	(wire
+		(pts
+			(xy 124.46 85.09) (xy 124.46 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f2a8b4ff-bd90-4cc9-993a-fce9a68d9f9f")
+	)
+	(wire
+		(pts
+			(xy 78.74 116.84) (xy 78.74 119.38)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "f7bfb06c-b17d-490f-af86-88fa6fe422b8")
 	)
 	(wire
 		(pts
@@ -2692,7 +2889,27 @@
 			(width 0)
 			(type default)
 		)
-		(uuid "fd029559-2ee4-4606-bee4-d7fbc58d0102")
+		(uuid "fbfe4f3a-9998-44a4-be7b-228ab5a3f969")
+	)
+	(wire
+		(pts
+			(xy 124.46 77.47) (xy 124.46 74.93)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fc46d0a3-4608-4ab0-b136-47e6f3c70213")
+	)
+	(wire
+		(pts
+			(xy 210.82 120.65) (xy 210.82 123.19)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "fd7e7c61-2c39-4173-833c-23e41030f105")
 	)
 	(label "I2C_SCL"
 		(at 88.9 101.6 0)
@@ -2702,307 +2919,7 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "063b7e3e-fb6e-45c8-a6c8-1fd3a382647c")
-	)
-	(label "FAN_PWM"
-		(at 147.32 57.15 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "0a80bfb9-a4fe-4052-a73b-ea41afac9de3")
-	)
-	(label "FAN_GATE"
-		(at 147.32 69.85 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "15fbc5f1-af63-49a0-948f-f2321a2dcd4e")
-	)
-	(label "+5V"
-		(at 165.1 116.84 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "1b30b8b8-b1ba-4772-ab01-af836b84b176")
-	)
-	(label "GND"
-		(at 147.32 87.63 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "2265694c-dc91-45ba-a528-b4d7966d99fd")
-	)
-	(label "I2C_SDA"
-		(at 88.9 99.06 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "2873f206-b977-40ad-9c5b-3b45fa29e6b4")
-	)
-	(label "+12V"
-		(at 132.08 109.22 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "2986a31d-25de-4039-b049-3866442f2f49")
-	)
-	(label "GND"
-		(at 76.2 119.38 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "2bca6b36-64fb-4d44-8783-9179ec65a137")
-	)
-	(label "GND"
-		(at 172.72 96.52 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "367c4072-9600-4a59-95f8-c488259fb348")
-	)
-	(label "GND"
-		(at 165.1 114.3 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "3bdb7147-d670-4c93-9788-bc6c37200323")
-	)
-	(label "GND"
-		(at 78.74 119.38 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "41432a9d-2e2e-4e8a-be72-ed6b30eee872")
-	)
-	(label "FAN_GATE"
-		(at 165.1 88.9 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "42042980-3ae3-431c-b789-c04ab126213a")
-	)
-	(label "+12V"
-		(at 223.52 63.5 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "4eb5680f-c786-43fd-92a8-aa5222b220ac")
-	)
-	(label "+5V"
-		(at 81.28 60.96 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "546790b6-da93-4543-8b9c-971e73bdad94")
-	)
-	(label "I2C_SDA"
-		(at 165.1 121.92 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "581ba35a-0840-4941-996b-4eca89ad7a15")
-	)
-	(label "BUTTON"
-		(at 185.42 116.84 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "5a6d96f7-27f5-4f75-b8fc-fa0dcb26526f")
-	)
-	(label "FAN_NEG"
-		(at 194.31 63.5 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "681477e6-6ffb-42d3-99d5-87d315886f76")
-	)
-	(label "FAN_NEG"
-		(at 223.52 66.04 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "69c24f61-1208-4852-89ad-88f1514af5a5")
-	)
-	(label "FAN_GATE"
-		(at 147.32 74.93 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "6a8d50cd-101f-4568-a653-323f35f9f1dd")
-	)
-	(label "GND"
-		(at 195.58 116.84 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "6f86098e-e2a7-4b25-973e-2f716da4125d")
-	)
-	(label "GND"
-		(at 124.46 87.63 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "702b9ae7-0e43-4d18-957b-7bdbbfa978ec")
-	)
-	(label "BUTTON"
-		(at 63.5 78.74 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "859c0edc-c00c-48a6-b5f9-3a8cf4779c0f")
-	)
-	(label "GND"
-		(at 73.66 119.38 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "8c148fe6-1b0d-4d2f-977e-fbbd0b491d96")
-	)
-	(label "I2C_SCL"
-		(at 165.1 119.38 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "90806202-f15b-4f2e-b227-a2e08a722704")
-	)
-	(label "TEMP_SENSE"
-		(at 88.9 88.9 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "9bd28ace-d0a3-4c8e-99b4-9d177f1a3ae1")
-	)
-	(label "TEMP_SENSE"
-		(at 124.46 74.93 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "a0c92efe-21c0-4a25-b4c3-da1d458a60bd")
-	)
-	(label "FAN_PWM"
-		(at 63.5 96.52 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "a86ce41a-3c45-4f8d-a587-a3a2dd374bad")
-	)
-	(label "GND"
-		(at 139.7 134.62 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "b29de79f-d818-4f43-8b34-eac30aaeba6b")
-	)
-	(label "GND"
-		(at 132.08 114.3 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "b2c4c36b-04ee-45fa-afb8-0a3d66c74afa")
-	)
-	(label "+12V"
-		(at 186.69 63.5 180)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right bottom)
-		)
-		(uuid "c262f158-75b7-49db-8f98-7c991f132744")
-	)
-	(label "+12V"
-		(at 124.46 134.62 0)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify left bottom)
-		)
-		(uuid "ca6774c1-115b-455c-a19e-eef2b3800ce1")
+		(uuid "00661814-627d-4751-a271-bdea8d0dac86")
 	)
 	(label "TEMP_SENSE"
 		(at 124.46 69.85 0)
@@ -3012,27 +2929,37 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "d8e8573b-645f-4caf-a570-30a9e7d0130b")
+		(uuid "02a60440-ab87-46bf-a85d-e75964e89db6")
 	)
-	(label "+12V"
-		(at 73.66 60.96 0)
+	(label "BUTTON"
+		(at 63.5 78.74 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "112f589d-1332-4f31-ab3b-3a2e24cbe2aa")
+	)
+	(label "GND"
+		(at 124.46 87.63 0)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
 			(justify left bottom)
 		)
-		(uuid "e1de4e60-bdbe-4f79-8f9d-c61804c483f0")
+		(uuid "1b2cec54-ce68-4a95-abb4-90471e8905e4")
 	)
-	(label "FAN_NEG"
-		(at 172.72 81.28 0)
+	(label "+5V"
+		(at 165.1 116.84 180)
 		(effects
 			(font
 				(size 1.27 1.27)
 			)
-			(justify left bottom)
+			(justify right bottom)
 		)
-		(uuid "eb2cc2ec-a983-40e3-9dd4-4fe61590552a")
+		(uuid "2986ae93-4a66-4b52-822b-9e6e8cf4e822")
 	)
 	(label "+5V"
 		(at 124.46 57.15 0)
@@ -3042,395 +2969,347 @@
 			)
 			(justify left bottom)
 		)
-		(uuid "f85d6434-c05c-489f-8f9e-2b27cb46dc76")
+		(uuid "2c974560-cd05-410e-bfd4-cca4b9f9b43a")
 	)
-	(symbol
-		(lib_id "smart_fan:Thermistor_NTC")
-		(at 124.46 63.5 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "2ecb1668-ae06-4afd-a6fd-0a642e2bf6ec")
-		(property "Reference" "TH1"
-			(at 120.015 63.5 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
+	(label "GND"
+		(at 224.79 116.84 180)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
+			(justify right bottom)
 		)
-		(property "Value" "10k NTC"
-			(at 127.635 63.5 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "smart_fan:R_Axial_DIN0204_L3.6mm_D1.6mm_P7.62mm_Horizontal"
-			(at 124.46 63.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 124.46 63.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 124.46 63.5 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "6e5a3c74-2480-4bb5-8aaf-b3264abe044b")
-		)
-		(pin "2"
-			(uuid "b0f78a1e-b5f5-422e-b8e6-be75d3185d11")
-		)
-		(instances
-			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
-					(reference "TH1")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "2db80c47-6a1f-4dc5-9216-be940f3e6e0b")
 	)
-	(symbol
-		(lib_id "smart_fan:R")
-		(at 147.32 81.28 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "328015b6-a7a2-4add-bd54-71b708530fce")
-		(property "Reference" "R3"
-			(at 149.352 81.28 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
+	(label "STATUS_LED"
+		(at 210.82 110.49 0)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
+			(justify left bottom)
 		)
-		(property "Value" "100k"
-			(at 147.32 81.28 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "smart_fan:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 147.32 81.28 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 147.32 81.28 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 147.32 81.28 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "50c68b8e-e249-47ba-bc33-b135785cc616")
-		)
-		(pin "2"
-			(uuid "0690ac08-02f1-45f2-80fb-4bf8bc1f13a0")
-		)
-		(instances
-			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
-					(reference "R3")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "3af95e46-fed6-49f7-82e9-2d2eff11b42a")
 	)
-	(symbol
-		(lib_id "smart_fan:R")
-		(at 147.32 63.5 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "38f397d6-95dd-41be-af75-7aadf137cfd1")
-		(property "Reference" "R2"
-			(at 149.352 63.5 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
+	(label "I2C_SDA"
+		(at 165.1 121.92 180)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
+			(justify right bottom)
 		)
-		(property "Value" "220"
-			(at 147.32 63.5 90)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "smart_fan:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 147.32 63.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 147.32 63.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 147.32 63.5 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "7ba72ed9-386f-4ebf-86b5-52d1a52b49c5")
-		)
-		(pin "2"
-			(uuid "8d577c6a-100a-4ada-b402-d31625f7b12f")
-		)
-		(instances
-			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
-					(reference "R2")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "405ff00d-6029-4f9b-892e-84ca18c4e699")
 	)
-	(symbol
-		(lib_id "smart_fan:PWR_FLAG")
-		(at 139.7 132.08 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom no)
-		(on_board no)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "422d46f4-d210-4930-9caa-6918a4917308")
-		(property "Reference" "#FLG02"
-			(at 139.7 130.175 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
+	(label "GND"
+		(at 147.32 87.63 0)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
+			(justify left bottom)
 		)
-		(property "Value" "PWR_FLAG"
-			(at 139.7 128.27 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 139.7 132.08 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 139.7 132.08 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 139.7 132.08 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "b664757d-5f0e-43ef-9b82-bd19bcc37c91")
-		)
-		(instances
-			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
-					(reference "#FLG02")
-					(unit 1)
-				)
-			)
-		)
+		(uuid "4e664308-ad38-4d47-99f8-1865bfda9835")
 	)
-	(symbol
-		(lib_id "smart_fan:Conn_01x02")
-		(at 228.6 63.5 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "44eb61ec-e281-47cd-9573-af05d7e8333f")
-		(property "Reference" "J1"
-			(at 228.6 60.96 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
+	(label "GND"
+		(at 172.72 96.52 0)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
+			(justify left bottom)
 		)
-		(property "Value" "Fan 12V"
-			(at 228.6 68.58 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
+		(uuid "4f8847f1-b3ad-4e79-85d2-08865179b9c5")
+	)
+	(label "TEMP_SENSE"
+		(at 88.9 88.9 0)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
+			(justify left bottom)
 		)
-		(property "Footprint" "smart_fan:PinHeader_1x02_P2.54mm_Vertical"
-			(at 228.6 63.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
+		(uuid "507d61d3-29ce-441f-964c-17bd6e35635c")
+	)
+	(label "FAN_GATE"
+		(at 147.32 74.93 0)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
+			(justify left bottom)
 		)
-		(property "Datasheet" "~"
-			(at 228.6 63.5 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
+		(uuid "54a4fef0-a9ec-4f65-94f3-2909e8fa8652")
+	)
+	(label "+5V"
+		(at 81.28 60.96 0)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
+			(justify left bottom)
 		)
-		(property "Description" ""
-			(at 228.6 63.5 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
+		(uuid "6359847c-7a4d-4271-a5b5-c8119c7bd955")
+	)
+	(label "GND"
+		(at 139.7 134.62 0)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
+			(justify left bottom)
 		)
-		(pin "1"
-			(uuid "41e2385e-e577-4043-84d0-fa7553529a28")
-		)
-		(pin "2"
-			(uuid "fb0ee070-a0e4-4a47-995c-301cb8d8f1e9")
-		)
-		(instances
-			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
-					(reference "J1")
-					(unit 1)
-				)
+		(uuid "6c387908-ccfe-46e2-8053-11f10960b691")
+	)
+	(label "+12V"
+		(at 223.52 63.5 180)
+		(effects
+			(font
+				(size 1.27 1.27)
 			)
+			(justify right bottom)
 		)
+		(uuid "763e7e91-73cb-43d4-9dc4-04c64bcc3266")
+	)
+	(label "LED_A"
+		(at 210.82 123.19 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "7a494d53-2e78-4d3e-831b-b6c6a22ee20d")
+	)
+	(label "+12V"
+		(at 124.46 134.62 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "83fc64d1-4dbe-4bf5-9788-9620cfa1f339")
+	)
+	(label "I2C_SCL"
+		(at 165.1 119.38 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "84642ae9-200f-4c0a-b5cb-fde3178622aa")
+	)
+	(label "FAN_PWM"
+		(at 63.5 96.52 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8554f47b-ef46-4658-8e8e-0ea6181f5bf3")
+	)
+	(label "FAN_NEG"
+		(at 223.52 66.04 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "8beefb7e-d3d5-4424-992a-35e46520ccc7")
+	)
+	(label "+12V"
+		(at 132.08 109.22 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "8ecdc60e-a77c-4f44-acbe-d083b067379d")
+	)
+	(label "STATUS_LED"
+		(at 63.5 106.68 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "922b4332-9d67-4d7b-a8b8-d710723f59f9")
+	)
+	(label "FAN_GATE"
+		(at 165.1 88.9 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "95a122eb-9f7a-410d-b979-22d532510946")
+	)
+	(label "+12V"
+		(at 73.66 60.96 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "aa6fe941-f81c-4152-a065-4cc41f4bb5f1")
+	)
+	(label "+12V"
+		(at 186.69 63.5 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "afc4ba0d-3b7c-409c-b244-160501ec38de")
+	)
+	(label "GND"
+		(at 73.66 119.38 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "afd657a9-2f2d-46ff-981d-5eecd7833f35")
+	)
+	(label "FAN_GATE"
+		(at 147.32 69.85 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "b67d1dbf-b869-4cd9-a437-e60f40ae0a8e")
+	)
+	(label "BUTTON"
+		(at 185.42 116.84 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "ba47856b-e7d3-40c9-94d7-6ed074c7a35e")
+	)
+	(label "GND"
+		(at 165.1 114.3 180)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify right bottom)
+		)
+		(uuid "ba69e784-786f-4829-8769-1ab5278319ee")
+	)
+	(label "I2C_SDA"
+		(at 88.9 99.06 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "c18d4325-0da5-44ce-9b0a-5d7838e5916c")
+	)
+	(label "GND"
+		(at 78.74 119.38 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "c745ca5c-0b72-4b2d-9326-78628a12446d")
+	)
+	(label "GND"
+		(at 195.58 116.84 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "cffb4709-096b-40fe-aeab-a9fe8168c4d8")
+	)
+	(label "GND"
+		(at 132.08 114.3 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "d3051f8e-9f90-4a35-8312-8e737c7caa88")
+	)
+	(label "TEMP_SENSE"
+		(at 124.46 74.93 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "d44984dc-1a7f-4090-972b-b85624eff4c1")
+	)
+	(label "LED_A"
+		(at 232.41 116.84 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "d89ae8bd-6536-492a-9b58-29d1d64281d1")
+	)
+	(label "FAN_PWM"
+		(at 147.32 57.15 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "dd459986-420f-49a2-9759-a70aa5188746")
+	)
+	(label "GND"
+		(at 76.2 119.38 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "e215e7eb-6d81-4904-aa27-5b9c03a079a2")
+	)
+	(label "FAN_NEG"
+		(at 194.31 63.5 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "e9c035c9-9e10-486f-a671-01d51569b3b3")
+	)
+	(label "FAN_NEG"
+		(at 172.72 81.28 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+			(justify left bottom)
+		)
+		(uuid "e9eecec5-6fe1-4dee-aa09-4b31eb37bc54")
 	)
 	(symbol
 		(lib_id "smart_fan:PWR_FLAG")
@@ -3442,7 +3321,7 @@
 		(on_board no)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "6118e55d-e7ce-4166-8818-e4bd3c83e165")
+		(uuid "0f406efb-b95f-418d-a0af-78ec3a49e36d")
 		(property "Reference" "#FLG01"
 			(at 124.46 130.175 0)
 			(hide yes)
@@ -3497,11 +3376,11 @@
 			)
 		)
 		(pin "1"
-			(uuid "85ffd7c4-d5af-468f-bb81-9f17f83e72ae")
+			(uuid "b52f7f36-ece8-4278-b57d-dcae768320d7")
 		)
 		(instances
 			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
 					(reference "#FLG01")
 					(unit 1)
 				)
@@ -3509,8 +3388,8 @@
 		)
 	)
 	(symbol
-		(lib_id "smart_fan:D")
-		(at 190.5 63.5 0)
+		(lib_id "smart_fan:R")
+		(at 147.32 63.5 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -3518,9 +3397,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "82a1176d-e26e-4987-9cf3-c9aa44d63bbc")
-		(property "Reference" "D1"
-			(at 190.5 60.96 0)
+		(uuid "1d1c5e49-ea0a-4d22-830a-752afdfe8233")
+		(property "Reference" "R2"
+			(at 149.352 63.5 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3529,8 +3408,8 @@
 				)
 			)
 		)
-		(property "Value" "1N4007"
-			(at 190.5 66.04 0)
+		(property "Value" "220"
+			(at 147.32 63.5 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3539,8 +3418,8 @@
 				)
 			)
 		)
-		(property "Footprint" "smart_fan:D_DO-41_SOD81_P10.16mm_Horizontal"
-			(at 190.5 63.5 0)
+		(property "Footprint" "smart_fan:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
+			(at 147.32 63.5 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3551,7 +3430,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 190.5 63.5 0)
+			(at 147.32 63.5 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3562,7 +3441,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 190.5 63.5 0)
+			(at 147.32 63.5 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3572,15 +3451,15 @@
 			)
 		)
 		(pin "1"
-			(uuid "06166d7d-f130-4bf5-ad3f-97eeea9ef387")
+			(uuid "40b97652-ab37-4165-b90e-2446b608829f")
 		)
 		(pin "2"
-			(uuid "dc3620e3-8a5a-4e91-be7f-2b5f358604cc")
+			(uuid "9accff11-28e1-4559-b44a-dc67810d1dff")
 		)
 		(instances
 			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
-					(reference "D1")
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
+					(reference "R2")
 					(unit 1)
 				)
 			)
@@ -3596,7 +3475,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "969966f0-8b02-4bc2-8234-707924b676a4")
+		(uuid "40ec894a-c3cd-4f5d-a9e1-577266f6a3b9")
 		(property "Reference" "A1"
 			(at 66.04 65.405 0)
 			(show_name no)
@@ -3652,104 +3531,104 @@
 			)
 		)
 		(pin "1"
-			(uuid "7b35233f-4edd-469a-b3f3-bfb0e1680b79")
+			(uuid "c0caced2-1e9c-4dc1-b1f5-583b729b37fd")
 		)
 		(pin "2"
-			(uuid "3acdf50b-bae2-426a-9df0-ff89d3e5bcaf")
+			(uuid "52d6cfb3-111d-4e29-8970-a26577f29ff0")
 		)
 		(pin "3"
-			(uuid "1eba0675-76a8-4746-b1c5-59f0f4922d13")
+			(uuid "f6f3b2fe-8b60-4c51-9929-ff98515231d5")
 		)
 		(pin "4"
-			(uuid "f2ce3801-bb5b-48fc-bad6-eb329a788188")
+			(uuid "73a84bed-d474-4322-93ec-839aab25b388")
 		)
 		(pin "5"
-			(uuid "88001498-76a9-4178-bdca-257a225ce941")
+			(uuid "2fbbd1a9-3dff-4d01-8e14-67027b841a9d")
 		)
 		(pin "6"
-			(uuid "5df1d6ba-6c98-481d-8b2f-c65c28a23fd7")
+			(uuid "df796cb5-db25-41a9-90f6-a81c0532ff98")
 		)
 		(pin "7"
-			(uuid "5f91b643-3d5f-4ca2-8e06-2403c157b194")
+			(uuid "79edbf9e-358f-426b-9e15-44731498428b")
 		)
 		(pin "8"
-			(uuid "bd313484-ab9f-4994-b97e-1c351092be3e")
+			(uuid "690f6eff-5de0-4447-a2aa-b7f634a7ea3c")
 		)
 		(pin "9"
-			(uuid "2a817ee6-a21d-4bba-af12-62d818f1fc78")
+			(uuid "eee40fe9-69c3-4ed9-9c35-9516ccdef408")
 		)
 		(pin "10"
-			(uuid "58b1b530-7fde-49d6-9c1a-501cf5cb7801")
+			(uuid "65d2b974-aff1-4aa5-8f78-6e1628c57505")
 		)
 		(pin "11"
-			(uuid "86ba9937-1e71-41c5-9738-7251e41b71cf")
+			(uuid "96e83a9c-dd3c-4c5d-ba6e-899bef255339")
 		)
 		(pin "12"
-			(uuid "32962d1e-7d42-4357-8124-b262a062cfdf")
+			(uuid "97fc78de-8f78-4603-b5ce-6865a1882aaf")
 		)
 		(pin "13"
-			(uuid "1e28a0ce-002d-4d9a-8880-ab710df4952f")
+			(uuid "fe4e2b7e-2fe9-4721-9225-f91b562bfef1")
 		)
 		(pin "14"
-			(uuid "97720cff-2130-4c2e-9453-fa43e6401dcf")
+			(uuid "4ca1f222-224e-4ef5-92c5-17d74dc95091")
 		)
 		(pin "15"
-			(uuid "99869e02-448b-47e5-8cd2-e3def0c1cc3e")
+			(uuid "54dba866-08c2-407e-a347-619f75156406")
 		)
 		(pin "16"
-			(uuid "2afe2eca-b15a-415e-9ba9-0aa24b2df337")
+			(uuid "abfc3ec8-98b6-4939-b55a-809a26397f0f")
 		)
 		(pin "17"
-			(uuid "b0f40a4c-fde2-4451-8c60-e4d8bc9dd45c")
+			(uuid "5fd0751d-cfbc-41f2-85c3-257ad3bd0c06")
 		)
 		(pin "18"
-			(uuid "bd7dfba0-fec4-49d3-b604-67f41be50a40")
+			(uuid "fe960849-71c1-414b-9f13-53798af0e68a")
 		)
 		(pin "19"
-			(uuid "3cf13143-a1b9-452e-a9e8-02d0a45b64c9")
+			(uuid "a15b6460-9362-485c-a8b2-d67ffb8aaa3b")
 		)
 		(pin "20"
-			(uuid "d58f6a17-b3b9-4e10-8b68-da8ab04789ec")
+			(uuid "d9d1fe29-396e-4bd3-8d7a-31d7d14bccd4")
 		)
 		(pin "21"
-			(uuid "75d8974f-c1ca-4dec-b663-ee503805e038")
+			(uuid "43dee16e-6ac8-482e-8310-ed09cc47ba0f")
 		)
 		(pin "22"
-			(uuid "db72434e-8f00-442b-b056-3a190fdc0fdc")
+			(uuid "335e964c-7cba-45ec-ae60-8aafb186316e")
 		)
 		(pin "23"
-			(uuid "552b6482-ab79-4106-b94e-c0c5ef223bc9")
+			(uuid "3fed2d00-99f3-4b3a-a777-6838a5c1d077")
 		)
 		(pin "24"
-			(uuid "72b089dd-389b-43c5-811a-82fb5baec538")
+			(uuid "bda5fb9e-0d5f-4752-ab8c-5c87eaf461bf")
 		)
 		(pin "25"
-			(uuid "f98b28a5-28c9-4795-a544-a959bc2732dd")
+			(uuid "71e60b15-9ede-4ed1-a4d3-35ee748002bf")
 		)
 		(pin "26"
-			(uuid "36a0274d-cc3d-41aa-bbb3-21b39a086d1b")
+			(uuid "6eedd099-065d-48ec-b5da-b901f1166699")
 		)
 		(pin "27"
-			(uuid "ecf3b775-f917-411f-8ee7-69015c1f0ee9")
+			(uuid "e98cb7bc-c689-4b35-a182-a8c6988ee15f")
 		)
 		(pin "28"
-			(uuid "8b12c15f-63ba-468f-bc33-1c18619f8a54")
+			(uuid "bdcf05af-0f47-4024-bb0a-b7a8ce404c82")
 		)
 		(pin "29"
-			(uuid "28a4d62a-2b79-4eac-bbfe-61720bc26d62")
+			(uuid "d21e6804-87ac-46f0-8a84-ce6ea7509d96")
 		)
 		(pin "30"
-			(uuid "d6e500f4-3d76-47b1-bd42-c6068d8f6ac8")
+			(uuid "70926803-07f8-4b02-8fb3-ea420a245aa5")
 		)
 		(pin "31"
-			(uuid "8296882d-3104-43af-b74d-ee22652e253a")
+			(uuid "cba4a170-9697-4457-8831-52c27b116f53")
 		)
 		(pin "32"
-			(uuid "ebd1b7b7-3cc1-460f-aeb4-dadf572d49e9")
+			(uuid "ea822aba-17d4-4905-99ff-5429a79b9a94")
 		)
 		(instances
 			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
 					(reference "A1")
 					(unit 1)
 				)
@@ -3757,87 +3636,8 @@
 		)
 	)
 	(symbol
-		(lib_id "smart_fan:SW_Push")
-		(at 190.5 116.84 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "a48cddb2-3ebc-4be2-ba8d-280c25221fbe")
-		(property "Reference" "SW1"
-			(at 191.77 114.3 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify left)
-			)
-		)
-		(property "Value" "Mode"
-			(at 190.5 118.364 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "smart_fan:SW_PUSH_6mm"
-			(at 190.5 116.84 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" "~"
-			(at 190.5 116.84 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 190.5 116.84 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "4403e3af-8a09-4083-a94f-ab58fbbb9864")
-		)
-		(pin "2"
-			(uuid "ce49fc22-11d3-43c2-bb18-8cd57917ba1a")
-		)
-		(instances
-			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
-					(reference "SW1")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
 		(lib_id "smart_fan:R")
-		(at 124.46 81.28 0)
+		(at 210.82 116.84 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -3845,9 +3645,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "a61dd9c1-c08c-4310-8947-abad98ab87bc")
-		(property "Reference" "R1"
-			(at 126.492 81.28 90)
+		(uuid "47c19ac1-7570-40b6-be38-c015bf1cf52d")
+		(property "Reference" "R4"
+			(at 212.852 116.84 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3856,8 +3656,8 @@
 				)
 			)
 		)
-		(property "Value" "10k"
-			(at 124.46 81.28 90)
+		(property "Value" "330"
+			(at 210.82 116.84 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3867,7 +3667,7 @@
 			)
 		)
 		(property "Footprint" "smart_fan:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
-			(at 124.46 81.28 0)
+			(at 210.82 116.84 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3878,7 +3678,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 124.46 81.28 0)
+			(at 210.82 116.84 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -3889,7 +3689,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 124.46 81.28 0)
+			(at 210.82 116.84 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -3899,15 +3699,411 @@
 			)
 		)
 		(pin "1"
-			(uuid "01b6f836-1aff-496c-958d-2cb1e8bc7c7c")
+			(uuid "4c764f82-8c21-4d5d-8f13-9d868862cb3c")
 		)
 		(pin "2"
-			(uuid "cb1df13c-45cc-49a6-8bbc-697aba64f613")
+			(uuid "bf3e9eb5-e024-4aa8-8456-40e39e5c30b8")
 		)
 		(instances
 			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
-					(reference "R1")
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
+					(reference "R4")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "smart_fan:LED")
+		(at 228.6 116.84 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "592a4fa9-d2d6-4531-9fb8-03cdf22f667c")
+		(property "Reference" "D2"
+			(at 228.6 114.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Status"
+			(at 228.6 119.38 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "smart_fan:LED_D3.0mm"
+			(at 228.6 116.84 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 228.6 116.84 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 228.6 116.84 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "301a979a-8fcb-4728-bf36-18d620f5c4dd")
+		)
+		(pin "2"
+			(uuid "f422fcf3-20a9-47ee-8c9c-d257021f6b2e")
+		)
+		(instances
+			(project "smart-fan"
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
+					(reference "D2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "smart_fan:D")
+		(at 190.5 63.5 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "5cad2d1d-9340-4f24-a08c-5f289b2572cf")
+		(property "Reference" "D1"
+			(at 190.5 60.96 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "1N4007"
+			(at 190.5 66.04 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "smart_fan:D_DO-41_SOD81_P10.16mm_Horizontal"
+			(at 190.5 63.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 190.5 63.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 190.5 63.5 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "1c818f01-af82-45c9-b3b0-baea9ac94751")
+		)
+		(pin "2"
+			(uuid "fdbecc9a-5ea2-4b2e-9b7a-13f176f47b70")
+		)
+		(instances
+			(project "smart-fan"
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
+					(reference "D1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "smart_fan:Barrel_Jack")
+		(at 124.46 111.76 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "6c588341-3e89-438a-b266-656c36c9371a")
+		(property "Reference" "J2"
+			(at 124.46 106.426 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "12V in"
+			(at 124.46 116.84 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "smart_fan:BarrelJack_Horizontal"
+			(at 124.46 111.76 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 124.46 111.76 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 124.46 111.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ecdbf814-16d4-4fcd-9835-c4a2b571c1f8")
+		)
+		(pin "2"
+			(uuid "98308969-8ac0-4e5f-b9e6-134badccef06")
+		)
+		(instances
+			(project "smart-fan"
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
+					(reference "J2")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "smart_fan:Conn_01x04")
+		(at 170.18 116.84 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "6ee48d6b-5413-446a-8418-2f3c76ee1142")
+		(property "Reference" "J3"
+			(at 170.18 111.76 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "SSD1306 OLED"
+			(at 170.18 124.46 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "smart_fan:PinHeader_1x04_P2.54mm_Vertical"
+			(at 170.18 116.84 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 170.18 116.84 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 170.18 116.84 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "e6d3fa29-0c71-4b4e-9183-e028815a51f0")
+		)
+		(pin "2"
+			(uuid "d3f13cd5-3d85-4228-a37e-aab748e89726")
+		)
+		(pin "3"
+			(uuid "481b7fee-7d60-42bf-815e-acfce4e9febb")
+		)
+		(pin "4"
+			(uuid "6b9d3321-65a2-4c7d-9f4c-9de393c2296f")
+		)
+		(instances
+			(project "smart-fan"
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
+					(reference "J3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "smart_fan:Thermistor_NTC")
+		(at 124.46 63.5 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "77ed69ac-0c65-46da-8678-ea1a16aa408b")
+		(property "Reference" "TH1"
+			(at 120.015 63.5 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "10k NTC"
+			(at 127.635 63.5 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "smart_fan:R_Axial_DIN0204_L3.6mm_D1.6mm_P7.62mm_Horizontal"
+			(at 124.46 63.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 124.46 63.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 124.46 63.5 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "559607f2-67e9-4f62-966b-4e69f84c89f2")
+		)
+		(pin "2"
+			(uuid "8bce86d7-3b24-4ef4-83b7-0086211e7b77")
+		)
+		(instances
+			(project "smart-fan"
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
+					(reference "TH1")
 					(unit 1)
 				)
 			)
@@ -3923,7 +4119,7 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "ef2b5cc4-7e35-427b-9634-175dc55f2afa")
+		(uuid "9d579dc2-8824-4f3f-a6a1-5c210e4ada89")
 		(property "Reference" "Q1"
 			(at 175.26 86.995 0)
 			(show_name no)
@@ -3979,17 +4175,17 @@
 			)
 		)
 		(pin "1"
-			(uuid "12a4fe18-3027-4561-ad26-d86bf5d61a6b")
+			(uuid "b6cfe509-a451-482b-85fd-6d533b5d710c")
 		)
 		(pin "2"
-			(uuid "8b526fa3-6048-4e97-b01f-9bce874ad0a4")
+			(uuid "f3306630-37ed-48a5-bc0b-c930795c16ab")
 		)
 		(pin "3"
-			(uuid "9c7ed795-1220-4213-ab6a-c15220829a15")
+			(uuid "0204279e-10e0-4ccf-9ee8-c8cd90c2980a")
 		)
 		(instances
 			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
 					(reference "Q1")
 					(unit 1)
 				)
@@ -3997,8 +4193,8 @@
 		)
 	)
 	(symbol
-		(lib_id "smart_fan:Conn_01x04")
-		(at 170.18 116.84 0)
+		(lib_id "smart_fan:R")
+		(at 124.46 81.28 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -4006,9 +4202,9 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "f9158b54-5f5a-40de-a5bb-da9b07655eda")
-		(property "Reference" "J3"
-			(at 170.18 111.76 0)
+		(uuid "ae2443f7-ac77-4fad-9ea5-0dcf29cceee9")
+		(property "Reference" "R1"
+			(at 126.492 81.28 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -4017,8 +4213,8 @@
 				)
 			)
 		)
-		(property "Value" "SSD1306 OLED"
-			(at 170.18 124.46 0)
+		(property "Value" "10k"
+			(at 124.46 81.28 90)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -4027,8 +4223,8 @@
 				)
 			)
 		)
-		(property "Footprint" "smart_fan:PinHeader_1x04_P2.54mm_Vertical"
-			(at 170.18 116.84 0)
+		(property "Footprint" "smart_fan:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
+			(at 124.46 81.28 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4039,7 +4235,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 170.18 116.84 0)
+			(at 124.46 81.28 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4050,7 +4246,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 170.18 116.84 0)
+			(at 124.46 81.28 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -4060,29 +4256,23 @@
 			)
 		)
 		(pin "1"
-			(uuid "e691810d-9db1-4122-bac8-6bac429414d5")
+			(uuid "5b5edd8b-e729-4a6f-9e96-4f2f3610f22c")
 		)
 		(pin "2"
-			(uuid "cb7b9aa1-dac2-4ac1-8693-f2ea19b9d2e8")
-		)
-		(pin "3"
-			(uuid "566ac099-746f-4496-abd3-b7ad8de7aebd")
-		)
-		(pin "4"
-			(uuid "48b0313b-842e-41e6-bf53-ea59a4d294fc")
+			(uuid "71fb6b77-4b50-4602-b401-2ca332ce01e0")
 		)
 		(instances
 			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
-					(reference "J3")
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
+					(reference "R1")
 					(unit 1)
 				)
 			)
 		)
 	)
 	(symbol
-		(lib_id "smart_fan:Barrel_Jack")
-		(at 124.46 111.76 0)
+		(lib_id "smart_fan:SW_Push")
+		(at 190.5 116.84 0)
 		(unit 1)
 		(body_style 1)
 		(exclude_from_sim no)
@@ -4090,9 +4280,20 @@
 		(on_board yes)
 		(in_pos_files yes)
 		(dnp no)
-		(uuid "ff9872cf-c90d-46ce-9562-e57588b650c3")
-		(property "Reference" "J2"
-			(at 124.46 106.426 0)
+		(uuid "b3c2fb88-9885-4ad8-893a-3afd8e52626b")
+		(property "Reference" "SW1"
+			(at 191.77 114.3 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left)
+			)
+		)
+		(property "Value" "Mode"
+			(at 190.5 118.364 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -4101,18 +4302,8 @@
 				)
 			)
 		)
-		(property "Value" "12V in"
-			(at 124.46 116.84 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" "smart_fan:BarrelJack_Horizontal"
-			(at 124.46 111.76 0)
+		(property "Footprint" "smart_fan:SW_PUSH_6mm"
+			(at 190.5 116.84 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4123,7 +4314,7 @@
 			)
 		)
 		(property "Datasheet" "~"
-			(at 124.46 111.76 0)
+			(at 190.5 116.84 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4134,7 +4325,7 @@
 			)
 		)
 		(property "Description" ""
-			(at 124.46 111.76 0)
+			(at 190.5 116.84 0)
 			(show_name no)
 			(do_not_autoplace no)
 			(effects
@@ -4144,15 +4335,247 @@
 			)
 		)
 		(pin "1"
-			(uuid "8783077a-0225-413b-8295-fa4a03e0f249")
+			(uuid "b42e4ab3-e11e-4083-8b99-1df8af765349")
 		)
 		(pin "2"
-			(uuid "0fd7043f-6eda-4b58-ae39-8eaa1fd1f831")
+			(uuid "f5e32718-0058-414f-af33-c91e4edbca72")
 		)
 		(instances
 			(project "smart-fan"
-				(path "/5a6eaf36-e102-4cc5-997b-f577bcbe80de"
-					(reference "J2")
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
+					(reference "SW1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "smart_fan:R")
+		(at 147.32 81.28 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "e530c6e5-1aa4-43be-b0b3-fa9fefd98738")
+		(property "Reference" "R3"
+			(at 149.352 81.28 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "100k"
+			(at 147.32 81.28 90)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "smart_fan:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal"
+			(at 147.32 81.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 147.32 81.28 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 147.32 81.28 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "8a6b867b-b7c5-4295-a3fa-9ff604ebff84")
+		)
+		(pin "2"
+			(uuid "5a672718-a192-4494-a71d-48e628cf1382")
+		)
+		(instances
+			(project "smart-fan"
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
+					(reference "R3")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "smart_fan:Conn_01x02")
+		(at 228.6 63.5 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "e8c73f66-220c-4e7b-a9e0-53d0f1d7fef5")
+		(property "Reference" "J1"
+			(at 228.6 60.96 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "Fan 12V"
+			(at 228.6 68.58 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" "smart_fan:PinHeader_1x02_P2.54mm_Vertical"
+			(at 228.6 63.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 228.6 63.5 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 228.6 63.5 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "734c7355-6f08-4b31-bef5-9a2407b862da")
+		)
+		(pin "2"
+			(uuid "7523a211-5653-49cb-be73-aef03653090e")
+		)
+		(instances
+			(project "smart-fan"
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
+					(reference "J1")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "smart_fan:PWR_FLAG")
+		(at 139.7 132.08 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom no)
+		(on_board no)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "e9a75905-e922-4023-8fd9-dc87b0014162")
+		(property "Reference" "#FLG02"
+			(at 139.7 130.175 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "PWR_FLAG"
+			(at 139.7 128.27 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 139.7 132.08 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" "~"
+			(at 139.7 132.08 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 139.7 132.08 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "ba2c9463-dcad-447e-9f2f-7f3e7f3d2554")
+		)
+		(instances
+			(project "smart-fan"
+				(path "/0798c1fe-f5c8-4315-9d96-6a0e0f1145a4"
+					(reference "#FLG02")
 					(unit 1)
 				)
 			)

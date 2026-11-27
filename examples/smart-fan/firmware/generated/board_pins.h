@@ -7,7 +7,8 @@
 
 constexpr uint8_t BUTTON     =  2; // D2, net /BUTTON
 constexpr uint8_t FAN_PWM    =  9; // D9, PWM, net /FAN_PWM
+constexpr uint8_t STATUS_LED = 13; // D13, SCK, net /STATUS_LED
 constexpr uint8_t TEMP_SENSE = 14; // A0, analog, net /TEMP_SENSE
 constexpr uint8_t I2C_SDA    = 18; // A4, SDA, analog, net /I2C_SDA
 constexpr uint8_t I2C_SCL    = 19; // A5, SCL, analog, net /I2C_SCL
-// Not connected: D0, D1, D3, D4, D5, D6, D7, D8, D10, D11, D12, D13, A1, A2, A3.
+// Not connected: D0, D1, D3, D4, D5, D6, D7, D8, D10, D11, D12, A1, A2, A3.

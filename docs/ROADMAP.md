@@ -8,7 +8,11 @@ session works, and [STATUS.md](STATUS.md) tracks where we are.
 **Order of attack: inside one window from the start.** Everything the user does
 happens in Triage's own tabs. Each engine first shows up as an **in-app view with
 simple edits** (electronics in P1, 3D in P2), then the simulation joins them (P3),
-then the phone and tablet companion (PC), then your other boards (P4), then **full in-app editing** (P5, P6). The stock KiCad
+then **the Arduino IDE built in** (PA: compile, upload to a real board, libraries,
+boards, examples), then the phone and tablet companion (PC), then your other boards (P4), then **full in-app editing** (P5, P6).
+**Buttons and mouse first** (the owner, 2026-11-27): everything a user does has a
+button, a menu or a mouse gesture; the command palette and the `triage` command
+line are extras. The stock KiCad
 and FreeCAD windows are only a temporary fallback for edits Triage can't do yet
 (PLAN §4.3). **Windows is first-class from P0**, because it's the owner's laptop.
 
@@ -22,8 +26,10 @@ gantt
   P1 Electronics engine, views (M1)   :p1, after p0, 9w
   P2 3D engine, enclosure from board  :p2, after p1, 7w
   P3 Simulation on Arduino (M2)       :p3, after p2, 6w
+  section Arduino built in
+  PA Arduino IDE built in             :pa, after p3, 5w
   section Phone companion
-  PC Phone and tablet companion       :pc, after p3, 6w
+  PC Phone and tablet companion       :pc, after pa, 6w
   section Your boards
   P4 ESP32 and Raspberry Pi (M3)      :p4, after pc, 8w
   section Full design tools
@@ -38,10 +44,11 @@ gantt
 |---|---|---|
 | **M1 "Circuit inside"** | end of P1, ~3 months | Open a KiCad project in Triage and see its **schematic and PCB in tabs**, drawn by KiCad's own engine. Make simple edits (move, rotate, change values, place a part, draw a wire). The code knows the pin map. The files still open in stock KiCad |
 | **M2 "One window"** | end of P3, ~6 months | **The whole Smart Fan in one window:** circuit, board, a 3D enclosure generated from the board, and Arduino code. **Run** the whole device, or simulate **just the circuit, just the code or just the mechanism**. A scenario test passes |
-| **PC "On your phone"** ([ADR 0005](adr/0005-phone-companion.md)) | after M2, ~7.5 months (6 weeks, before P4) | Pick **Show on phone** beside a tab, scan the QR, confirm the code: the **schematic, PCB, 3D model and simulation** show on a phone or tablet (Android, iOS 26.4+), with simple edits and the simulation's controls. The laptop does the work |
-| **M3 "Your boards"** | end of P4, ~9.5 months | The same on **ESP32** (with simulated Wi-Fi), **Raspberry Pi Pico**, and **Raspberry Pi** Python projects. A breakpoint freezes the whole simulated world |
-| **M4 "Full design tools"** | end of P6, ~13.5 months | Draw any schematic and route a 2–4 layer board in Triage (push-and-shove router, zones, DRC). Model enclosures and mechanisms from scratch (sketches, features, assemblies that drive the physics) |
-| **M5 "v1.0"** | end of P8, ~16.5 months | SPICE accuracy, more boards (Uno R4, Nano 33 BLE, STM32), ~100 smart parts, product renders, a polished Windows installer (Linux and macOS too) |
+| **PA "Arduino built in"** ([ADR 0006](adr/0006-arduino-built-in.md)) | after M2, ~7 months (5 weeks) | No Arduino IDE needed: **Build and Upload buttons** put the firmware on a real Uno, Nano or Mega over USB, with a serial monitor for the real board. **Library Manager**, **Boards Manager** (other boards' compilers download like the IDE's) and **File → Examples**. Every action has a button or menu |
+| **PC "On your phone"** ([ADR 0005](adr/0005-phone-companion.md)) | after PA, ~8.5 months (6 weeks, before P4) | Pick **Show on phone** beside a tab, scan the QR, confirm the code: the **schematic, PCB, 3D model and simulation** show on a phone or tablet (Android, iOS 26.4+), with simple edits and the simulation's controls. The laptop does the work |
+| **M3 "Your boards"** | end of P4, ~10.5 months | The same on **ESP32** (with simulated Wi-Fi), **Raspberry Pi Pico**, and **Raspberry Pi** Python projects. A breakpoint freezes the whole simulated world |
+| **M4 "Full design tools"** | end of P6, ~14.5 months | Draw any schematic and route a 2–4 layer board in Triage (push-and-shove router, zones, DRC). Model enclosures and mechanisms from scratch (sketches, features, assemblies that drive the physics) |
+| **M5 "v1.0"** | end of P8, ~17.5 months | SPICE accuracy, more boards (Uno R4, Nano 33 BLE, STM32), ~100 smart parts, product renders, a polished Windows installer (Linux and macOS too) |
 
 **What's inside the one window at each milestone**
 
@@ -49,6 +56,7 @@ gantt
 |---|---|---|---|---|---|
 | M1 | edit, build, pin-map diagnostics | view, simple edits | view, simple edits | – | – |
 | M2 | same | same | + simple tracks | view, enclosure from board, fit checks | Arduino Uno/Nano: whole device, circuit only, code only, mechanism only |
+| PA | + Upload to a real board, serial monitor, Library and Boards Managers, examples (no Arduino IDE needed) | same | same | same | same |
 | M3 | + ESP32, Pico, Pi Python | same | same | same | + ESP32 with Wi-Fi, Pico, Raspberry Pi; debugging in the simulated world |
 | M4 | same | full editing, ERC | full editing, push-and-shove routing, DRC, fab outputs | full parametric design, assemblies | assemblies drive physics |
 | M5 | same | same | same | + renders | + SPICE accuracy, more boards, ~100 parts |
@@ -120,10 +128,34 @@ Windows.
 **M2 exit demo:** PLAN §3 steps 1–6 and 9 inside Triage. The board uses simple
 tracks (push-and-shove routing arrives in P5). The owner runs it on Windows.
 
+## PA · Arduino built in ([ADR 0006](adr/0006-arduino-built-in.md), proposed 2026-11-27; added at the owner's request, DV-33, DV-34)
+
+Everything the Arduino IDE does, inside Triage and with buttons, so nobody needs
+the Arduino IDE (the owner, 2026-11-27). It comes **right after P3, before the
+phone companion (PC) and P4** (the owner's choice); PC and everything after move
+by about 5 weeks. The Uno, Nano and Mega compiler and uploader are **built from
+source and shipped**; other boards' compilers **download like the IDE's**, from
+Arduino's servers with their checksums checked (the owner's choice). PA-1 applies
+the owner's **buttons and mouse first** rule to everything Triage already has.
+
+| WP | Deliverable | Done when |
+|---|---|---|
+| **PA-1** Buttons for every action | A button, menu entry or mouse gesture for every user action Triage has: Build Firmware (above the code and in the Sim tab), Rename Net (right-click a net in the Schematic tab), Export STL and part heights (the 3D tab's toolbar and properties), Edit in KiCad, Benchmark and the rest; GUIDELINES' definition of done gains the rule; a test lists every Triage command and fails if a user-facing one has no menu or button | The smoke test walks PLAN §3 (open the Smart Fan, build, run, warm the room, press the Mode button, run the scenarios, export the enclosure) **with mouse clicks only**: no command palette, no typing of commands |
+| **PA-2** Arduino toolchain built in | `engines/arduino/`: arduino-cli built from source (pinned tag) and run as a daemon from a utility process; GCC for AVR, binutils, avr-libc and avrdude built from source on Windows and Linux and installed as the `arduino:avr` platform's tools, with the pinned ArduinoCore-avr; **Build** compiles for Uno, Nano and Mega; ADR 0006 settles how `firmware/src/` compiles (DV-29 closed) | On CI machines with **no Arduino IDE, no arduino-cli and no gcc-avr installed**, the packaged app compiles Blink and the Smart Fan for Uno and Nano, and the Sim and App workflows pass on Windows and Linux. C6 no longer asks the owner to install the Arduino IDE |
+| **PA-3** Upload to a real board | The **board and port picker** in the status bar (a plugged-in board is recognised), the **Upload** button with progress and errors in plain words, a **Serial Monitor** for the real board (baud rate, line endings, send box) | CI (Linux) uploads Blink to an **emulated Uno bootloader** (Optiboot in the AVR unit behind a virtual serial port) and reads its serial output. **Owner check:** the owner uploads Blink, then the Smart Fan, to a real Uno on Windows and sees the serial output |
+| **PA-4** Library Manager | Search, install, update and remove Arduino libraries (Arduino's library index through arduino-cli) with buttons; the project's libraries and versions in `triage.toml`; the firmware build, the simulation and C++ IntelliSense use the same set | In the smoke test, installing **Adafruit SSD1306** from the Library Manager lets a sketch using it build, run in the simulator and draw on the simulated OLED |
+| **PA-5** Boards Manager | Installed and available boards; Uno, Nano and Mega built in; other platforms (ESP32, Pico, …) install from Arduino's package index with their ready-made compilers, checksums checked; extra index URLs as a setting with a button; the board picker shows what's installed and which boards the simulator runs | A test installs a platform from a local test index and compiles Blink for it. **Owner check:** the owner installs the ESP32 boards on Windows and compiles Blink for an ESP32 |
+| **PA-6** Examples and New Project | **File → Examples**: the built-in Arduino examples (Blink, Button, Fade, AnalogReadSerial, …) and each installed library's examples open as a new Triage project; **File → New Project** with a board picker | The smoke test opens Blink from File → Examples, runs it in the simulator (code only, the virtual I/O panel shows the LED blinking) and builds it for upload |
+
+**PA exit demo (owner):** on the Windows laptop, without the Arduino IDE
+installed: open Blink from File → Examples, upload it to a real Uno with the
+Upload button, install a library from the Library Manager, and install the ESP32
+boards from the Boards Manager.
+
 ## PC · Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md), accepted 2026-11-25; added at the owner's request, DV-20, DV-23)
 
 Any Triage tab on a paired phone or tablet, through an installable web app
-(PLAN §4.16). It comes **after M2 and before P4** (the owner's choice), when the
+(PLAN §4.16). It comes **after M2 and PA, and before P4** (the owner's choices), when the
 schematic, board, 3D model and simulation all exist to show; P4 onward move by
 about 6 weeks. The phone app is hosted on **GitHub Pages** first and on the
 owner's own domain later; phones on other networks connect through a **relay**

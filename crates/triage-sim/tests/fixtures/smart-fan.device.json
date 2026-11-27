@@ -7,6 +7,7 @@
     "pins": [
       { "name": "D2", "net": "/BUTTON", "analog": false, "pwm": false },
       { "name": "D9", "net": "/FAN_PWM", "analog": false, "pwm": true },
+      { "name": "D13", "net": "/STATUS_LED", "analog": false, "pwm": false },
       { "name": "A0", "net": "/TEMP_SENSE", "analog": true, "pwm": false },
       { "name": "A4", "net": "/I2C_SDA", "analog": true, "pwm": false },
       { "name": "A5", "net": "/I2C_SCL", "analog": true, "pwm": false }
@@ -21,6 +22,12 @@
       "model": "diode",
       "params": {},
       "pins": { "anode": "/FAN_NEG", "cathode": "/+12V" }
+    },
+    {
+      "reference": "D2",
+      "model": "led",
+      "params": {},
+      "pins": { "cathode": "/GND", "anode": "/LED_A" }
     },
     {
       "reference": "J1",
@@ -63,6 +70,12 @@
       "model": "resistor",
       "params": { "ohms": 100000.0 },
       "pins": { "a": "/FAN_GATE", "b": "/GND" }
+    },
+    {
+      "reference": "R4",
+      "model": "resistor",
+      "params": { "ohms": 330.0 },
+      "pins": { "a": "/STATUS_LED", "b": "/LED_A" }
     },
     {
       "reference": "SW1",

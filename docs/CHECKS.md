@@ -144,8 +144,8 @@ Triage's own commands start with "Triage:".
      `MOTOR_SPEED`, press Enter. **Check:** within about 2 seconds
      `board_pins.h` says `MOTOR_SPEED` where it said `FAN_PWM`. Also open
      `firmware\src\main.cpp` and hover the mouse over the pin name `BUTTON`
-     (in `setup()`, about line 56) or `TEMP_SENSE` (in `loop()`, about line
-     78): a box shows its net, the Arduino pin and what the pin can do.
+     (in `setup()`, about line 59) or `TEMP_SENSE` (in `loop()`, about line
+     81): a box shows its net, the Arduino pin and what the pin can do.
      (`main.cpp` still uses the old name `FAN_PWM`; renaming code is later
      work.)
   8. **The KiCad fallback window:** click in the Board tab, then run
@@ -262,7 +262,7 @@ Triage's own commands start with "Triage:".
      *If it says avr-gcc wasn't found:* the Arduino IDE (above) isn't
      installed, or its AVR boards aren't; tell Claude the exact message.
      *If the ratio stays below 1.00×:* tell Claude the number. On CI's Windows
-     machine (4 slow cores, no graphics card) the app reached only 0.2–0.3×,
+     machine (4 slow cores, no graphics card) the app reached about 0.7×,
      while the same firmware runs at 1.3× outside the app there; your laptop
      is the real measure.
   3. **The display and the serial monitor:** under **Display**, the OLED
@@ -273,12 +273,16 @@ Triage's own commands start with "Triage:".
      temperature** to **35 °C**. **Check:** within a second the OLED shows
      `35.0C 80%`, the plot under **Instruments** shows the fan's duty rising to
      80%, the motor current and the rotor's speed (about 2,600 rpm), and in the
-     **3D** tab the fan's rotor turns. Take a screenshot (**Win+Shift+S**).
+     **3D** tab the fan's rotor turns and the **status LED (D2)** on the board,
+     beside the OLED's header, glows red. (If the enclosure hides the board,
+     click the eye next to **Enclosure** in the 3D tab's list.) Take a
+     screenshot (**Win+Shift+S**).
   5. **Too hot:** drag the temperature to **40 °C**. **Check:** the OLED adds
-     `HOT` and shows 100%.
+     `HOT` and shows 100%, and the status LED in the 3D tab blinks.
   6. **The Mode button:** under **Parts**, click **Press** next to **SW1**
-     once. **Check:** the OLED says `MAX`. Press it again: `OFF`, and the rotor
-     in the 3D tab slows to a stop. Press once more for `AUTO`.
+     once. **Check:** the OLED says `MAX`. Press it again: `OFF`, the rotor
+     in the 3D tab slows to a stop and the status LED goes dark. Press once
+     more for `AUTO`.
   7. **Pause, step, stop:** click **Pause** (the Run button): the time stops
      and so does the rotor. Click **Step 10 ms** a few times: the time moves 10
      ms each click. Click **Run** to go on, then **Stop**.
@@ -290,7 +294,8 @@ Triage's own commands start with "Triage:".
   9. **Code only:** pick **Scope → Code only** and click **Run**. Only the
      firmware runs; the **Virtual I/O** panel stands in for the circuit. Drag
      **TEMP_SENSE (A0)** to **3.03 V**. **Check:** the OLED shows about `35.0C
-     80%` and the **FAN_PWM (D9)** indicator shows about 80%. Click **Press** next
+     80%`, the **FAN_PWM (D9)** indicator shows about 80% and **STATUS_LED
+     (D13)** is lit. Click **Press** next
      to **BUTTON (D2)**: the OLED says `MAX`. Click **Stop**.
   10. **Mechanism only:** pick **Scope → Mechanism only**, click **Run**, and
       drag the **J1.torque** slider to about **2 mN·m**. **Check:** the plot
@@ -300,10 +305,11 @@ Triage's own commands start with "Triage:".
       `simulation/scopes/power-stage.toml`) and click **Run**: D9 is an 80%
       PWM generator and the rotor spins up. Click **Stop**.
   12. **Scenarios (PLAN §3 step 9):** at the bottom of the Sim tab, click **Run
-      all scenarios**. **Check:** after about half a minute all five show a
-      green ✓, `fan reacts to overheating` among them; each lists its checks.
+      all scenarios**. **Check:** after about half a minute all six show a
+      green ✓, `fan reacts to overheating` and `the status LED shows the fan
+      running` among them; each lists its checks.
   13. **The Test Explorer:** click the flask icon in the left-hand bar
-      (**Testing**). **Check:** **Triage scenarios** lists the five scenario
+      (**Testing**). **Check:** **Triage scenarios** lists the six scenario
       files; click the ▶ next to **Triage scenarios**: all pass.
 - **Tell Claude:** which steps worked; the real-time ratio in step 2 (it
   should stay at 1.00×; with Speed **max** it shows how fast your laptop can

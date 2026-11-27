@@ -632,6 +632,12 @@ describe('packaged Triage app', () => {
         const first = await angle();
         await expect.poll(angle, { timeout: 30_000 }).not.toBe(first);
         expect(Number.isFinite(await angle())).toBe(true);
+        // P3-4: the status LED (D2) glows on the board while the fan runs.
+        await expect
+          .poll(async () => (await cadView().getAttribute('data-sim-leds')) ?? '', {
+            timeout: 30_000,
+          })
+          .toMatch(/\bD2=0\.[3-9]/);
       }
       await window.screenshot({ path: shot('sim-whole-device') });
       await setSlider('env.room_temperature_c', 40);

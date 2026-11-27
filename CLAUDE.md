@@ -30,6 +30,9 @@ and Claude**.
   also be popped out into a separate Triage window, DV-14). The stock
   KiCad or FreeCAD window is only a temporary fallback where the ROADMAP lists it.
   Simulation must work for the whole device and for any part alone (PLAN §4.7).
+- **Buttons and mouse first** (the owner, 2026-11-27): every user action has a
+  button, menu or mouse gesture in Triage's window; the command palette and the
+  `triage` CLI are extras, never the only way (GUIDELINES §4, PLAN D13).
 - **Windows is first-class:** CI stays green on Windows and Linux. No Linux-only
   scripts, paths or assumptions in product code (GUIDELINES §8). Boards and
   emulators: ADR 0003.

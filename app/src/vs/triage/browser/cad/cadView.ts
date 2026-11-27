@@ -526,14 +526,18 @@ export class CadView extends Disposable {
 			}
 			angles.push(`${body.name}=${angle.toFixed(3)}`);
 		}
+		const leds: string[] = [];
 		for (const [reference, signal] of state.info.leds) {
 			const object = this.renderer?.getObject(`${BOARD_DOCUMENT}/Part_${reference.replace(/[^A-Za-z0-9_]/g, '_')}`);
 			const brightness = Math.max(0, Math.min(1, frame.values[signal] ?? 0));
 			if (object) {
 				object.emissive = brightness > 0.01 ? [0.9 * brightness, 0.1 * brightness, 0.05 * brightness] : undefined;
+				leds.push(`${reference}=${brightness.toFixed(2)}`);
 			}
 		}
 		this.element.dataset['simAngle'] = angles.join(' ');
+		// The LEDs drawn in 3D and how brightly they glow (the smoke test reads it).
+		this.element.dataset['simLeds'] = leds.join(' ');
 		this.element.dataset['simT'] = frame.t.toFixed(3);
 	}
 

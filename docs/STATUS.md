@@ -4,8 +4,11 @@
 
 **Last updated:** 2026-11-27 · **Phase P3 Simulation on Arduino: done** on
 Windows and Linux in CI (Sim run 9, App run 80, CI run 114) and merged into the
-default branch through a pull request; see "P3 done" below. **Next: phase PC**
-(the phone and tablet companion), which the owner starts in a new session. The
+default branch through a pull request (#8); see "P3 done" below. **Next: phase
+PA, "Arduino built in"** (the owner, 2026-11-27: compile with a built-in compiler,
+upload to a real board, Library and Boards Managers, examples, and buttons for
+every action; ROADMAP PA, [ADR 0006](adr/0006-arduino-built-in.md)), which the
+owner starts in a new session; then PC (phone), then P4. The
 owner's checks still open: **C3** (M1 demo), **C4** (60 fps on a real GPU),
 **C5** (the 3D tab, optional) and, new, **C6**: the M2 exit demo, the Smart Fan
 running in the Sim tab on the Windows laptop. Every owner step is in
@@ -18,7 +21,7 @@ running in the Sim tab on the Windows laptop. Every owner step is in
 | P3-1 Sim kernel core | **done** | `crates/triage-sim-kernel`: picosecond clock, unit contract, conservative quantum scheduler in grant / sync / unblock phases, hosts (producers outside Rust), adaptive quantum (1 ms … 1 µs), signal bus with traces, inputs recorded where they took effect, scopes and control / hold / trace / ideal / open stubs. Tests: replay reproduces a run's trace hash exactly; a host producer matches an in-kernel one; scheduler property tests (proptest, 64 cases: contiguous steps, every edge once at its time, exact integrals, quantum bounds); each stub kind |
 | P3-2 AVR unit | **done** | `sim/src/avr.ts`: ATmega328P (Uno, Nano) in avr8js as the kernel's host: pins, ADC synced on demand, PWM, USART, TWI (I²C at transaction level), SPI; a 64K-table decoder generated from avr8js (all 65,536 opcodes checked); the Sim tab's serial monitor. Compiled Arduino sketches in the Sim workflow (`sim/test/sketches.test.ts`): Blink 1.3× and serial echo 2.3× real time on Windows (Sim run 8), 2.8× and 4.1× on Linux (Sim run 9); the Smart Fan's whole device 1.3× and 2.5× |
 | P3-3 T0 circuit + parts | **done** | `crates/triage-mna` (Newton–Raphson MNA, backward Euler) and `crates/triage-sim` (rails, logic nets, analog islands; resistor, NTC, pot, button, LED, diode, MOSFET, DC motor, capacitor, inductor, servo; the SSD1306 in `sim/`). The thermistor divider reads the ADC's own counts from 20 to 40 °C (511/512 at 25 °C, 620 at 35 °C; also through the AVR's ADC); LED current matches Kirchhoff and Shockley for 220, 330 and 1 kΩ |
-| P3-4 Mechanics + 3D playback | **done**, one point open (DV-31) | `crates/triage-mujoco` (MuJoCo 4.0.1 built from source, rotors with `mjs_*`, torques in `mjcb_control`; analytic spin-up within 1%); fan speed follows PWM (0 → 100% duty, torque balance at full duty); MuJoCo and the built-in rotor agree within 1%. The 3D tab turns the rotor by the simulation's angle at the display's rate (smoke test). **The Smart Fan has no LED**, so the LED glow in 3D isn't shown on it (DV-31) |
+| P3-4 Mechanics + 3D playback | **done** (the LED point closed 2026-11-27, DV-31) | `crates/triage-mujoco` (MuJoCo 4.0.1 built from source, rotors with `mjs_*`, torques in `mjcb_control`; analytic spin-up within 1%); fan speed follows PWM (0 → 100% duty, torque balance at full duty); MuJoCo and the built-in rotor agree within 1%. The 3D tab turns the rotor by the simulation's angle at the display's rate, and lights the Smart Fan's **status LED (D2 on D13, added 2026-11-27)** by its simulated brightness (smoke test; `status-led.yaml`) |
 | P3-5 Run UX and scopes | **done** | The Sim tab: Run / Pause / Step / Stop, speed, scope picker (whole device, circuit only, code only, mechanism only, the saved "Power stage only"), environment and parts' controls, virtual I/O panel, stubs, plots, OLED, serial monitor; the status bar; a narrow Sim tab stacks its columns. PLAN §3 step 6 (35 °C → 80%, "35.0C 80%" on the OLED, the rotor turning in 3D) and each scope on its own pass as smoke checks in the packaged app on both OSes (App run 80) |
 | P3-6 Scenario tests | **done** | YAML v0 (`at`, `within`, `always`, `scope`, environment ramps, timed inputs; `sim/src/scenario.ts`), `triage test` / `triage sim run`, the Test Explorer (VS Code's testing service) and the Sim tab's scenario list; five Smart Fan scenarios, `overheat.yaml` as in PLAN §4.7. `triage test examples/smart-fan` passes all five headless on Windows (overheat 12 s in 5.8 s) and Linux (in 3.2 s) in the Sim workflow (Sim runs 8 and 9), and from the Sim tab in the app (App run 80) |
 
@@ -38,17 +41,19 @@ the app: compiled firmware runs only in CI (the Sim and App workflows install
 the toolchain), and hand-assembled AVR programs test the AVR unit locally.
 Triage's workbench code was type-checked here against the VS Code tree.
 
-**Known issues.** Building firmware needs avr-gcc: on Windows the Arduino IDE 2
-or arduino-cli with the AVR core (Triage uses their compiler); on Linux Ubuntu's
-`gcc-avr` and `avr-libc` (the app ships Arduino's AVR core). Times cross into
+**Known issues.** Building firmware needs avr-gcc until PA-2 builds it into
+Triage: on Windows the Arduino IDE 2 or arduino-cli with the AVR core (Triage
+uses their compiler); on Linux Ubuntu's `gcc-avr` and `avr-libc` (the app ships
+Arduino's AVR core). Times cross into
 JavaScript as picoseconds in numbers, exact for about 2.5 hours of virtual time.
 Traces are trimmed to the last half second in interactive runs, so plots keep 10
-s of samples, not the full history. The Smart Fan has no LED (DV-31). **In the
+s of samples, not the full history. **In the
 app on CI's Windows machine** (4 slow cores, software graphics, KiCad's and
 FreeCAD's engines running) the whole device reached only about 0.2–0.3× real
 time, against 1.02× in the app on Linux and 1.3× for the same firmware outside
-the app on Windows; the laptop run (C6 step 2) is the real measure, and the
-owner reports the number.
+the app on Windows; 0.72× in App run 86 after the engine stopped waiting on 0 ms
+timers. The laptop run (C6 step 2) is the real measure, and the owner reports
+the number.
 
 ### P2 done (2026-11-26)
 
@@ -297,6 +302,10 @@ The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt
 | — (2026-11-25) | The repository is **public** (Actions had stopped for billing; public repositories run Actions free) | [DV-24](DEVIATIONS.md) |
 | D11 (2026-11-25) | **Phone and tablet companion accepted**: a relay, "whichever is the most secure" (end-to-end sealed, holds no keys); the phone app on **GitHub Pages**, the owner's domain later; **iOS 26.4+** for the direct path; phase **PC between P3 and P4**; **View only or View and edit asked each time**, and a view-only phone can be given edit permission during the session | [ADR 0005](adr/0005-phone-companion.md) (Accepted), PLAN §4.16, ROADMAP PC, [DV-23](DEVIATIONS.md) |
 | — (2026-11-26) | The owner's steps live in **`docs/CHECKS.md`**, with detailed instructions; every session adds and updates them, and **only the owner marks a check done** | CLAUDE.md, GUIDELINES §2 and §4, [CHECKS.md](CHECKS.md) |
+| — (2026-11-27) | CI's Windows jobs may **download and run arduino-cli** (pinned, checksum checked) and the AVR compiler it installs | [DV-29](DEVIATIONS.md), `.github/workflows/sim.yml`, `app.yml` |
+| — (2026-11-27) | The Smart Fan gets a **status LED**, so the LED glow in 3D shows on the example | [DV-31](DEVIATIONS.md) |
+| D12 (2026-11-27) | **The Arduino IDE is built in:** a compiler inside Triage (no Arduino install), **upload to a real board** with its serial monitor, **Library Manager**, **Boards Manager**, **examples**; as phase **PA, now: after P3, before PC**; other boards' compilers **download like the IDE's** (checksums checked), the Uno/Nano/Mega compiler built from source | [ADR 0006](adr/0006-arduino-built-in.md) (Proposed: the backend), PLAN §1, §4.11, §4.13, §4.15, ROADMAP PA, [DV-33](DEVIATIONS.md) |
+| D13 (2026-11-27) | **Buttons and mouse first:** everything a user does has a button, menu or mouse gesture, "like KiCad or AutoCAD"; the command palette and the CLI are extras | PLAN §1, GUIDELINES §4, CLAUDE.md, ROADMAP PA-1, [DV-34](DEVIATIONS.md) |
 
 ## Deviations from the plan
 
@@ -314,8 +323,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
 | Windows code-signing certificate (avoids SmartScreen warnings) | unsigned nightlies; decide before P8-2 | P8 |
-| CI's Windows jobs (Sim, App) download and run **arduino-cli 1.6.0** (pinned version and SHA-256) and the AVR compiler it installs from Arduino's servers, as your laptop will with the Arduino IDE (DV-29). OK? | yes, in CI only; Claude's sessions never run it | now (say no and Windows CI compiles no firmware) |
-| Add a status LED to the Smart Fan, so the LED glow in 3D shows on the example (DV-31)? It changes the KiCad files (regenerated with kicad-cli in the EDA workflow) and the board in 3D | no LED for now | P3-4's last point; any time |
+| Accept [ADR 0006](adr/0006-arduino-built-in.md)'s backend: **arduino-cli built from source** as Triage's Arduino engine (the one inside the Arduino IDE 2), with the AVR compiler and avrdude built from source | yes, as proposed | PA's start |
 
 ## Work packages
 
@@ -325,7 +333,8 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **done** 2026-11-26 on Windows and Linux in CI (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 accepted); **the owner's M1 run on Windows and the GPU 60 fps check next** |
 | P2 3D engine + enclosure from board | P2-1 FreeCAD fork · P2-2 CAD engine RPC · P2-3 3D view · P2-4 enclosure · P2-5 fit checks | **done** 2026-11-26 on Windows and Linux in CI (DV-25 … DV-27; see "P2 done" at the top) |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | **done** 2026-11-27 on Windows and Linux in CI (Sim run 9, App run 80; DV-28 … DV-32); **the owner's M2 run (C6) next** |
-| PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | not started (after P3, before P4) |
+| PA Arduino built in ([ADR 0006](adr/0006-arduino-built-in.md)) | PA-1 … PA-6 | **next**: planned 2026-11-27 at the owner's request (DV-33, DV-34) |
+| PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | not started (after PA, before P4) |
 | P4 ESP32 + Raspberry Pi (M3) | P4-1 … P4-6 | not started |
 | P5 In-app electronics editing | P5-1 … P5-7 | not started |
 | P6 In-app 3D design (M4) | P6-1 … P6-5 | not started |
@@ -574,3 +583,21 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
     stop their runs even when they fail, and accept 79% at 34.9 °C.
   CI: Sim run 9, App run 80 and CI run 114 green on both OSes. P3 merged into
   the default branch through a pull request.
+- **2026-11-27 (same session, after P3's merge, PR #8).** The owner answered the
+  open questions: arduino-cli in CI is fine; **add the LED**; C6 later. They
+  asked for **the Arduino IDE built in** (upload to a real board, Library and
+  Boards Managers, examples; now, before PC; other boards' compilers download
+  like the IDE's) and for **buttons and mouse first** everywhere. Planned as
+  phase **PA** (ROADMAP, ADR 0006 proposed, PLAN D12 and D13, DV-33, DV-34),
+  which the owner starts in a new session. Added the Smart Fan's status LED
+  (DV-31 closed): the generator, a new **Examples** workflow that regenerates
+  the KiCad files and the enclosure with Triage's engines in CI (this session
+  has no KiCad), the firmware, a Rust test that the committed `board_pins.h`
+  matches the schematic's pin map, the CAD engine's LED height, a sixth
+  scenario and a 3D glow check in the smoke test. CI: Examples run 2 (ERC 0,
+  DRC 0, schematic parity 0), Sim run 15 (the sim test files now run one at a
+  time: in run 14 the Smart Fan's speed check overlapped the decoder test and
+  read 0.98x), CAD runs 12 and 13, App run 86 (second attempt, once CAD 12's
+  engine with the LED height was built; D2 glows in the 3D tab on both OSes),
+  CI run 122. The Windows app reached **0.72x** real time in App run 86, up
+  from 0.31x before the engine stopped waiting on 0 ms timers.
