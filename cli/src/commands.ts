@@ -171,10 +171,24 @@ export function simCommand(argv: readonly string[]): CliResult {
   return { exitCode: 0, stdout: `${lines.join('\n')}\n`, stderr: '' };
 }
 
-/** `triage build [PROJECT]` */
+/** `triage build [PROJECT] [--board PROFILE] [--fqbn FQBN]`: the firmware, with Triage's Arduino engine. */
 export function buildCommand(argv: readonly string[]): CliResult {
-  const project = loadProject(path.resolve(argv[0] ?? '.'));
+  const { positional, options } = parse(argv, []);
+  const loaded = loadProject(path.resolve(positional[0] ?? '.'));
+  const board = options.get('board')?.[0];
+  const fqbn = options.get('fqbn')?.[0];
+  const project = {
+    ...loaded,
+    ...(board ? { board, fqbn: undefined } : {}),
+    ...(fqbn ? { fqbn } : {}),
+  };
   const lines: string[] = [];
-  firmwareFor(project, lines);
+  const result = buildProjectFirmware(project);
+  lines.push(
+    `firmware for ${result.fqbn}: ${path.relative(process.cwd(), result.hex) || result.hex}`,
+    `  ${result.flash} of ${result.maxFlash || '?'} bytes flash, ${result.ram} of ${result.maxRam || '?'} bytes RAM${result.cached ? ' (up to date)' : ''}`,
+    `  libraries: ${result.libraries.join(', ') || 'none'}`,
+    `  ${result.toolchain}`,
+  );
   return { exitCode: 0, stdout: `${lines.join('\n')}\n`, stderr: '' };
 }

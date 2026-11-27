@@ -16,7 +16,15 @@ export function fetchUpstream(forkDir, { force = false } = {}) {
   const pin = readPin(forkDir);
   const target = path.join(forkDir, 'upstream');
   const label = `${path.relative(repoRoot, forkDir) || forkDir}/upstream`;
+  return fetchPin(pin, target, { force, label });
+}
 
+/**
+ * Checks out `pin` ({ repository, tag, commit }) into `target`: a shallow clone of
+ * exactly the pinned commit, refusing a tag that moved. Engines with several
+ * upstreams (engines/arduino) call this once per source.
+ */
+export function fetchPin(pin, target, { force = false, label = target } = {}) {
   if (!existsSync(path.join(target, '.git'))) {
     mkdirSync(target, { recursive: true });
     git(target, ['init', '--quiet']);

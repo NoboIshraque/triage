@@ -1,5 +1,6 @@
 // @triage/sim: Triage's simulation runner (ROADMAP P3-2 to P3-6).
 export * from './addon.js';
+export * from './arduino.js';
 export * from './avr.js';
 export * from './boards.js';
 export * from './firmware.js';
