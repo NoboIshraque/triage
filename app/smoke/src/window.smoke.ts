@@ -174,6 +174,8 @@ describe('packaged Triage app', () => {
         `--user-data-dir=${path.join(profile, 'user-data')}`,
         `--extensions-dir=${path.join(profile, 'extensions')}`,
         `--logsPath=${path.join(outputDir, `logs-${process.platform}`)}`,
+        // Chromium's sandbox refuses to start as root (a container); CI runs as a user.
+        ...(process.getuid?.() === 0 ? ['--no-sandbox'] : []),
       ],
       timeout: 120_000,
     });
