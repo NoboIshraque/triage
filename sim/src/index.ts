@@ -2,6 +2,7 @@
 export * from './addon.js';
 export * from './arduino.js';
 export * from './avr.js';
+export * from './board.js';
 export * from './boards.js';
 export * from './firmware.js';
 export * from './font.js';

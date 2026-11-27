@@ -58,7 +58,8 @@ jobs:
       - name: Ninja (Linux)
         if: runner.os == 'Linux'
         shell: bash
-        run: sudo apt-get update && sudo apt-get install -y ninja-build
+        # socat: the virtual serial port of the upload test (sim/test/upload.test.ts).
+        run: sudo apt-get update && sudo apt-get install -y ninja-build socat
       - name: Triage's Arduino engine (built from source, ROADMAP PA-2)
         uses: ./.github/actions/arduino-engine
         with:

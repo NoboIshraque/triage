@@ -673,10 +673,12 @@ export function upload(
     options.fqbn,
     '--port',
     options.port,
-    '--protocol',
-    options.protocol ?? 'serial',
-    '--input-dir',
-    options.buildDir,
+    // Without --protocol, a port no discovery reports (avrdude's net:host:port, a
+    // pty) is taken as a serial port; with it, arduino-cli waits for discovery.
+    ...(options.protocol ? ['--protocol', options.protocol] : []),
+    // firmware.hex beside firmware.elf: {build.project_name} is "firmware".
+    '--input-file',
+    path.join(options.buildDir, 'firmware.hex'),
     '--verbose',
   ];
   if (options.verify) args.push('--verify');
@@ -1021,8 +1023,7 @@ export function openMonitor(
     'monitor',
     '--port',
     options.port,
-    '--protocol',
-    options.protocol ?? 'serial',
+    ...(options.protocol ? ['--protocol', options.protocol] : []),
     '--config',
     `baudrate=${options.baud}`,
     '--quiet',
