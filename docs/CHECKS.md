@@ -90,7 +90,8 @@ connected" and "FreeCAD engine: connected".
 
 **Every Triage action has a button or a menu entry** (the owner's rule,
 2026-11-27): the **Triage** menu in the menu bar lists all of them, the tabs have
-toolbar buttons, and the Schematic tab has a right-click menu. Typing a command
+toolbar buttons, and the Schematic tab has a right-click menu. (The **Triage**
+menu sits between **Edit** and **Selection**.) Typing a command
 (**F1**, then part of its name, **Enter**) still works if you prefer it.
 
 ---
