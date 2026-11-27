@@ -236,6 +236,13 @@ For source trees we have (the forks), read the source. REA is for shipped artifa
   engine holds a button's release for 0.15 s of simulated time. Each engine
   needs its own utility-process module: VS Code keys a window's workers by
   module, so a second engine on the same module replaces the first.
+- **Draw per display frame, not per message,** and keep small canvases that
+  redraw many times a second CPU-backed (`willReadFrequently`). With software
+  graphics, GPU-backed 2D canvases redrawn for every simulation frame made the
+  window wait on the GPU process until it stopped answering. A window that
+  answers more and more slowly is a backlog: reproduce it under `xvfb-run`
+  with the CI build, then use gdb on the renderer, a CDP CPU profile and
+  Chromium flags to bisect.
 
 ## 11. When Claude stops and asks
 

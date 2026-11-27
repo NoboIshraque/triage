@@ -38,11 +38,22 @@ ran at **0.14× and 0.17×** real time in App runs 101 and 102 (0.29× to 0.72×
 before PA, runs 86 to 88; Linux 0.97× now). No PA code runs per frame; the
 Arduino engine's port watcher and a first index download run beside the
 simulation there, and CI's Windows machine varies run to run. The laptop runs
-(C6 step 2, C7) are the real measure. The Smart Fan's status-LED check in the
-smoke test failed once on the default branch after PR #9 (App run 88) and passed
-in runs 87, 101 and 102. Not built in PA (DV-36): avrdude for USB programmers
+(C6 step 2, C7) are the real measure. Not built in PA (DV-36): avrdude for USB programmers
 (Burn Bootloader) and dfu-discovery, which arduino-cli downloads the first time
 the indexes update, as the IDE does.
+
+**Fixed after PA's merge: the window stopped answering during a simulation
+run** (Linux CI, App runs 88 and 103; then every later smoke check failed). The Sim tab redrew its OLED and plots on GPU-backed 2D canvases
+for every frame from the engine, about 30 a second. With software graphics
+(SwiftShader, as on CI's machines and on PCs without a working GPU driver) each
+redraw waited for an overloaded GPU process, frames queued faster than the
+window drew them, and the window fell further behind until nothing answered.
+Reproduced here with App run 102's Linux build: checks 2 s apart stretched to
+4, 8, 13 and 20 s, then the window hung after about 25 s of simulation, three
+runs out of three; closing the 3D, Schematic or Board tab didn't help. Keeping
+2D canvases off the GPU ran 90 s at a steady 1× with no slowdown. Now the Sim
+tab's canvases are CPU-backed (`willReadFrequently`), and it draws once per
+display frame from the newest frame instead of once per frame received.
 
 ### P3 done (2026-11-27)
 
@@ -650,3 +661,13 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   and C6** updated to clicks (no command palette) and to need no Arduino
   install. CI: Arduino run 6, Sim run 30, App run 102 (35/35), CI run 142.
   PA merged into the default branch through a pull request.
+- **2026-11-27 (PA session, after PA's merge).** The default branch's first Sim
+  and App runs after the merge (runs 32 and 104) failed because its first Arduino
+  run was still building the engine; re-run, both passed, and the engine step now
+  waits for the Arduino run of the same commit. The PR's App run 103 failed on
+  Linux: the window stopped answering during the Smart Fan's simulation, as in
+  App run 88 before PA. Reproduced with App run 102's Linux build under a
+  virtual display (gdb, a CPU profile, and runs with tabs closed): GPU-backed 2D
+  canvases redrawn for every simulation frame stalled behind software graphics.
+  Fixed in the Sim tab (CPU-backed canvases, one drawing per display frame).
+  The owner asked to fix it here before starting PC.

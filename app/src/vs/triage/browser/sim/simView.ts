@@ -53,6 +53,11 @@ export class SimView extends Disposable {
 	private info: ISimRunInfo | undefined;
 	private serialText = '';
 	private plotRequested = false;
+	/** The newest frame not drawn yet, and the displays that changed since the last drawing. */
+	private pendingFrame: ISimFrame | undefined;
+	private readonly pendingDisplays = new Map<string, ISimFrame['displays'][string]>();
+	private serialChanged = false;
+	private drawRequested = false;
 
 	constructor(
 		@ITriageSimService private readonly sim: ITriageSimService,
@@ -183,6 +188,8 @@ export class SimView extends Disposable {
 		this.serialText = '';
 		this.serialOut.textContent = '';
 		this.series.clear();
+		this.pendingFrame = undefined;
+		this.pendingDisplays.clear();
 		const state = await this.sim.prepare(this.scopeSelect.value || 'Whole device');
 		if (state.kind === 'ready') {
 			await this.sim.run(speed);
@@ -341,11 +348,13 @@ export class SimView extends Disposable {
 
 	// ---- Frames ---------------------------------------------------------------------------
 
+	/**
+	 * Takes a frame from the engine (about 30 a second). What accumulates (plot points,
+	 * serial output, changed displays) is kept at once; the drawing waits for the next
+	 * display frame (drawFrame), so a window that draws more slowly than frames arrive
+	 * (software graphics, a busy machine) skips frames instead of queueing them.
+	 */
 	private onFrame(frame: ISimFrame): void {
-		this.element.dataset['t'] = frame.t.toFixed(4);
-		this.element.dataset['ratio'] = frame.ratio.toFixed(3);
-		const info = this.info;
-		this.status.textContent = localize('triage.sim.time', "t = {0} s · {1}× real time{2}", frame.t.toFixed(3), frame.ratio.toFixed(2), info ? ` · ${info.scope}` : '');
 		for (const [signal, points] of Object.entries(frame.plots)) {
 			const series = this.series.get(signal);
 			if (!series) {
@@ -361,6 +370,34 @@ export class SimView extends Disposable {
 				series.v.splice(0, cut);
 			}
 		}
+		if (frame.serial) {
+			this.serialText = (this.serialText + frame.serial).slice(-20_000);
+			this.serialChanged = true;
+		}
+		for (const [ref, display] of Object.entries(frame.displays)) {
+			this.pendingDisplays.set(ref, display);
+		}
+		this.pendingFrame = frame;
+		if (!this.drawRequested) {
+			this.drawRequested = true;
+			getWindow(this.element).requestAnimationFrame(() => {
+				this.drawRequested = false;
+				this.drawFrame();
+			});
+		}
+	}
+
+	/** Draws the newest frame: time, indicators, serial output, displays and plots. */
+	private drawFrame(): void {
+		const frame = this.pendingFrame;
+		if (!frame) {
+			return;
+		}
+		this.pendingFrame = undefined;
+		this.element.dataset['t'] = frame.t.toFixed(4);
+		this.element.dataset['ratio'] = frame.ratio.toFixed(3);
+		const info = this.info;
+		this.status.textContent = localize('triage.sim.time', "t = {0} s · {1}× real time{2}", frame.t.toFixed(3), frame.ratio.toFixed(2), info ? ` · ${info.scope}` : '');
 		for (const [signal, indicator] of this.indicators) {
 			const duty = frame.duty[signal];
 			const level = frame.values[signal];
@@ -373,21 +410,31 @@ export class SimView extends Disposable {
 				indicator.dataset['level'] = indicator.textContent;
 			}
 		}
-		if (frame.serial) {
-			this.serialText = (this.serialText + frame.serial).slice(-20_000);
+		if (this.serialChanged) {
+			this.serialChanged = false;
 			this.serialOut.textContent = this.serialText;
 			this.serialOut.scrollTop = this.serialOut.scrollHeight;
 		}
-		for (const [ref, display] of Object.entries(frame.displays)) {
+		for (const [ref, display] of this.pendingDisplays) {
 			this.drawOled(display.buffer, display.on);
 			this.oledBox.dataset['ref'] = ref;
 			this.oledBox.dataset['text'] = display.text;
 		}
-		this.schedulePlot();
+		this.pendingDisplays.clear();
+		this.drawPlot();
+	}
+
+	/**
+	 * A 2D context kept in the CPU: the Sim tab redraws its OLED and plots many times a
+	 * second, and a GPU-backed canvas makes each redraw wait for the GPU, which with
+	 * software graphics falls behind until the window stops answering (App runs 88, 103).
+	 */
+	private context2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null {
+		return canvas.getContext('2d', { willReadFrequently: true });
 	}
 
 	private drawOled(buffer: readonly number[], on: boolean): void {
-		const context = this.oledCanvas.getContext('2d');
+		const context = this.context2d(this.oledCanvas);
 		if (!context) {
 			return;
 		}
@@ -425,7 +472,7 @@ export class SimView extends Disposable {
 			canvas.width = width;
 			canvas.height = height;
 		}
-		const context = canvas.getContext('2d');
+		const context = this.context2d(canvas);
 		if (!context) {
 			return;
 		}
