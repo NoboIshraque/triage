@@ -128,7 +128,7 @@ Windows.
 **M2 exit demo:** PLAN §3 steps 1–6 and 9 inside Triage. The board uses simple
 tracks (push-and-shove routing arrives in P5). The owner runs it on Windows.
 
-## PA · Arduino built in ([ADR 0006](adr/0006-arduino-built-in.md), proposed 2026-11-27; added at the owner's request, DV-33, DV-34)
+## PA · Arduino built in ([ADR 0006](adr/0006-arduino-built-in.md), accepted 2026-11-27; added at the owner's request, DV-33, DV-34)
 
 Everything the Arduino IDE does, inside Triage and with buttons, so nobody needs
 the Arduino IDE (the owner, 2026-11-27). It comes **right after P3, before the

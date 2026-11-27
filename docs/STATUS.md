@@ -2,16 +2,13 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-27 · **Phase P3 Simulation on Arduino: done** on
-Windows and Linux in CI (Sim run 9, App run 80, CI run 114) and merged into the
-default branch through a pull request (#8); see "P3 done" below. **Next: phase
-PA, "Arduino built in"** (the owner, 2026-11-27: compile with a built-in compiler,
-upload to a real board, Library and Boards Managers, examples, and buttons for
-every action; ROADMAP PA, [ADR 0006](adr/0006-arduino-built-in.md)), which the
-owner starts in a new session; then PC (phone), then P4. The
-owner's checks still open: **C3** (M1 demo), **C4** (60 fps on a real GPU),
-**C5** (the 3D tab, optional) and, new, **C6**: the M2 exit demo, the Smart Fan
-running in the Sim tab on the Windows laptop. Every owner step is in
+**Last updated:** 2026-11-27 · **Phase PA, "Arduino built in": in progress**
+(this session; ROADMAP PA, [ADR 0006](adr/0006-arduino-built-in.md), **accepted**
+by the owner at PA's start: arduino-cli 1.6.0 built from source is Triage's
+Arduino engine). The owner has an Arduino **Nano or Mega** for the upload check
+(PA-3). P3 is done and merged (PR #8); then PC (phone), then P4. The owner's
+checks still open: **C3** (M1 demo), **C4** (60 fps on a real GPU), **C5** (the
+3D tab, optional) and **C6** (the M2 exit demo). Every owner step is in
 [CHECKS.md](CHECKS.md).
 
 ### P3 done (2026-11-27)
@@ -304,7 +301,7 @@ The owner launched it on 2026-11-24, which completes P0-7. Tell Claude what felt
 | — (2026-11-26) | The owner's steps live in **`docs/CHECKS.md`**, with detailed instructions; every session adds and updates them, and **only the owner marks a check done** | CLAUDE.md, GUIDELINES §2 and §4, [CHECKS.md](CHECKS.md) |
 | — (2026-11-27) | CI's Windows jobs may **download and run arduino-cli** (pinned, checksum checked) and the AVR compiler it installs | [DV-29](DEVIATIONS.md), `.github/workflows/sim.yml`, `app.yml` |
 | — (2026-11-27) | The Smart Fan gets a **status LED**, so the LED glow in 3D shows on the example | [DV-31](DEVIATIONS.md) |
-| D12 (2026-11-27) | **The Arduino IDE is built in:** a compiler inside Triage (no Arduino install), **upload to a real board** with its serial monitor, **Library Manager**, **Boards Manager**, **examples**; as phase **PA, now: after P3, before PC**; other boards' compilers **download like the IDE's** (checksums checked), the Uno/Nano/Mega compiler built from source | [ADR 0006](adr/0006-arduino-built-in.md) (Proposed: the backend), PLAN §1, §4.11, §4.13, §4.15, ROADMAP PA, [DV-33](DEVIATIONS.md) |
+| D12 (2026-11-27) | **The Arduino IDE is built in:** a compiler inside Triage (no Arduino install), **upload to a real board** with its serial monitor, **Library Manager**, **Boards Manager**, **examples**; as phase **PA, now: after P3, before PC**; other boards' compilers **download like the IDE's** (checksums checked), the Uno/Nano/Mega compiler built from source | [ADR 0006](adr/0006-arduino-built-in.md) (Accepted at PA's start, 2026-11-27: arduino-cli 1.6.0 built from source is the backend), PLAN §1, §4.11, §4.13, §4.15, ROADMAP PA, [DV-33](DEVIATIONS.md) |
 | D13 (2026-11-27) | **Buttons and mouse first:** everything a user does has a button, menu or mouse gesture, "like KiCad or AutoCAD"; the command palette and the CLI are extras | PLAN §1, GUIDELINES §4, CLAUDE.md, ROADMAP PA-1, [DV-34](DEVIATIONS.md) |
 
 ## Deviations from the plan
@@ -323,7 +320,6 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | Which Raspberry Pi: Pico (microcontroller) or Pi 4/5 (Linux, usually Python)? | both: Pico through rp2040js, Pi 4/5 Python projects through the Python bridge | P4 |
 | Arduino boards beyond Uno, Nano and Mega | Uno R4 Minima and Nano 33 BLE through Renode in P7 | P7 |
 | Windows code-signing certificate (avoids SmartScreen warnings) | unsigned nightlies; decide before P8-2 | P8 |
-| Accept [ADR 0006](adr/0006-arduino-built-in.md)'s backend: **arduino-cli built from source** as Triage's Arduino engine (the one inside the Arduino IDE 2), with the AVR compiler and avrdude built from source | yes, as proposed | PA's start |
 
 ## Work packages
 
@@ -333,7 +329,7 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | P1 Electronics engine + views (M1) | P1-1 KiCad fork builds · P1-2 headless engine · P1-3 Stream GAL · P1-4 views · P1-5 pin map · P1-6 edits + spike · P1-7 fallback | **done** 2026-11-26 on Windows and Linux in CI (P1-3 and P1-4 with DV-21, DV-22; ADR 0004 accepted); **the owner's M1 run on Windows and the GPU 60 fps check next** |
 | P2 3D engine + enclosure from board | P2-1 FreeCAD fork · P2-2 CAD engine RPC · P2-3 3D view · P2-4 enclosure · P2-5 fit checks | **done** 2026-11-26 on Windows and Linux in CI (DV-25 … DV-27; see "P2 done" at the top) |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | **done** 2026-11-27 on Windows and Linux in CI (Sim run 9, App run 80; DV-28 … DV-32); **the owner's M2 run (C6) next** |
-| PA Arduino built in ([ADR 0006](adr/0006-arduino-built-in.md)) | PA-1 … PA-6 | **next**: planned 2026-11-27 at the owner's request (DV-33, DV-34) |
+| PA Arduino built in ([ADR 0006](adr/0006-arduino-built-in.md)) | PA-1 … PA-6 | **in progress** since 2026-11-27 (ADR 0006 accepted; DV-33, DV-34) |
 | PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | not started (after PA, before P4) |
 | P4 ESP32 + Raspberry Pi (M3) | P4-1 … P4-6 | not started |
 | P5 In-app electronics editing | P5-1 … P5-7 | not started |
