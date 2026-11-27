@@ -346,7 +346,7 @@ const HOST_FLAGS = "CFLAGS='-w -O2 -g0 -fcommon' CXXFLAGS='-w -O2 -g0 -std=gnu++
 
 function buildToolchain(target) {
   const version = pins.avrGcc.version;
-  const key = keyOf(pins.avrGcc, HOST_FLAGS, 3);
+  const key = keyOf(pins.avrGcc, HOST_FLAGS, 4);
   const work = path.join(buildRoot, target, 'avr-gcc-work');
   const prefix = path.join(buildRoot, target, 'avr-gcc');
   const linuxPrefix = path.join(buildRoot, 'linux', 'avr-gcc');
@@ -359,7 +359,9 @@ function buildToolchain(target) {
     console.log(`Building avr-gcc ${version} for ${target} (about 20 minutes) …`);
     toolchainSources(work);
     rmSync(prefix, { recursive: true, force: true });
-    const host = target === 'windows' ? `--host=${MINGW}` : '';
+    // Windows: no registry lookup (GCC 7's prefix.c then includes windows.h after its own
+    // abort() macro, which newer mingw-w64 headers reject).
+    const host = target === 'windows' ? `--host=${MINGW} --disable-win32-registry` : '';
     const ldflags =
       target === 'windows'
         ? "LDFLAGS='-s -static -static-libgcc -static-libstdc++'"
