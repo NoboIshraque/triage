@@ -22,6 +22,13 @@ import { ISimEngine, ISimFrame, ISimModule, ISimProject, ISimRunInfo, ISimRunner
 const CHUNK = 0.005;
 /** Frames per second at most. */
 const FRAME_MS = 33;
+/**
+ * The shortest press of a momentary control, in simulated time, s. A click lasts
+ * about 0.1 s of wall time, which is less simulated time when the simulation runs
+ * slower than real time, and firmware debounces buttons (the Smart Fan: 30 ms, read
+ * once per loop): a release sooner than this waits (release()).
+ */
+const MIN_PRESS_SECONDS = 0.15;
 /** Instrument samples: one per CHUNK, kept for the frame. */
 
 export class SimEngine implements ISimEngine {
@@ -54,6 +61,10 @@ export class SimEngine implements ISimEngine {
 	private lastTrim = 0;
 	private firmwareHex: string | undefined;
 	private pwmPins: { name: string; drive: string }[] = [];
+	/** Simulated time of each control's last input, s. */
+	private readonly inputAt = new Map<string, number>();
+	/** Inputs waiting for their time (a release held to MIN_PRESS_SECONDS, and what follows it), per control. */
+	private readonly queued = new Map<string, { at: number; value: number }[]>();
 
 	async load(folder: string, project: string): Promise<{ scopes: ISimScope[]; scenarios: string[]; mujoco: boolean }> {
 		if (!this.module) {
@@ -104,6 +115,8 @@ export class SimEngine implements ISimEngine {
 			this.setState({ kind: 'building', what: 'device' });
 			const runner = new module.Runner({ device: module.deviceSpec(project), scope, ...(this.firmwareHex && scope.run.includes('firmware') ? { firmwareHex: this.firmwareHex } : {}) });
 			this.runner = runner;
+			this.inputAt.clear();
+			this.queued.clear();
 			const info = runner.info;
 			this.signalNames = info.signals.map(s => s[0]);
 			this.signalIds = Uint32Array.from(this.signalNames.map((_, i) => i));
@@ -204,13 +217,42 @@ export class SimEngine implements ISimEngine {
 		this.cancelTick();
 		this.runner = undefined;
 		this.info = undefined;
+		this.inputAt.clear();
+		this.queued.clear();
 		if (this.state.kind !== 'idle') {
 			this.setState({ kind: 'idle' });
 		}
 	}
 
 	async input(control: string, value: number): Promise<void> {
-		this.runner?.input(control, value);
+		this.enqueue(control, value, 0);
+	}
+
+	async release(control: string, value: number): Promise<void> {
+		this.enqueue(control, value, MIN_PRESS_SECONDS);
+	}
+
+	/**
+	 * Sets a control now, or `gap` s of simulated time after its last input; while one
+	 * waits, later inputs to the control queue behind it, each MIN_PRESS_SECONDS
+	 * later, so quick clicks stay separate presses.
+	 */
+	private enqueue(control: string, value: number, gap: number): void {
+		const runner = this.runner;
+		if (!runner) {
+			return;
+		}
+		const queue = this.queued.get(control);
+		const last = queue?.at(-1)?.at;
+		const at = last !== undefined ? last + MIN_PRESS_SECONDS : (this.inputAt.get(control) ?? -Infinity) + gap;
+		if (at <= runner.now) {
+			this.inputAt.set(control, runner.now);
+			runner.input(control, value);
+		} else if (queue) {
+			queue.push({ at, value });
+		} else {
+			this.queued.set(control, [{ at, value }]);
+		}
 	}
 
 	async sendSerial(text: string): Promise<void> {
@@ -242,6 +284,22 @@ export class SimEngine implements ISimEngine {
 	/** Runs to `until` (s) and records one instrument sample. */
 	private advance(until: number): void {
 		const runner = this.runner!;
+		// Queued inputs that fall due on the way, each at its time.
+		if (this.queued.size) {
+			const due = [...this.queued].flatMap(([control, queue]) => queue.map(input => ({ control, ...input })))
+				.filter(input => input.at <= until)
+				.sort((a, b) => a.at - b.at);
+			for (const input of due) {
+				runner.runUntil(input.at);
+				const queue = this.queued.get(input.control)!;
+				queue.shift();
+				if (!queue.length) {
+					this.queued.delete(input.control);
+				}
+				this.inputAt.set(input.control, runner.now);
+				runner.input(input.control, input.value);
+			}
+		}
 		runner.runUntil(until);
 		const t = runner.now;
 		for (const [signal, points] of this.plots) {

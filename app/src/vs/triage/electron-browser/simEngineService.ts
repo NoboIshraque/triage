@@ -141,6 +141,10 @@ export class TriageSimService extends Disposable implements ITriageSimService {
 		await (await this.getEngine()).input(control, value);
 	}
 
+	async release(control: string, value: number): Promise<void> {
+		await (await this.getEngine()).release(control, value);
+	}
+
 	async sendSerial(text: string): Promise<void> {
 		await (await this.getEngine()).sendSerial(text);
 	}

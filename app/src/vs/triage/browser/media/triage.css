@@ -464,6 +464,7 @@
 	padding: 6px 8px;
 	border-right: 1px solid var(--vscode-editorGroup-border);
 	overflow-y: auto;
+	container: triage-sim-controls / inline-size;
 }
 
 .triage-sim-view .triage-sim-instruments {
@@ -531,6 +532,26 @@
 	flex: 0 0 64px;
 	text-align: right;
 	font-variant-numeric: tabular-nums;
+}
+
+/* Too narrow for name, slider and value on one line (the 260 px column, or a narrow
+   tab's stacked controls): the slider would be 60 px, too short to set a value with
+   the mouse, and the value cut off, so the slider takes a line of its own under its
+   name and value. */
+@container triage-sim-controls (max-width: 380px) {
+	.triage-sim-view .triage-sim-row {
+		flex-wrap: wrap;
+	}
+
+	.triage-sim-view .triage-sim-row .triage-sim-name {
+		flex: 1 1 0;
+	}
+
+	.triage-sim-view .triage-sim-row input[type="range"] {
+		order: 1;
+		flex: 1 0 100%;
+		margin: 0;
+	}
 }
 
 .triage-sim-view .triage-sim-led {

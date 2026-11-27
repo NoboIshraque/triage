@@ -229,6 +229,13 @@ For source trees we have (the forks), read the source. REA is for shipped artifa
 - **Cache long builds per stage and save the cache even when a job fails**
   (`actions/cache/restore` + `save` with `if: always()`), so a failure late in
   a 45-minute build doesn't throw the finished stages away.
+- **Mouse-driven tests click at a person's pace.** VS Code ignores a click on a
+  menu item in its first 100 ms and opens a submenu 250 ms after hover; a
+  Chromium slider ignores a click on its own thumb (press and nudge instead);
+  a click lasts milliseconds, shorter than a firmware's debounce, so the sim
+  engine holds a button's release for 0.15 s of simulated time. Each engine
+  needs its own utility-process module: VS Code keys a window's workers by
+  module, so a second engine on the same module replaces the first.
 
 ## 11. When Claude stops and asks
 

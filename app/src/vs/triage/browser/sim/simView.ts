@@ -259,7 +259,8 @@ export class SimView extends Disposable {
 		button.dataset['control'] = control;
 		const set = (down: boolean) => {
 			button.classList.toggle('down', down);
-			void this.sim.input(control, down ? pressed : released);
+			// A click is held for at least MIN_PRESS_SECONDS of simulated time (release).
+			void (down ? this.sim.input(control, pressed) : this.sim.release(control, released));
 		};
 		this.panelDisposables.add(addDisposableListener(button, EventType.POINTER_DOWN, () => set(true)));
 		this.panelDisposables.add(addDisposableListener(button, EventType.POINTER_UP, () => set(false)));

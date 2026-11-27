@@ -105,6 +105,12 @@ export interface ISimEngine {
 	stop(): Promise<void>;
 	setSpeed(speed: number): Promise<void>;
 	input(control: string, value: number): Promise<void>;
+	/**
+	 * Lets go of a momentary control (a button): sets `value`, but no sooner than
+	 * MIN_PRESS_SECONDS of simulated time after the control's last input, so a click
+	 * reaches debouncing firmware however slowly the simulation runs.
+	 */
+	release(control: string, value: number): Promise<void>;
 	sendSerial(text: string): Promise<void>;
 	/** Runs scenario files headless (the Test Explorer and the CLI's runner). */
 	runScenarios(files: readonly string[]): Promise<ISimScenarioResult[]>;
@@ -130,6 +136,7 @@ export interface ITriageSimService {
 	stop(): Promise<void>;
 	setSpeed(speed: number): Promise<void>;
 	input(control: string, value: number): Promise<void>;
+	release(control: string, value: number): Promise<void>;
 	sendSerial(text: string): Promise<void>;
 	runScenarios(files: readonly string[]): Promise<ISimScenarioResult[]>;
 }

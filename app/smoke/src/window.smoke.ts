@@ -69,12 +69,15 @@ async function clickMenu(window: Page, path: readonly string[]): Promise<void> {
       .filter({ has: window.locator('.action-label', { hasText: label(text) }) })
       .last();
     await item.waitFor({ state: 'visible', timeout: 30_000 });
+    // VS Code ignores a click on a menu item for its first 100 ms ("to avoid accidental
+    // clicks", base/browser/ui/menu/menu.ts), and opens a submenu 250 ms after the
+    // pointer rests on it: a person's pace.
+    await window.waitForTimeout(300);
     if (i < items.length - 1) {
       await item.hover();
-      await item.click();
-    } else {
-      await item.click();
+      await window.waitForTimeout(300);
     }
+    await item.click();
   }
   // The menu closes once the item runs.
   await window
@@ -601,8 +604,10 @@ describe('packaged Triage app', () => {
   const simView = () => window.locator('.triage-sim-view');
   const simT = async () => Number((await simView().getAttribute('data-t')) ?? 0);
   /**
-   * Moves a slider in the Sim tab with the mouse (PA-1): a click at the place on the
-   * track for `value` (Chromium puts the thumb's centre there).
+   * Moves a slider in the Sim tab with the mouse (PA-1): presses at the place on the
+   * track for `value` and nudges. Chromium moves the thumb's centre to a press beside
+   * the thumb; a press on the thumb itself only starts a drag, which the nudge ends
+   * there.
    */
   const setSlider = async (control: string, value: number) => {
     const input = simView().locator(`input[data-control="${control}"]`);
@@ -613,8 +618,19 @@ describe('packaged Triage app', () => {
     const max = Number(await input.getAttribute('max'));
     const thumb = 16;
     const x = box.x + thumb / 2 + ((value - min) / (max - min)) * (box.width - thumb);
-    await window.mouse.click(x, box.y + box.height / 2);
+    const y = box.y + box.height / 2;
+    await window.mouse.move(x, y);
+    await window.mouse.down();
+    await window.mouse.move(x + 1, y);
+    await window.mouse.move(x, y);
+    await window.mouse.up();
+    // Within two pixels' worth of the value.
+    const perPixel = (max - min) / Math.max(1, box.width - thumb);
+    expect(Math.abs(Number(await input.inputValue()) - value)).toBeLessThanOrEqual(2 * perPixel);
   };
+  /** Presses the Mode button (SW1) as a person clicks: about 0.1 s down. */
+  const pressMode = () =>
+    simView().locator('button[data-control="SW1.pressed"]').click({ delay: 100 });
   /** Sets a slider to an exact value (checks that need a precise input, not the walk). */
   const setSliderExact = (control: string, value: number) =>
     window.evaluate(`(() => {
@@ -691,13 +707,15 @@ describe('packaged Triage app', () => {
       await window.screenshot({ path: shot('sim-whole-device') });
       await setSlider('env.room_temperature_c', 40);
       await expect.poll(() => oled.getAttribute('data-text'), { timeout: 60_000 }).toContain('HOT');
-      // The Mode button (SW1), pressed with the mouse: Auto → Max.
-      await simView().locator('button[data-control="SW1.pressed"]').click();
-      await expect.poll(() => oled.getAttribute('data-text'), { timeout: 30_000 }).toContain('MAX');
-      await simView().locator('button[data-control="SW1.pressed"]').click();
-      await simView().locator('button[data-control="SW1.pressed"]').click();
+      // The Mode button (SW1), pressed with the mouse: Auto → Max → Off → Auto. The
+      // engine holds a click for 0.15 s of simulated time, however slowly it runs.
+      await pressMode();
+      await expect.poll(() => oled.getAttribute('data-text'), { timeout: 60_000 }).toContain('MAX');
+      await pressMode();
+      await expect.poll(() => oled.getAttribute('data-text'), { timeout: 60_000 }).toContain('OFF');
+      await pressMode();
       await expect
-        .poll(() => oled.getAttribute('data-text'), { timeout: 30_000 })
+        .poll(() => oled.getAttribute('data-text'), { timeout: 60_000 })
         .toContain('AUTO');
     },
   );
