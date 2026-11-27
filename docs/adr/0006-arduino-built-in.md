@@ -1,9 +1,9 @@
 # ADR 0006: Arduino built in: compile, upload, libraries, boards and examples inside Triage, with buttons
 
-- **Status:** **Proposed**, 2026-11-27. The owner decided **what** (the end of this
-  ADR: the scope, the order and how other boards' compilers arrive); the backend
-  (arduino-cli built from source, as the Arduino IDE 2 uses it) is Claude's
-  proposal for the owner to accept at the start of phase PA.
+- **Status:** **Accepted**, 2026-11-27. The owner decided **what** (the end of this
+  ADR: the scope, the order and how other boards' compilers arrive) when PA was
+  planned, and **accepted the backend** (arduino-cli 1.6.0 built from source, as
+  the Arduino IDE 2 uses it) at the start of phase PA, the same day.
 - **Related:** [ADR 0001](0001-standalone-app-on-vscode-codebase.md) (VS Code
   fork), [ADR 0003](0003-boards-and-windows.md) (boards, Windows first), PLAN §1
   (principles), §4.11, §4.13, §4.15, ROADMAP phase **PA**, DEVIATIONS DV-29, DV-33,
@@ -54,14 +54,17 @@ can run the scenario tests without a window, and a user never needs it.
   the Library Manager, the Boards Manager and examples, **now, before the phone
   companion (PC) and P4**; Triage must be usable with buttons and the mouse.
 
-## Decision (proposed)
+## Decision
 
 1. **arduino-cli, built from source, is Triage's Arduino engine.** It is the
    engine inside the Arduino IDE 2 itself: the IDE is an Electron app that talks to
    `arduino-cli daemon` over gRPC for compiling, uploading, the board list, the
-   Library and Boards Managers and the serial monitor [inferred from the IDE 2's
-   source layout and arduino-cli's documentation; to be confirmed with a
-   teardown at PA's start]. Triage does the same from a utility process, the way
+   Library and Boards Managers and the serial monitor [observed 2026-11-27 in the
+   IDE 2's source, `arduino/arduino-ide` at `f467a6a`: `arduino-ide-extension/package.json`
+   pins arduino-cli **1.6.0**; `src/node/arduino-daemon-impl.ts` starts it with
+   `daemon`; the board, core, library, sketch and monitor services
+   (`boards-service-impl.ts`, `core-service-impl.ts`, `library-service-impl.ts`,
+   `sketches-service-impl.ts`, `monitor-service.ts`) are gRPC clients of it]. Triage does the same from a utility process, the way
    its other engines run (ADR 0002). It is Go, GPL-3.0; CI builds it from a pinned
    tag on Windows and Linux (`engines/arduino/`).
 2. **The AVR tools are built from source and shipped:** GCC for AVR, binutils,
@@ -106,3 +109,8 @@ can run the scenario tests without a window, and a user never needs it.
   checksums checked. The Uno/Nano/Mega compiler is built from source and shipped.
 - **Buttons and mouse first** for every action in Triage; the CLI is an extra.
 - arduino-cli may run in CI's Windows jobs (it does since P3; DV-29).
+- **Backend accepted** at PA's start (2026-11-27): arduino-cli built from source
+  as the engine, with the AVR compiler, avrdude and arduino-cli's helper tools
+  built from source and shipped.
+- **Board for the upload check:** the owner has an Arduino **Nano or Mega**
+  (2026-11-27), so the PA-3 owner check uses that board.

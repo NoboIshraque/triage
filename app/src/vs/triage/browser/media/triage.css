@@ -464,6 +464,7 @@
 	padding: 6px 8px;
 	border-right: 1px solid var(--vscode-editorGroup-border);
 	overflow-y: auto;
+	container: triage-sim-controls / inline-size;
 }
 
 .triage-sim-view .triage-sim-instruments {
@@ -531,6 +532,26 @@
 	flex: 0 0 64px;
 	text-align: right;
 	font-variant-numeric: tabular-nums;
+}
+
+/* Too narrow for name, slider and value on one line (the 260 px column, or a narrow
+   tab's stacked controls): the slider would be 60 px, too short to set a value with
+   the mouse, and the value cut off, so the slider takes a line of its own under its
+   name and value. */
+@container triage-sim-controls (max-width: 380px) {
+	.triage-sim-view .triage-sim-row {
+		flex-wrap: wrap;
+	}
+
+	.triage-sim-view .triage-sim-row .triage-sim-name {
+		flex: 1 1 0;
+	}
+
+	.triage-sim-view .triage-sim-row input[type="range"] {
+		order: 1;
+		flex: 1 0 100%;
+		margin: 0;
+	}
 }
 
 .triage-sim-view .triage-sim-led {
@@ -619,4 +640,171 @@
 
 .triage-sim-view .triage-sim-hint {
 	opacity: 0.8;
+}
+
+/* --- The Arduino IDE built in (ROADMAP PA): side bar panels and the Serial Monitor --- */
+
+.triage-overview .triage-overview-buttons {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 0 6px;
+}
+
+.triage-arduino {
+	display: flex;
+	flex-direction: column;
+	height: 100%;
+	padding: 4px 12px 8px 12px;
+	box-sizing: border-box;
+	line-height: 1.4;
+}
+
+.triage-arduino.busy .triage-arduino-button,
+.triage-arduino.busy select {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+.triage-arduino-bar {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	align-items: center;
+	margin-bottom: 4px;
+}
+
+.triage-arduino-search {
+	flex: 1 1 140px;
+	min-width: 0;
+	background: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	border: 1px solid var(--vscode-input-border, transparent);
+	padding: 3px 6px;
+}
+
+.triage-arduino-button {
+	background: var(--vscode-button-secondaryBackground);
+	color: var(--vscode-button-secondaryForeground);
+	border: none;
+	padding: 3px 8px;
+	cursor: pointer;
+	border-radius: 2px;
+}
+
+.triage-arduino-button:hover {
+	background: var(--vscode-button-secondaryHoverBackground);
+}
+
+.triage-arduino-button[data-action="install"],
+.triage-arduino-button[data-action="connect"] {
+	background: var(--vscode-button-background);
+	color: var(--vscode-button-foreground);
+}
+
+.triage-arduino select {
+	background: var(--vscode-dropdown-background);
+	color: var(--vscode-dropdown-foreground);
+	border: 1px solid var(--vscode-dropdown-border, transparent);
+	padding: 2px;
+}
+
+.triage-arduino-status {
+	color: var(--vscode-descriptionForeground);
+	font-size: 0.9em;
+	min-height: 1.4em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.triage-arduino-list {
+	flex: 1;
+	overflow: auto;
+}
+
+.triage-arduino-heading {
+	color: var(--vscode-descriptionForeground);
+	margin: 4px 0;
+}
+
+.triage-arduino-item {
+	padding: 6px 0;
+	border-bottom: 1px solid var(--vscode-panel-border, rgba(128, 128, 128, 0.2));
+}
+
+.triage-arduino-note {
+	color: var(--vscode-descriptionForeground);
+}
+
+.triage-arduino-badge {
+	margin-left: 6px;
+	padding: 0 5px;
+	border-radius: 8px;
+	font-size: 0.85em;
+	background: var(--vscode-badge-background);
+	color: var(--vscode-badge-foreground);
+}
+
+.triage-arduino-badge.simulated {
+	background: var(--vscode-charts-green, #388a34);
+	color: var(--vscode-editor-background);
+}
+
+.triage-arduino-text {
+	margin: 2px 0;
+}
+
+.triage-arduino-actions {
+	display: flex;
+	gap: 4px;
+	align-items: center;
+	margin-top: 4px;
+}
+
+.triage-arduino-group summary {
+	cursor: pointer;
+	padding: 2px 0;
+	font-weight: 600;
+}
+
+.triage-arduino-example {
+	display: block;
+	padding: 1px 0 1px 16px;
+	color: var(--vscode-textLink-foreground);
+	text-decoration: none;
+}
+
+.triage-arduino-example:hover {
+	text-decoration: underline;
+}
+
+.triage-arduino-check {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+}
+
+.triage-arduino-output {
+	flex: 1;
+	margin: 0;
+	overflow: auto;
+	white-space: pre-wrap;
+	font-family: var(--monaco-monospace-font);
+	font-size: var(--vscode-editor-font-size, 12px);
+	background: var(--vscode-editor-background);
+	padding: 4px;
+}
+
+.triage-arduino-send {
+	display: flex;
+	gap: 4px;
+	margin-top: 4px;
+}
+
+.triage-arduino-send input {
+	flex: 1;
+	background: var(--vscode-input-background);
+	color: var(--vscode-input-foreground);
+	border: 1px solid var(--vscode-input-border, transparent);
+	padding: 3px 6px;
 }

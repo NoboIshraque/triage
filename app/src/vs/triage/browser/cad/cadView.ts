@@ -16,6 +16,7 @@
  *  through the engine.
  *--------------------------------------------------------------------------------------------*/
 
+import { ICommandService } from '../../../platform/commands/common/commands.js';
 import { $, addDisposableListener, append, clearNode, EventType, getWindow } from '../../../base/browser/dom.js';
 import { Emitter } from '../../../base/common/event.js';
 import { Disposable, DisposableStore, toDisposable } from '../../../base/common/lifecycle.js';
@@ -34,6 +35,8 @@ import { CadRenderer, rotationAbout, SceneObject } from './cadRenderer.js';
 
 /** The board document the CAD engine builds (engines/cad/triage/engine/triage_cad/board.py). */
 export const BOARD_DOCUMENT = 'TriageBoard';
+/** CAD_COMMANDS.setPartHeight (cadCommands.ts imports this view). */
+const CAD_COMMAND_SET_PART_HEIGHT = 'triage.cad.setPartHeight';
 
 /**
  * How long the 3D tab waits for KiCad's engine before showing the documents without
@@ -132,6 +135,7 @@ export class CadView extends Disposable {
 		@ILogService private readonly logService: ILogService,
 		@IMarkerService private readonly markerService: IMarkerService,
 		@ITriageSimService private readonly sim: ITriageSimService,
+		@ICommandService private readonly commandService: ICommandService,
 	) {
 		super();
 		this._register(toDisposable(() => this.markerService.changeAll(FIT_MARKERS, [])));
@@ -687,6 +691,10 @@ export class CadView extends Disposable {
 		button(localize('triage.cad.exportStl', "Export STL"), localize('triage.cad.exportStlTitle', "Write the enclosure's base and lid as STL files for printing (mechanical/exports/)"), () => {
 			void this.exportEnclosure().catch(error => this.setStatus(error instanceof Error ? error.message : String(error)));
 		});
+		// ROADMAP PA-1: part heights with the mouse (pick the part, type its height).
+		button(localize('triage.cad.partHeight', "Part Height…"), localize('triage.cad.partHeightTitle', "Set a board part's height above the board, for the 3D view and the fit checks"), () => {
+			void this.commandService.executeCommand(CAD_COMMAND_SET_PART_HEIGHT);
+		});
 		button(localize('triage.cad.panel', "Panel"), localize('triage.cad.panelTitle', "Show or hide the outliner and properties (N)"), () => this.togglePanel());
 		button(localize('triage.cad.projection', "Persp/Ortho"), localize('triage.cad.projectionTitle', "Switch between perspective and orthographic (Numpad 5)"), () => {
 			if (this.renderer) {
@@ -801,6 +809,35 @@ export class CadView extends Disposable {
 			append(row, $('span.triage-cad-name', undefined, property.name));
 			append(row, this.propertyEditor(doc, object, property, editable && !property.readOnly));
 		}
+		if (doc === BOARD_DOCUMENT && object.startsWith('Part_')) {
+			// A board part's height (its "Height" field in the board, an engine edit).
+			const reference = object.slice('Part_'.length);
+			const row = append(this.propertiesPanel, $('.triage-cad-property'));
+			row.title = localize('triage.cad.heightRowTitle', "The part's height above the board, for the 3D view and the fit checks (0: from its footprint). Saved in the board file.");
+			append(row, $('span.triage-cad-name', undefined, localize('triage.cad.heightRow', "Height above board (mm)")));
+			const input = append(row, $('input', { type: 'text' })) as HTMLInputElement;
+			input.dataset['property'] = 'TriagePartHeight';
+			input.placeholder = '0';
+			const commit = () => {
+				const height = Number.parseFloat(input.value);
+				if (Number.isFinite(height)) {
+					void this.setPartHeight(reference, height).catch(error => this.setStatus(error instanceof Error ? error.message : String(error)));
+				}
+			};
+			this.propertyDisposables.add(addDisposableListener(input, EventType.KEY_DOWN, (event: KeyboardEvent) => {
+				if (event.key === 'Enter') {
+					commit();
+				}
+			}));
+		}
+	}
+
+	/** The board's parts (references), for the part height picker. */
+	boardReferences(): string[] {
+		return this.objects
+			.filter(o => o.key.startsWith(`${BOARD_DOCUMENT}/Part_`))
+			.map(o => o.key.slice(`${BOARD_DOCUMENT}/Part_`.length))
+			.sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 	}
 
 	private propertyEditor(doc: string, object: string, property: CadProperty, editable: boolean): HTMLElement {

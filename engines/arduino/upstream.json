@@ -1,0 +1,134 @@
+{
+  "$comment": "Every source of Triage's Arduino engine (ROADMAP PA-2, ADR 0006): arduino-cli and its helper tools, the AVR compiler, avr-libc and avrdude, each pinned by tag and commit (git) or by SHA-256 (release tarballs). engines/arduino/build.mjs fetches exactly these into engines/arduino/upstream/ and builds them from source; nothing prebuilt is downloaded. Versions match what Arduino's package index lists for arduino:avr 1.8.8 and arduino-cli 1.6.0's builtin tools, so arduino-cli finds them where it would have installed its own.",
+  "arduinoCli": {
+    "repository": "https://github.com/arduino/arduino-cli.git",
+    "tag": "v1.6.0",
+    "commit": "50a0e80daf5d5a4e6cdf57b51fbfd71f07a43462",
+    "version": "1.6.0"
+  },
+  "go": {
+    "$comment": "arduino-cli 1.6.0's go.mod asks for Go 1.27.3. CI installs Go with actions/setup-go; elsewhere build.mjs builds this Go from source with an older Go (1.24.6 or later) as bootstrap.",
+    "minimum": "1.27.3",
+    "version": "1.27.4",
+    "url": "https://go.dev/dl/go1.27.4.src.tar.gz",
+    "sha256": "73cfb8571aec0c01177687db87163d46aa20e9779672772891aa17654d9a6099"
+  },
+  "goTools": [
+    {
+      "name": "serial-discovery",
+      "package": "builtin",
+      "version": "1.5.2",
+      "repository": "https://github.com/arduino/serial-discovery.git",
+      "tag": "v1.5.2",
+      "commit": "fcbd39ac7c612a1dd8a9a300d0534324315e5908",
+      "versionVariable": "github.com/arduino/serial-discovery/version.Version"
+    },
+    {
+      "name": "serial-monitor",
+      "package": "builtin",
+      "version": "0.15.0",
+      "repository": "https://github.com/arduino/serial-monitor.git",
+      "tag": "v0.15.0",
+      "commit": "13b8e8058fd5c3eb24e97cba091f3a897aa20afb",
+      "versionVariable": "github.com/arduino/serial-monitor/version.Version"
+    },
+    {
+      "name": "mdns-discovery",
+      "package": "builtin",
+      "version": "1.1.0",
+      "repository": "https://github.com/arduino/mdns-discovery.git",
+      "tag": "v1.1.0",
+      "commit": "435f0445a9d70f48d7bbd4910da23394e8a44bf9",
+      "versionVariable": "github.com/arduino/mdns-discovery/version.Version"
+    },
+    {
+      "name": "arduinoOTA",
+      "package": "arduino",
+      "version": "1.3.0",
+      "repository": "https://github.com/arduino/arduinoOTA.git",
+      "tag": "1.3.0",
+      "commit": "e40e85b2657cdb8cf659b92af1d9890854ac6bd5",
+      "$comment": "No go.mod at 1.3.0 (standard library only): build.mjs creates one.",
+      "subdir": "bin"
+    }
+  ],
+  "ctags": {
+    "repository": "https://github.com/arduino/ctags.git",
+    "tag": "v5.8-arduino12",
+    "commit": "740e75e1dca4adaaae8e66f16fc1573220235107",
+    "version": "5.8-arduino12"
+  },
+  "examples": {
+    "$comment": "The Arduino IDE 2's built-in examples (File → Examples: 01.Basics … 11.ArduinoISP), the version arduino-ide-extension/scripts/download-examples.js pins. Sketches only (CC0 / public domain).",
+    "repository": "https://github.com/arduino/arduino-examples.git",
+    "tag": "1.10.3",
+    "commit": "33dddb8c8f6d28509fa035c3437df63e8d5c6d81"
+  },
+  "avrdude": {
+    "repository": "https://github.com/avrdudes/avrdude.git",
+    "tag": "v8.0",
+    "commit": "d8c8cf1379c474aee1cc8685b9ec7da71feb8e2a",
+    "version": "8.0.0-arduino1",
+    "extraVersion": "-arduino.1",
+    "$comment": "Arduino's 8.0.0-arduino1 is avrdude 8.0 with one patch (its version string), from arduino/avrdude-packing below. Serial programmers only (no libusb, HID or FTDI): the Arduino bootloader's upload needs only the serial port."
+  },
+  "avrdudePacking": {
+    "repository": "https://github.com/arduino/avrdude-packing.git",
+    "tag": "8.0-arduino.1",
+    "commit": "ead5b42b2563ec9173f94d5955843b6bb4091a0f",
+    "patches": ["patches/0001-Add-extra-version-information-to-avrdude-output.patch"]
+  },
+  "avrGcc": {
+    "version": "7.3.0-atmel3.6.1-arduino7",
+    "$comment": "Arduino's own recipe (arduino/toolchain-avr at this tag): GNU GCC 7.3.0 with Atmel's AVR patches, Atmel's binutils 2.26 and avr-libc 2.0.0 from the Atmel AVR 8-bit GNU Toolchain 3.6.1 sources (Arduino's mirror of them), and Arduino's small patches.",
+    "toolchainAvr": {
+      "repository": "https://github.com/arduino/toolchain-avr.git",
+      "tag": "7.3.0-atmel3.6.1-arduino7",
+      "commit": "368b87a73e3677071fa44f2182c1ea4cc6a90557"
+    },
+    "gccPatch": "avr-gcc-patches/atmel-patches-gcc.7.3.0-arduino2.patch",
+    "binutilsPatches": ["binutils-patches/00-binutils-data_region_length.patch"],
+    "avrLibcPatches": [
+      "avr-libc-patches/01-arduino-malloc_margin.patch",
+      "avr-libc-patches/02-power.patch",
+      "avr-libc-patches/03-eeprom.patch"
+    ],
+    "tarballs": {
+      "binutils": {
+        "url": "https://downloads.arduino.cc/tools/opensource/Atmel-AVR-GNU-Toolchain/3.6.1/avr-binutils.tar.bz2",
+        "sha256": "7f2ee50c3867ca13be47aee7925c4c9182b15cb5fe6ace23849ee9005081a340"
+      },
+      "avrLibc": {
+        "url": "https://downloads.arduino.cc/tools/opensource/Atmel-AVR-GNU-Toolchain/3.6.1/avr-libc.tar.bz2",
+        "sha256": "8dd2a70c6fac96f151eaa1110c109b5579f4f75da76be08e8434475dab8ae575"
+      },
+      "avr8Headers": {
+        "url": "https://downloads.arduino.cc/tools/opensource/Atmel-AVR-GNU-Toolchain/3.6.1/avr8-headers.zip",
+        "sha256": "95242c5a2ecb1c8d92a316f3ef29991e5c41eb62821875fbcadd4d72ef918a62"
+      },
+      "gcc": {
+        "url": "https://ftp.gnu.org/gnu/gcc/gcc-7.3.0/gcc-7.3.0.tar.xz",
+        "sha256": "832ca6ae04636adbb430e865a1451adf6979ab44ca1c8374f61fba65645ce15c"
+      },
+      "gmp": {
+        "url": "https://ftp.gnu.org/gnu/gmp/gmp-6.1.0.tar.bz2",
+        "sha256": "498449a994efeba527885c10405993427995d3f86b8768d8cdf8d9dd7c6b73e8"
+      },
+      "mpfr": {
+        "url": "https://ftp.gnu.org/gnu/mpfr/mpfr-3.1.4.tar.bz2",
+        "sha256": "d3103a80cdad2407ed581f3618c4bed04e0c92d1cf771a65ead662cc397f7775"
+      },
+      "mpc": {
+        "url": "https://ftp.gnu.org/gnu/mpc/mpc-1.0.3.tar.gz",
+        "sha256": "617decc6ea09889fb08ede330917a00b16809b8db88c29c31bfbb49cbf88ecc3"
+      }
+    }
+  },
+  "platform": {
+    "$comment": "The arduino:avr platform shipped inside Triage: the pinned ArduinoCore-avr checkout of engines/arduino-avr, with installed.json (installed-avr-1.8.8.json here, Arduino's package index entry for it), as arduino-cli would install it.",
+    "packager": "arduino",
+    "architecture": "avr",
+    "version": "1.8.8",
+    "installedJson": "installed-avr-1.8.8.json"
+  }
+}

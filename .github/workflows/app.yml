@@ -180,32 +180,19 @@ jobs:
         timeout-minutes: 30
         run: scripts/dev/setup.sh ${{ steps.eda.outcome == 'success' && '--eda' || '' }} ${{ steps.cad.outcome == 'success' && '--cad' || '' }}
 
-      # ROADMAP P3: the app ships the pinned Arduino AVR core (engines step), and the smoke
-      # test runs the Smart Fan's firmware, so the machine needs the AVR toolchain, as in the Sim workflow (sim.yml): Ubuntu's avr-gcc with the
-      # pinned Arduino AVR core, or arduino-cli with its own on Windows.
-      - name: AVR toolchain for the simulation checks (Linux)
-        if: runner.os == 'Linux'
+      # ROADMAP PA-2: the app ships Triage's Arduino engine (arduino-cli and the AVR
+      # compiler, built from source by the Arduino workflow), and the smoke test builds
+      # the Smart Fan's firmware with it, on a machine with no Arduino software.
+      - name: Triage's Arduino engine (built from source)
+        uses: ./.github/actions/arduino-engine
+        with:
+          token: ${{ github.token }}
+      - name: No Arduino IDE, arduino-cli or avr-gcc on this machine
+        shell: bash
         run: |
-          sudo apt-get install -y gcc-avr avr-libc binutils-avr
-          node engines/arduino-avr/fetch.mjs
-
-      - name: AVR toolchain for the simulation checks (Windows, arduino-cli)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          ARDUINO_CLI_VERSION: '1.6.0'
-          ARDUINO_CLI_SHA256: '2769b9b282ce597db9679d8ec14d726d57004ca4205ef4d7a795bf36b6cdc9d8'
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $zip = Join-Path $env:RUNNER_TEMP 'arduino-cli.zip'
-          $url = "https://github.com/arduino/arduino-cli/releases/download/v$env:ARDUINO_CLI_VERSION/arduino-cli_$($env:ARDUINO_CLI_VERSION)_Windows_64bit.zip"
-          for ($i = 1; $i -le 4; $i++) { try { Invoke-WebRequest $url -OutFile $zip; break } catch { if ($i -eq 4) { throw }; Start-Sleep (2 * $i) } }
-          $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
-          if ($hash -ne $env:ARDUINO_CLI_SHA256) { throw "arduino-cli checksum $hash" }
-          $dir = Join-Path $env:RUNNER_TEMP 'arduino-cli'
-          Expand-Archive $zip -DestinationPath $dir -Force
-          & "$dir\arduino-cli.exe" core update-index
-          & "$dir\arduino-cli.exe" core install arduino:avr
+          for p in avr-gcc arduino-cli avrdude; do
+            if command -v "$p"; then echo "$p is installed here; the app must build with its own engine"; exit 1; fi
+          done
 
       - name: Build the engines into the app (CMake, Ninja, Cargo)
         run: node app/build.mjs engines

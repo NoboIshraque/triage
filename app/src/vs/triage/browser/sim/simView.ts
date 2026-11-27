@@ -9,6 +9,8 @@
  *  monitor); and the project's scenarios with their results.
  *--------------------------------------------------------------------------------------------*/
 
+import { ICommandService } from '../../../platform/commands/common/commands.js';
+import { ARDUINO_COMMANDS } from '../../common/arduino/arduino.js';
 import { $, addDisposableListener, append, EventType, getWindow, reset } from '../../../base/browser/dom.js';
 import { Disposable, DisposableStore } from '../../../base/common/lifecycle.js';
 import { basename } from '../../../base/common/path.js';
@@ -55,6 +57,7 @@ export class SimView extends Disposable {
 	constructor(
 		@ITriageSimService private readonly sim: ITriageSimService,
 		@ILogService private readonly logService: ILogService,
+		@ICommandService private readonly commandService: ICommandService,
 	) {
 		super();
 		this.element = $('.triage-sim-view');
@@ -65,6 +68,9 @@ export class SimView extends Disposable {
 		this.runButton = this.button(this.toolbar, localize('triage.sim.run', "Run"), () => this.toggleRun(), 'run');
 		this.button(this.toolbar, localize('triage.sim.step', "Step 10 ms"), () => this.step(), 'step');
 		this.button(this.toolbar, localize('triage.sim.stop', "Stop"), () => this.sim.stop(), 'stop');
+		// ROADMAP PA-1: Build (and Upload) here too, not only above the code; Run builds by itself.
+		this.button(this.toolbar, localize('triage.sim.build', "Build"), () => this.commandService.executeCommand(ARDUINO_COMMANDS.build), 'build');
+		this.button(this.toolbar, localize('triage.sim.upload', "Upload"), () => this.commandService.executeCommand(ARDUINO_COMMANDS.upload), 'upload');
 		append(this.toolbar, $('span.triage-sim-label', undefined, localize('triage.sim.scope', "Scope")));
 		this.scopeSelect = append(this.toolbar, $('select.triage-sim-scope')) as HTMLSelectElement;
 		this.scopeSelect.title = localize('triage.sim.scopeTitle', "What runs: the whole device, or one part with stubs for the rest (PLAN §4.7)");
@@ -253,7 +259,8 @@ export class SimView extends Disposable {
 		button.dataset['control'] = control;
 		const set = (down: boolean) => {
 			button.classList.toggle('down', down);
-			void this.sim.input(control, down ? pressed : released);
+			// A click is held for at least MIN_PRESS_SECONDS of simulated time (release).
+			void (down ? this.sim.input(control, pressed) : this.sim.release(control, released));
 		};
 		this.panelDisposables.add(addDisposableListener(button, EventType.POINTER_DOWN, () => set(true)));
 		this.panelDisposables.add(addDisposableListener(button, EventType.POINTER_UP, () => set(false)));
@@ -305,7 +312,9 @@ export class SimView extends Disposable {
 				} else if (element.signal) {
 					const row = append(io, $('.triage-sim-row'));
 					append(row, $('span.triage-sim-name', undefined, element.label));
-					this.indicators.set(element.signal, append(row, $('span.triage-sim-led')));
+					const led = append(row, $('span.triage-sim-led'));
+					led.dataset['signal'] = element.signal;
+					this.indicators.set(element.signal, led);
 				}
 			}
 		}
@@ -358,6 +367,11 @@ export class SimView extends Disposable {
 			const on = duty !== undefined ? duty : level === 1 ? 1 : 0;
 			indicator.style.opacity = String(0.15 + 0.85 * on);
 			indicator.textContent = duty !== undefined ? `${Math.round(duty * 100)}%` : level === 1 ? 'H' : level === 0 ? 'L' : '–';
+			// Each change of level counts (a smoke check watches Blink blink).
+			if (indicator.dataset['level'] !== indicator.textContent) {
+				indicator.dataset['changes'] = String(Number(indicator.dataset['changes'] ?? 0) + 1);
+				indicator.dataset['level'] = indicator.textContent;
+			}
 		}
 		if (frame.serial) {
 			this.serialText = (this.serialText + frame.serial).slice(-20_000);

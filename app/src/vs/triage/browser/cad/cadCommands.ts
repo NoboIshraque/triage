@@ -79,6 +79,11 @@ export function registerCadCommands(): void {
 				notifications.info(localize('triage.cad.noView', "Open the 3D tab first."));
 				return;
 			}
+			// Pick the part with the mouse (ROADMAP PA-1); typing a reference still works.
+			const parts = view.boardReferences();
+			if (!reference && parts.length > 0) {
+				reference = (await quickInput.pick(parts.map(label => ({ label })), { placeHolder: localize('triage.cad.heightPick', "The part whose height to set") }))?.label;
+			}
 			reference ??= await quickInput.input({ prompt: localize('triage.cad.heightReference', "Part reference (Q1, J1 …)") });
 			if (!reference) {
 				return;

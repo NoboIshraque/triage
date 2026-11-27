@@ -14,8 +14,9 @@
 
 **Current build branch:** `claude/unified-engineering-platform-jn5rmk`, the
 **default branch** (Claude updates this line when a session works on another
-branch). P0 to P3, the simulation included, are **merged into it**, so its
-nightly build and its ZIP download have everything the open checks need.
+branch). P0 to P3 and **PA** (the Arduino IDE built in, 2026-11-27) are
+**merged into it**: every check uses a build from it (C7 needs one made after
+PA's merge, which the nightly or the App workflow on this branch gives).
 
 ## At a glance
 
@@ -27,6 +28,7 @@ nightly build and its ZIP download have everything the open checks need.
 | [C4](#c4--frame-rates-on-your-gpu-dv-22) | Frame rates on your GPU (the 60 fps check) | P1-4, P2-3 | no | |
 | [C5](#c5--the-3d-tab-and-the-enclosure-p2) | The 3D tab and the enclosure | P2 | no | |
 | [C6](#c6--m2-exit-demo-the-smart-fan-runs-in-one-window-p3) | M2 exit demo: the Smart Fan runs in one window | P3 (milestone M2) | no | |
+| [C7](#c7--pa-exit-demo-the-arduino-ide-built-into-triage-on-your-board-pa) | PA exit demo: examples, Upload to your Nano or Mega, Serial Monitor, Library and Boards Managers (ESP32) | PA (PA-3, PA-5, exit demo) | no | |
 
 "Blocks the next phase: no" means Claude can start the next phase before you run
 it. A milestone (M1, M2 …) only counts as finished once you have run its exit
@@ -86,9 +88,11 @@ click the **Triage icon** at the top of the left-hand bar (the T logo) and click
 3D** and **Sim** tabs, and the status bar at the bottom shows "KiCad engine:
 connected" and "FreeCAD engine: connected".
 
-**Running a command:** press **F1** (or **Ctrl+Shift+P**), type part of the
-command's name (for example `Rename Net`), and press **Enter** on the command.
-Triage's own commands start with "Triage:".
+**Every Triage action has a button or a menu entry** (the owner's rule,
+2026-11-27): the **Triage** menu in the menu bar lists all of them, the tabs have
+toolbar buttons, and the Schematic tab has a right-click menu. (The **Triage**
+menu sits between **Edit** and **Selection**.) Typing a command
+(**F1**, then part of its name, **Enter**) still works if you prefer it.
 
 ---
 
@@ -139,17 +143,19 @@ Triage's own commands start with "Triage:".
   6. **Save:** press **Ctrl+S** (or **Save** in the toolbar). **Check:** **modified**
      goes away from the toolbar.
   7. **Rename a net:** in the **Code** area open `firmware\generated\board_pins.h`
-     (Explorer: the files icon in the left-hand bar). Then run
-     **Triage: Rename Net in the Schematic**, type `FAN_PWM`, press Enter, type
-     `MOTOR_SPEED`, press Enter. **Check:** within about 2 seconds
+     (Explorer: the files icon in the left-hand bar). Then, in the
+     **Schematic** tab, **right-click** the wire or label of the net `FAN_PWM`
+     and click **Rename Net "FAN_PWM"…** (or click **Rename Net…** in the
+     Schematic tab's toolbar and type `FAN_PWM`, Enter), type `MOTOR_SPEED`,
+     press Enter. **Check:** within about 2 seconds
      `board_pins.h` says `MOTOR_SPEED` where it said `FAN_PWM`. Also open
      `firmware\src\main.cpp` and hover the mouse over the pin name `BUTTON`
      (in `setup()`, about line 59) or `TEMP_SENSE` (in `loop()`, about line
      81): a box shows its net, the Arduino pin and what the pin can do.
      (`main.cpp` still uses the old name `FAN_PWM`; renaming code is later
      work.)
-  8. **The KiCad fallback window:** click in the Board tab, then run
-     **Triage: Edit in KiCad (Fallback Window)**. KiCad's own board editor
+  8. **The KiCad fallback window:** click **Edit in KiCad** in the Board tab's
+     toolbar (or right-click the board → **Edit in KiCad**). KiCad's own board editor
      opens on the same file. If KiCad first asks how to set up its global
      library tables, choose the option to create an **empty** table (the Smart
      Fan carries its own libraries). Move any part in KiCad and save there
@@ -171,13 +177,14 @@ Triage's own commands start with "Triage:".
   laptop in** (on battery, Windows slows the graphics card down).
 - **Steps:**
   1. Open the project and click **Open Engineering Layout**.
-  2. Run **Triage: Benchmark Schematic and Board Views**. A notification at the
+  2. Click **Triage → Diagnostics → Benchmark Schematic and Board Views** in the
+     menu bar. A notification at the
      bottom right shows, for example, `schematic: 58 fps (average 17.1 ms,
      worst 25.3 ms) · board: 60 fps (…)`. Write both down.
   3. Make the Board tab big: double-click its tab title (the word **Board** at
      the top of the tab). Run the same command again and write the numbers
      down. Double-click the tab title again to go back to the layout.
-  4. Run **Triage: Benchmark the 3D View**. The notification shows `3D view: …
+  4. Click **Triage → Diagnostics → Benchmark the 3D View**. The notification shows `3D view: …
      fps`. Write it down.
   5. Find your graphics card's name: **Ctrl+Shift+Esc** (Task Manager) →
      **Performance** → **GPU**; the name is at the top right.
@@ -216,11 +223,13 @@ Triage's own commands start with "Triage:".
   5. **Change the wall:** set **WallThickness** to `3 mm` and press **Enter**.
      **Check:** within about a second the enclosure gets thicker walls (the
      status line under the view says what changed and how long it took).
-  6. **A part that doesn't fit:** run **Triage: Set a Part's Height (3D and Fit
-     Checks)**, type `R1`, Enter, then `60`, Enter. **Check:** a tall block
-     pokes through the lid, the enclosure turns red, and the **Problems** panel
-     (**Ctrl+Shift+M**) says "Enclosure collides with R1". Run the command
-     again with `R1` and `0`: the problem goes away.
+  6. **A part that doesn't fit:** click **Part Height…** in the 3D tab's
+     toolbar, click **R1** in the list, type `60`, Enter. (Or select R1 in the
+     panel's list under the board, and type 60 in its **Height above board**
+     row.) **Check:** a tall block pokes through the lid, the enclosure turns
+     red, and the **Problems** panel (click the problems count at the bottom
+     left) says "Enclosure collides with R1". Do it again with `R1` and `0`: the
+     problem goes away.
   7. **Print files:** click **Export STL** in the 3D tab's toolbar (it may be
      cut off in a narrow tab; double-click the tab title **3D** to make the tab
      big). **Check:** `mechanical\exports\base.stl` and `lid.stl` appear.
@@ -241,14 +250,11 @@ Triage's own commands start with "Triage:".
   scenarios run as tests. CI checks all of it on Windows and Linux; this is the
   run on your laptop that finishes milestone M2 (together with C3, M1).
 - **You need:** a build and the example project (top of this file) from the
-  current build branch, made after P3 was merged: **2026-11-27 or later** (the
-  nightly of 2026-11-27 has it), about 30 minutes, and **the Arduino IDE 2** (or
-  arduino-cli): Triage compiles the firmware with the AVR compiler it installs.
-  - **Install it once:** download the Arduino IDE 2 for Windows from
-    <https://www.arduino.cc/en/software> and install it. Start it once, open
-    **Tools → Board → Boards Manager…**, search **Arduino AVR Boards** and make
-    sure it is **installed** (the IDE usually installs it on first start). Close
-    the IDE. (With arduino-cli instead: `arduino-cli core install arduino:avr`.)
+  current build branch, made **after phase PA was merged** (the Arduino engine
+  is then inside Triage), about 30 minutes. **No Arduino IDE is needed any
+  more:** Triage builds the firmware with its own compiler. (If you installed
+  the Arduino IDE for an earlier build of this check, you can keep it or
+  uninstall it; Triage doesn't use it.)
 - **Steps:**
   1. Open the `smart-fan` copy in Triage and click **Open Engineering Layout**
      (see "Opening the project"). The bottom-right tab is **Sim**. If the
@@ -259,8 +265,11 @@ Triage's own commands start with "Triage:".
      line says "Building the firmware…" for a few seconds, then shows
      `t = … s · 1.00× real time · Whole device` with the time counting up. The
      status bar at the bottom says "Sim: Whole device · … · 1.00× real time".
-     *If it says avr-gcc wasn't found:* the Arduino IDE (above) isn't
-     installed, or its AVR boards aren't; tell Claude the exact message.
+     The very first build after installing Triage takes up to a minute longer:
+     Triage copies its AVR compiler into your Arduino folder
+     (`%LOCALAPPDATA%\Triage\Arduino`). *If the firmware doesn't build:* tell
+     Claude the exact message (the **Arduino** output channel, **View →
+     Output**, shows the compiler's output).
      *If the ratio stays below 1.00×:* tell Claude the number. On CI's Windows
      machine (4 slow cores, no graphics card) the app reached about 0.7×,
      while the same firmware runs at 1.3× outside the app there; your laptop
@@ -315,6 +324,90 @@ Triage's own commands start with "Triage:".
   should stay at 1.00×; with Speed **max** it shows how fast your laptop can
   go: tell Claude that number too); anything slow, odd or confusing in the Sim
   tab; and screenshots.
+- [ ] Done
+
+## C7 · PA exit demo: the Arduino IDE built into Triage, on your board (PA)
+
+- **Why:** ROADMAP PA exit demo: "on the Windows laptop, without the Arduino IDE
+  installed: open Blink from File → Examples, upload it to a real Uno with the
+  Upload button, install a library from the Library Manager, and install the
+  ESP32 boards from the Boards Manager". You have an **Arduino Nano or Mega**
+  (2026-11-27), so this check uses that. It also covers PA-3's owner check (the
+  real board's serial output) and PA-5's (an ESP32 compile). CI checks the same
+  steps with an emulated Uno (no real board there).
+- **You need:** a build from the current build branch made after PA was merged
+  (the nightly, or the App workflow's **triage-Windows**; see the top of this
+  file), your **Nano or Mega** and its **USB cable**, an internet connection (the
+  Library and Boards Managers download from Arduino), about 30 minutes. The
+  Arduino IDE doesn't need to be installed; if it is, close it (two programs
+  can't use the board's port at once).
+  - **A Nano clone** usually has a CH340 USB chip. Windows 10 and 11 install its
+    driver by themselves (through Windows Update) the first time you plug it in.
+    If the board never shows up in step 3, open **Device Manager** (right-click
+    the Start button) and look under **Ports (COM & LPT)**: tell Claude what it
+    lists, or what's under **Other devices** with a yellow mark.
+- **Steps:**
+  1. **Open an example.** Start Triage. Click **File → Examples…** in the menu
+     bar (or the **Triage** menu → **Examples…**). A list opens: type `Blink` in the box at the top (or
+     scroll to **01.Basics**), and click **Blink** (under **01.Basics**). **Check:** a new Triage window opens with the project
+     **Blink** (the Triage icon at the top left of the activity bar shows it), and
+     `Documents\Triage\Blink\` now holds `triage.toml` and `Blink\Blink.ino`.
+  2. **Try it in the simulator first.** In the new window, click the **Triage**
+     icon, then **Open Engineering Layout**. In the **Sim** tab pick **Scope →
+     Code only** and click **Run**. **Check:** under **Virtual I/O**, the **D13**
+     indicator switches between **H** and **L** once a second. Click **Stop**.
+  3. **Pick your board and port.** Plug the board in. At the bottom left of the
+     window, click the board's name in the status bar (it says **Arduino Uno**).
+     **Check:** a list opens; under **Plugged in** your board shows with its
+     port (for example `COM5`). A genuine board shows by name; a clone may show
+     only under the port list in the next step.
+     - **Nano:** click **Arduino Nano**. Triage asks for the **Processor**: pick
+       **ATmega328P** for a recent genuine Nano, or **ATmega328P (Old
+       Bootloader)** for most clones (if unsure, try Old Bootloader first). Then
+       pick the port (`COM…`).
+     - **Mega:** click **Arduino Mega or Mega 2560**, pick **ATmega2560 (Mega
+       2560)** as the Processor, then the port.
+     **Check:** the status bar now shows your board and port, for example
+     `Arduino Nano · COM5`.
+  4. **Upload.** Open `Blink\Blink.ino` (Explorer, the files icon at the top of
+     the left-hand bar). Click the **→** button (**Upload to the Board**) at the
+     top right, above the code (the **✓** beside it is **Build**). **Check:** the
+     status bar shows a spinning icon while it builds and uploads; a message
+     says "Uploaded to … on COM…"; the board's own LED (marked **L**) blinks once
+     a second. *If it fails:* the message says why in plain words; for a Nano,
+     try the other Processor (step 3). Tell Claude the message, and copy the
+     **Arduino** output channel (**View → Output**, pick **Arduino** in the list
+     at the top right of the panel).
+  5. **The Serial Monitor.** Open another example that prints: **File →
+     Examples…** → **01.Basics → AnalogReadSerial**. In its window, pick your
+     board and port again (step 3), click **→** to upload, then click the
+     **plug** button above the code (**Serial Monitor**), or **Triage → Serial
+     Monitor**. In the panel, leave **9600 baud** and click **Connect**.
+     **Check:** a number between 0 and 1023 appears several times a second (the
+     board's unconnected A0 pin, so the numbers drift). Click **Disconnect**.
+  6. **The Library Manager.** Click the **Arduino** icon in the left-hand bar
+     (the books). In **Library Manager**, type `Adafruit SSD1306` in the search
+     box and click **Search** (the first search downloads Arduino's library list,
+     a few seconds). **Check:** **Adafruit SSD1306** is listed; click **Install**.
+     **Check:** a message says it's installed; the project's `triage.toml` now
+     has a line `libraries = ["Adafruit SSD1306@…"]`; **Installed** lists it with
+     **Adafruit GFX Library** and **Adafruit BusIO**, which came with it. Its
+     examples appear in **Examples** (click **Reload** there).
+  7. **The Boards Manager and an ESP32.** In the same Arduino side bar, open
+     **Boards Manager**. Click **More URLs…** and paste
+     `https://espressif.github.io/arduino-esp32/package_esp32_index.json`, press
+     **Enter**. Click **Refresh**. Type `esp32` in the search box and click
+     **Search**. **Check:** **esp32** by Espressif Systems is listed; click
+     **Install** (it downloads Espressif's compilers, a few hundred MB: this can
+     take 5–15 minutes). **Check:** it shows **installed**. Then, in the Blink
+     window, click the board's name in the status bar, pick **ESP32 Dev Module**
+     (and its options, the defaults are fine) and **No port: build only**, and
+     click **✓** (Build). **Check:** the Triage side bar's **Firmware** section
+     says "Built for esp32:esp32:esp32…" with the flash used. (Uploading to an
+     ESP32 and simulating it come in P4.)
+- **Tell Claude:** which steps worked; your board (Nano or Mega, genuine or
+  clone, and which Processor worked); the upload message if one failed;
+  anything slow or confusing; screenshots (**Win+Shift+S**).
 - [ ] Done
 
 ---

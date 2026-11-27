@@ -88,6 +88,10 @@ export interface Project {
   readonly root: string;
   readonly name: string;
   readonly board: string;
+  /** The board for builds and uploads (arduino-cli's FQBN), when triage.toml names one. */
+  readonly fqbn?: string;
+  /** Arduino libraries the firmware uses, `Name@version` (triage.toml `firmware.libraries`). */
+  readonly libraries: readonly string[];
   readonly firmwareDir: string;
   readonly simulationDir: string;
   readonly mechanicalDir: string;
@@ -111,20 +115,58 @@ function str(value: unknown, fallback: string): string {
   return typeof value === 'string' ? value : fallback;
 }
 
+/** What a project's firmware build needs (triage.toml's [firmware]), without the link graph. */
+export interface FirmwareConfig {
+  readonly root: string;
+  readonly name: string;
+  readonly board: string;
+  readonly fqbn?: string;
+  readonly libraries: readonly string[];
+  readonly firmwareDir: string;
+}
+
+export function loadFirmwareConfig(folder: string): FirmwareConfig {
+  const root = path.resolve(folder);
+  const manifest = readToml(path.join(root, 'triage.toml'));
+  if (!manifest['project']) throw new Error(`${root} has no triage.toml`);
+  const firmware = section(manifest, 'firmware');
+  return {
+    root,
+    name: str(section(manifest, 'project')['name'], path.basename(root)),
+    board: str(firmware['board'], 'arduino-uno'),
+    ...(typeof firmware['fqbn'] === 'string' ? { fqbn: firmware['fqbn'] } : {}),
+    libraries: Array.isArray(firmware['libraries'])
+      ? firmware['libraries'].filter((l): l is string => typeof l === 'string')
+      : [],
+    firmwareDir: path.join(root, str(firmware['path'], 'firmware')),
+  };
+}
+
 /** Loads a project's simulation inputs. */
-export function loadProject(root: string): Project {
+export function loadProject(folder: string): Project {
+  const root = path.resolve(folder);
   const manifest = readToml(path.join(root, 'triage.toml'));
   if (!manifest['project']) throw new Error(`${root} has no triage.toml`);
   const firmware = section(manifest, 'firmware');
   const simulation = section(manifest, 'simulation');
   const mechanical = section(manifest, 'mechanical');
   const linksFile = path.join(root, '.triage', 'links.json');
-  if (!existsSync(linksFile)) {
+  const hasElectronics = manifest['electronics'] !== undefined;
+  if (!existsSync(linksFile) && hasElectronics) {
     throw new Error(
       `${linksFile} is missing: open the project in Triage once, and it writes the link graph from the schematic`,
     );
   }
-  const links = JSON.parse(readFileSync(linksFile, 'utf8')) as Links;
+  // A project without electronics (an Arduino example, ROADMAP PA-6) is the board
+  // alone: its code runs on its own, with the virtual I/O panel.
+  const links: Links = existsSync(linksFile)
+    ? (JSON.parse(readFileSync(linksFile, 'utf8')) as Links)
+    : {
+        format: 1,
+        board: { profile: str(firmware['board'], 'arduino-uno'), symbol: '' },
+        components: [],
+        nets: [],
+      };
   if (links.format < 1) {
     throw new Error(
       `${linksFile} is format ${links.format}; the simulation needs format 1 (open the project in Triage to update it)`,
@@ -135,6 +177,10 @@ export function loadProject(root: string): Project {
     root,
     name: str(section(manifest, 'project')['name'], path.basename(root)),
     board: str(firmware['board'], links.board.profile),
+    ...(typeof firmware['fqbn'] === 'string' ? { fqbn: firmware['fqbn'] } : {}),
+    libraries: Array.isArray(firmware['libraries'])
+      ? firmware['libraries'].filter((l): l is string => typeof l === 'string')
+      : [],
     firmwareDir: path.join(root, str(firmware['path'], 'firmware')),
     simulationDir,
     mechanicalDir: path.join(root, str(mechanical['path'], 'mechanical')),
@@ -299,6 +345,26 @@ export function deviceSpec(
       pins,
       regulator,
       vin,
+      quiescent_a: 0.045,
+    };
+  }
+  if (!board && links.components.length === 0) {
+    // A project without electronics (an Arduino example, ROADMAP PA-6): the board on
+    // its own, each pin on a net of its own name, so the Code only scope's virtual I/O
+    // panel shows the pins (Blink's D13 blinking).
+    board = {
+      reference: 'A1',
+      profile: profile.id,
+      pins: Object.keys(profile.pins)
+        .filter((name) => !profile.pins[name]?.adcOnly)
+        .map((name) => ({
+          name,
+          net: name,
+          analog: name.startsWith('A'),
+          pwm: profile.pwm.includes(name),
+        })),
+      regulator: { net: '+5V', volts: 5 },
+      vin: null,
       quiescent_a: 0.045,
     };
   }

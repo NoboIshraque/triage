@@ -13,17 +13,9 @@ import { ITriageEdaEngineService } from '../../common/eda/edaEngine.js';
 import { TRIAGE_CATEGORY } from '../../common/triage.js';
 import { TriageViewEditor } from '../triageViewEditor.js';
 import { EdaDocumentView, EdaViewKind } from './edaDocumentView.js';
+import { EDA_COMMANDS } from './edaCommandIds.js';
 
-export const EDA_COMMANDS = {
-	benchmark: 'triage.eda.benchmarkView',
-	reload: 'triage.eda.reload',
-	renameNet: 'triage.eda.renameNet',
-	edit: 'triage.eda.edit',
-	save: 'triage.eda.save',
-	openInKicad: 'triage.eda.openInKicad',
-	select: 'triage.eda.selectReferences',
-	restartEngine: 'triage.eda.restartEngine',
-} as const;
+export { EDA_COMMANDS };
 
 /** The engine views in visible tabs, the active one first. */
 export function edaViews(editorService: IEditorService, kind?: EdaViewKind): EdaDocumentView[] {
@@ -78,7 +70,7 @@ export function registerEdaCommands(): void {
 				accessor.get(INotificationService).info(localize('triage.eda.noSchematic', "Open the Schematic tab first."));
 				return;
 			}
-			from ??= await quickInput.input({ prompt: localize('triage.eda.renameFrom', "Net to rename (its label text)") });
+			from ??= await quickInput.input({ prompt: localize('triage.eda.renameFrom', "Net to rename (its label text)"), value: view.selectedNet() });
 			if (!from) {
 				return;
 			}

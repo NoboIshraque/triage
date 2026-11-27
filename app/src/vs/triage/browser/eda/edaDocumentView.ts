@@ -10,6 +10,10 @@
  *  Home fits the document. Every edit is an engine commit (ROADMAP P1-6).
  *--------------------------------------------------------------------------------------------*/
 
+import { IAction, Separator, toAction } from '../../../base/common/actions.js';
+import { ICommandService } from '../../../platform/commands/common/commands.js';
+import { IContextMenuService } from '../../../platform/contextview/browser/contextView.js';
+import { EDA_COMMANDS } from './edaCommandIds.js';
 import { $, addDisposableListener, append, clearNode, EventType, getWindow } from '../../../base/browser/dom.js';
 import { Emitter } from '../../../base/common/event.js';
 import { Disposable, DisposableStore, toDisposable } from '../../../base/common/lifecycle.js';
@@ -86,6 +90,8 @@ export class EdaDocumentView extends Disposable {
 		@IQuickInputService private readonly quickInputService: IQuickInputService,
 		@IFileService private readonly fileService: IFileService,
 		@ILogService private readonly logService: ILogService,
+		@IContextMenuService private readonly contextMenuService: IContextMenuService,
+		@ICommandService private readonly commandService: ICommandService,
 	) {
 		super();
 		this.element = $('.triage-eda-view');
@@ -251,17 +257,22 @@ export class EdaDocumentView extends Disposable {
 				void this.loadDisplayList(this.sheet).then(() => this.fit(), error => this.reportError(error));
 			}));
 		}
-		const actions: [string, () => void][] = [
-			[localize('triage.eda.fit', "Fit"), () => this.fit()],
-			[localize('triage.eda.undo', "Undo"), () => void this.undoRedo('undo')],
-			[localize('triage.eda.redo', "Redo"), () => void this.undoRedo('redo')],
-			[localize('triage.eda.save', "Save"), () => void this.save()],
+		const actions: [string, () => void, string][] = [
+			[localize('triage.eda.fit', "Fit"), () => this.fit(), 'fit'],
+			[localize('triage.eda.undo', "Undo"), () => void this.undoRedo('undo'), 'undo'],
+			[localize('triage.eda.redo', "Redo"), () => void this.undoRedo('redo'), 'redo'],
+			[localize('triage.eda.save', "Save"), () => void this.save(), 'save'],
 		];
 		if (info.kind === DocumentKind.DOCUMENT_KIND_BOARD) {
-			actions.push([localize('triage.eda.layersButton', "Layers"), () => this.layerPanel.classList.toggle('open')]);
+			actions.push([localize('triage.eda.layersButton', "Layers"), () => this.layerPanel.classList.toggle('open'), 'layers']);
+		} else {
+			// ROADMAP PA-1: also on a net's right-click menu.
+			actions.push([localize('triage.eda.renameNetButton', "Rename Net…"), () => void this.commandService.executeCommand(EDA_COMMANDS.renameNet), 'rename-net']);
 		}
-		for (const [label, run] of actions) {
+		actions.push([localize('triage.eda.kicadButton', "Edit in KiCad"), () => void this.commandService.executeCommand(EDA_COMMANDS.openInKicad), 'kicad']);
+		for (const [label, run, action] of actions) {
 			const button = append(this.toolbar, $('button.triage-eda-button', undefined, label));
+			button.dataset['action'] = action;
 			this.docDisposables.add(addDisposableListener(button, EventType.CLICK, run));
 		}
 		if (info.modified) {
@@ -532,6 +543,9 @@ export class EdaDocumentView extends Disposable {
 				this.requestFrame();
 			} else if (current.button === 0 && !current.moved) {
 				void this.pick(wx, wy, e.shiftKey);
+			} else if (current.button === 2 && !current.moved) {
+				// A right-click (not a right-drag, which pans): the menu for what's under it.
+				void this.showContextMenu(e.clientX, e.clientY, wx, wy);
 			}
 		}));
 		this._register(addDisposableListener(target, EventType.CONTEXT_MENU, e => e.preventDefault()));
@@ -588,6 +602,47 @@ export class EdaDocumentView extends Disposable {
 	}
 
 	// ---- Selection and cross-probing -------------------------------------------------------
+
+	/** The net of the selection (a pin's, a wire's or a label's), if any. */
+	selectedNet(): string | undefined {
+		return this.selection.map(item => item.net as string | undefined).find(Boolean);
+	}
+
+	/** The right-click menu: what can be done with the net or part under the cursor, then the tab's actions. */
+	private async showContextMenu(clientX: number, clientY: number, x: number, y: number): Promise<void> {
+		let net: string | undefined;
+		let reference: string | undefined;
+		if (this.document) {
+			try {
+				const hit = await this.engine.call('hitTest', { document: this.document, x, y, tolerance: 5 / this.camera.scale });
+				const items = hit.response.hitTest.items as Message[];
+				net = items.map(item => item.net as string | undefined).find(Boolean);
+				reference = items.map(item => item.reference as string | undefined).find(Boolean);
+			} catch (error) {
+				this.reportError(error);
+			}
+		}
+		const actions: IAction[] = [];
+		if (net && this.kind === 'schematic') {
+			actions.push(toAction({ id: 'triage.eda.menu.renameNet', label: localize('triage.eda.menuRenameNet', "Rename Net “{0}”…", net), run: () => this.commandService.executeCommand(EDA_COMMANDS.renameNet, net) }));
+		}
+		if (reference) {
+			actions.push(toAction({ id: 'triage.eda.menu.select', label: localize('triage.eda.menuSelect', "Select {0} in Schematic and Board", reference), run: () => this.commandService.executeCommand(EDA_COMMANDS.select, [reference], net) }));
+		}
+		if (actions.length > 0) {
+			actions.push(new Separator());
+		}
+		actions.push(
+			toAction({ id: 'triage.eda.menu.fit', label: localize('triage.eda.fit', "Fit"), run: () => this.fit() }),
+			toAction({ id: 'triage.eda.menu.undo', label: localize('triage.eda.undo', "Undo"), run: () => this.undoRedo('undo') }),
+			toAction({ id: 'triage.eda.menu.redo', label: localize('triage.eda.redo', "Redo"), run: () => this.undoRedo('redo') }),
+			toAction({ id: 'triage.eda.menu.save', label: localize('triage.eda.save', "Save"), run: () => this.save() }),
+			new Separator(),
+			toAction({ id: 'triage.eda.menu.kicad', label: localize('triage.eda.menuKicad', "Edit in KiCad (Fallback Window)"), run: () => this.commandService.executeCommand(EDA_COMMANDS.openInKicad) }),
+		);
+		this.element.dataset['contextNet'] = net ?? '';
+		this.contextMenuService.showContextMenu({ getAnchor: () => ({ x: clientX, y: clientY }), getActions: () => actions });
+	}
 
 	private async pick(x: number, y: number, add: boolean): Promise<void> {
 		if (!this.document) {

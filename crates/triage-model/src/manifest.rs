@@ -63,6 +63,11 @@ pub struct FirmwareSection {
     pub path: Option<String>,
     /// Board profile id, e.g. `arduino-uno`.
     pub board: Option<String>,
+    /// The board for builds and uploads, as arduino-cli names it
+    /// (`arduino:avr:nano:cpu=atmega328old`). Default: the board profile's.
+    pub fqbn: Option<String>,
+    /// Arduino libraries the firmware uses, `Name@version` (ROADMAP PA-4).
+    pub libraries: Option<Vec<String>>,
     /// Build system.
     pub build: Option<BuildSystem>,
 }
@@ -250,6 +255,23 @@ mod tests {
             ["enclosure.FCStd"]
         );
         assert!(manifest.simulation.is_some());
+    }
+
+    #[test]
+    fn firmware_board_and_libraries_for_arduino_cli() {
+        let manifest = Manifest::parse(&format!(
+            "{MINIMAL}[firmware]\npath = \"Blink\"\nboard = \"arduino-nano\"\nfqbn = \"arduino:avr:nano:cpu=atmega328old\"\nlibraries = [\"Adafruit SSD1306@2.5.17\"]\n"
+        ))
+        .expect("valid");
+        let firmware = manifest.firmware.expect("firmware");
+        assert_eq!(
+            firmware.fqbn.as_deref(),
+            Some("arduino:avr:nano:cpu=atmega328old")
+        );
+        assert_eq!(
+            firmware.libraries,
+            Some(vec!["Adafruit SSD1306@2.5.17".to_owned()])
+        );
     }
 
     #[test]

@@ -23,6 +23,7 @@ import { describeEngineState, HELLO_ENGINE_COMMANDS, IHelloEngineBenchmark, ITri
 import { ITriageDomain, ITriageProjectService, TriageProjectState } from '../common/projectModel.js';
 import { ENGINEERING_LAYOUT_COMMAND_ID, ENGINEERING_WINDOWS_COMMAND_ID, TRIAGE_WALKTHROUGH_ID } from '../common/triage.js';
 import { URI } from '../../base/common/uri.js';
+import { ARDUINO_COMMANDS, ITriageArduinoService } from '../common/arduino/arduino.js';
 import { joinPath } from '../../base/common/resources.js';
 
 /** What each domain holds, for folders that are not Triage projects yet. */
@@ -48,6 +49,7 @@ export class TriageOverviewView extends ViewPane {
 		@ICommandService private readonly commandService: ICommandService,
 		@ITriageHelloEngineService private readonly helloEngine: ITriageHelloEngineService,
 		@ITriageProjectService private readonly projectService: ITriageProjectService,
+		@ITriageArduinoService private readonly arduino: ITriageArduinoService,
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
 	}
@@ -76,6 +78,45 @@ export class TriageOverviewView extends ViewPane {
 		const walkthrough = this._register(new Button(root, { ...defaultButtonStyles, secondary: true, title: true }));
 		walkthrough.label = localize('triage.overview.walkthrough', "Get Started with Triage");
 		this._register(walkthrough.onDidClick(() => this.commandService.executeCommand('workbench.action.openWalkthrough', TRIAGE_WALKTHROUGH_ID, false)));
+
+		// The Arduino IDE built in (ROADMAP PA), with buttons (PA-1).
+		append(root, $('h3', undefined, localize('triage.overview.firmware', "Firmware")));
+		const firmware = append(root, $('.triage-overview-buttons'));
+		const firmwareButtons: [string, string, boolean][] = [
+			[localize('triage.overview.build', "Build"), ARDUINO_COMMANDS.build, false],
+			[localize('triage.overview.upload', "Upload"), ARDUINO_COMMANDS.upload, false],
+			[localize('triage.overview.monitor', "Serial Monitor"), ARDUINO_COMMANDS.serialMonitor, true],
+			[localize('triage.overview.board', "Board and Port…"), ARDUINO_COMMANDS.selectBoard, true],
+			[localize('triage.overview.libraries', "Library Manager"), ARDUINO_COMMANDS.libraryManager, true],
+			[localize('triage.overview.boards', "Boards Manager"), ARDUINO_COMMANDS.boardsManager, true],
+			[localize('triage.overview.examples', "Examples…"), ARDUINO_COMMANDS.examples, true],
+			[localize('triage.overview.newProject', "New Project…"), ARDUINO_COMMANDS.newProject, true],
+		];
+		for (const [label, command, secondary] of firmwareButtons) {
+			const button = this._register(new Button(firmware, { ...defaultButtonStyles, secondary, title: true }));
+			button.label = label;
+			button.element.dataset['command'] = command;
+			this._register(button.onDidClick(() => this.commandService.executeCommand(command)));
+		}
+		const buildStatus = append(root, $('p.triage-note.triage-firmware-status'));
+		const renderBuild = () => {
+			const task = this.arduino.task;
+			const last = this.arduino.lastBuild;
+			buildStatus.dataset['state'] = task.kind === 'busy' ? 'busy' : task.kind === 'error' ? 'error' : last ? 'built' : 'idle';
+			if (task.kind === 'busy') {
+				buildStatus.textContent = task.what;
+			} else if (task.kind === 'error') {
+				buildStatus.textContent = task.message;
+			} else if (last) {
+				buildStatus.dataset['flash'] = String(last.flash);
+				buildStatus.textContent = localize('triage.overview.lastBuild', "Built for {0}: {1} of {2} bytes of flash, {3} bytes of RAM. Libraries: {4}.", last.fqbn, last.flash, last.maxFlash || '?', last.ram, last.libraries.join(', ') || '—');
+			} else {
+				buildStatus.textContent = localize('triage.overview.noBuild', "Build compiles the firmware with Triage's own compiler (no Arduino IDE needed); Upload puts it on a board plugged in over USB.");
+			}
+		};
+		renderBuild();
+		this._register(this.arduino.onDidChangeTask(renderBuild));
+		this._register(this.arduino.onDidBuild(renderBuild));
 
 		// The hello engine (ROADMAP P0-4) starts when this view first shows.
 		append(root, $('h3', undefined, localize('triage.overview.engines', "Engines")));

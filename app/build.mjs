@@ -263,6 +263,28 @@ function buildEngines({ arch }) {
     console.log(`Copied ${path.basename(file)} into ${path.relative(process.cwd(), target)}`);
   }
   buildSimulation(target);
+  // Triage's Arduino engine (ROADMAP PA-2): arduino-cli, the AVR platform and its
+  // compiler, built from source by engines/arduino/build.mjs (Linux) or taken from the
+  // Arduino workflow (.github/actions/arduino-engine). The sim package finds it at
+  // engines/arduino beside engines/sim (sim/src/arduino.ts).
+  const arduinoStage = path.join(
+    repoRoot,
+    'engines',
+    'arduino',
+    'build',
+    isWindows ? 'windows' : 'linux',
+    'stage',
+  );
+  const arduinoTarget = path.join(target, 'arduino');
+  rmSync(arduinoTarget, { recursive: true, force: true });
+  if (existsSync(path.join(arduinoStage, 'triage-arduino.json'))) {
+    cpSync(arduinoStage, arduinoTarget, { recursive: true });
+    console.log(`Copied the Arduino engine into ${path.relative(process.cwd(), arduinoTarget)}`);
+  } else {
+    console.log(
+      `No Arduino engine in ${path.relative(process.cwd(), arduinoStage)}: Build and Upload will say so.`,
+    );
+  }
   // The EDA engine (KiCad's engine, ROADMAP P1-2), staged by engines/eda/build.mjs
   // or downloaded from the EDA workflow: programs, kifaces and libraries in one folder.
   const edaStage = path.join(
@@ -373,26 +395,6 @@ function buildSimulation(target) {
       path.join(simTarget, 'node_modules', dependency),
       { recursive: true, dereference: true },
     );
-  }
-  // The Arduino AVR core (engines/arduino-avr, when fetched): the app then needs
-  // only avr-gcc to build Arduino firmware (sim/src/firmware.ts looks here too).
-  const core = path.join(repoRoot, 'engines', 'arduino-avr', 'upstream');
-  if (existsSync(path.join(core, 'cores', 'arduino', 'Arduino.h'))) {
-    for (const part of [
-      'cores',
-      'variants',
-      'libraries',
-      'platform.txt',
-      'boards.txt',
-      'LICENSE.txt',
-      'README.md',
-    ]) {
-      if (existsSync(path.join(core, part))) {
-        cpSync(path.join(core, part), path.join(simTarget, 'arduino-avr', part), {
-          recursive: true,
-        });
-      }
-    }
   }
   const addons = path.join(repoRoot, 'build', 'native', 'addons');
   for (const name of readdirSync(addons).filter(
