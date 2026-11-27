@@ -70,7 +70,7 @@ export function registerEdaCommands(): void {
 				accessor.get(INotificationService).info(localize('triage.eda.noSchematic', "Open the Schematic tab first."));
 				return;
 			}
-			from ??= await quickInput.input({ prompt: localize('triage.eda.renameFrom', "Net to rename (its label text)") });
+			from ??= await quickInput.input({ prompt: localize('triage.eda.renameFrom', "Net to rename (its label text)"), value: view.selectedNet() });
 			if (!from) {
 				return;
 			}

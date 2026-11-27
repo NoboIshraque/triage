@@ -184,6 +184,9 @@ export interface ITriageArduinoService {
 	readonly onDidOutput: Event<IArduinoOutput>;
 	readonly onDidMonitor: Event<{ readonly text: string } | { readonly closed: string }>;
 	readonly onDidChangeTask: Event<ArduinoTask>;
+	readonly onDidBuild: Event<IArduinoBuild>;
+	/** The last successful build. */
+	readonly lastBuild: IArduinoBuild | undefined;
 	/** The board builds and uploads are for (the project's, or the picked one). */
 	readonly fqbn: string | undefined;
 	readonly boardName: string | undefined;

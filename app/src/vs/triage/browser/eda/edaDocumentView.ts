@@ -267,7 +267,7 @@ export class EdaDocumentView extends Disposable {
 			actions.push([localize('triage.eda.layersButton', "Layers"), () => this.layerPanel.classList.toggle('open'), 'layers']);
 		} else {
 			// ROADMAP PA-1: also on a net's right-click menu.
-			actions.push([localize('triage.eda.renameNetButton', "Rename Net…"), () => void this.commandService.executeCommand(EDA_COMMANDS.renameNet, this.selectedNet()), 'rename-net']);
+			actions.push([localize('triage.eda.renameNetButton', "Rename Net…"), () => void this.commandService.executeCommand(EDA_COMMANDS.renameNet), 'rename-net']);
 		}
 		actions.push([localize('triage.eda.kicadButton', "Edit in KiCad"), () => void this.commandService.executeCommand(EDA_COMMANDS.openInKicad), 'kicad']);
 		for (const [label, run, action] of actions) {
@@ -604,7 +604,7 @@ export class EdaDocumentView extends Disposable {
 	// ---- Selection and cross-probing -------------------------------------------------------
 
 	/** The net of the selection (a pin's, a wire's or a label's), if any. */
-	private selectedNet(): string | undefined {
+	selectedNet(): string | undefined {
 		return this.selection.map(item => item.net as string | undefined).find(Boolean);
 	}
 

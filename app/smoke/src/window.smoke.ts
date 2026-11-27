@@ -44,27 +44,45 @@ function namingVSCode(texts: readonly string[]): string[] {
 const ENGINEERING_TABS = ['code', 'schematic', 'board', '3d', 'sim'];
 
 /**
- * Runs a command through the command palette, as upstream's smoke tests do. Like
- * their openQuickAccessWithRetry (test/automation/src/quickaccess.ts), it retries
- * opening the palette: "Other parts of code might steal focus away from quickinput".
+ * Clicks through the menu bar (ROADMAP PA-1: everything with the mouse; this test
+ * never opens the command palette). `path` is a top menu, any submenus, and the
+ * item. On a narrow screen VS Code folds menus into "More", which this follows.
  */
-async function runCommand(window: Page, title: string): Promise<void> {
-  const input = window.locator('.quick-input-widget .quick-input-box input');
-  for (let attempt = 1; ; attempt++) {
-    await window.keyboard.press('F1');
-    try {
-      await input.waitFor({ state: 'visible', timeout: 10_000 });
-      break;
-    } catch (error) {
-      if (attempt === 5) throw error;
-    }
+async function clickMenu(window: Page, path: readonly string[]): Promise<void> {
+  const [top, ...rest] = path;
+  const button = window.locator(`.menubar .menubar-menu-button[aria-label="${top}"]`);
+  const items = [...rest];
+  if (await button.isVisible()) {
+    await button.click();
+  } else {
+    await window.locator('.menubar .menubar-menu-button[aria-label="More"]').click();
+    items.unshift(top ?? '');
   }
-  await input.fill(`>${title}`);
+  for (const [i, label] of items.entries()) {
+    const item = window
+      .locator('.monaco-menu .action-menu-item')
+      .filter({ has: window.locator(`.action-label[aria-label="${label}"]`) })
+      .last();
+    await item.waitFor({ state: 'visible', timeout: 30_000 });
+    if (i < items.length - 1) await item.hover();
+    else await item.click();
+  }
+}
+
+/** A quick input's prompt (a value to type: a net's name, a height), then the value. */
+async function answerPrompt(window: Page, prompt: string, value: string): Promise<void> {
   await window
-    .locator('.quick-input-widget .monaco-list-row', { hasText: title })
-    .first()
+    .locator('.quick-input-widget .quick-input-message', { hasText: prompt })
     .waitFor({ state: 'visible', timeout: 30_000 });
+  await window.locator('.quick-input-widget .quick-input-box input').fill(value);
   await window.keyboard.press('Enter');
+}
+
+/** Clicks an item of an open quick pick list. */
+async function pickItem(window: Page, label: string): Promise<void> {
+  const row = window.locator('.quick-input-widget .monaco-list-row', { hasText: label }).first();
+  await row.waitFor({ state: 'visible', timeout: 30_000 });
+  await row.click();
 }
 
 /** Polls `condition` every 25 ms; resolves with the milliseconds it took. */
@@ -104,6 +122,12 @@ describe('packaged Triage app', () => {
   };
   let electronApp: ElectronApplication | undefined;
   let window: Page;
+
+  // File → New Project and File → Examples create projects here (ROADMAP PA-6).
+  const projectsFolder = path.join(profile, 'projects');
+  const userSettings = path.join(profile, 'user-data', 'User', 'settings.json');
+  mkdirSync(path.dirname(userSettings), { recursive: true });
+  writeFileSync(userSettings, JSON.stringify({ 'triage.projectsFolder': projectsFolder }, null, 2));
 
   beforeAll(async () => {
     mkdirSync(outputDir, { recursive: true });
@@ -286,8 +310,10 @@ describe('packaged Triage app', () => {
     await window.screenshot({ path: shot('project') });
   });
 
-  it('lays out Code, Schematic, Board, 3D and Sim with one command', async () => {
-    await runCommand(window, 'Triage: Open Engineering Layout');
+  it('lays out Code, Schematic, Board, 3D and Sim with one click', async () => {
+    await window
+      .locator('.triage-overview .monaco-button', { hasText: 'Open Engineering Layout' })
+      .click();
     for (const kind of ENGINEERING_TABS) {
       await window
         .locator(`.tabs-container div.tab[data-resource-name="${kind}"]`)
@@ -386,18 +412,12 @@ describe('packaged Triage app', () => {
       const updates = async () => Number((await cadView().getAttribute('data-board-updates')) ?? 0);
       const setHeight = async (reference: string, height: string) => {
         const before = await updates();
-        await runCommand(window, "Triage: Set a Part's Height (3D and Fit Checks)");
-        const input = window.locator('.quick-input-widget .quick-input-box input');
-        const prompt = (text: string) =>
-          window
-            .locator('.quick-input-widget .quick-input-message', { hasText: text })
-            .waitFor({ state: 'visible', timeout: 30_000 });
-        await prompt('Part reference');
-        await input.fill(reference);
-        await window.keyboard.press('Enter');
-        await prompt(`Height of ${reference}`);
-        await input.fill(height);
-        await window.keyboard.press('Enter');
+        // The 3D tab's Part Height… button: pick the part, type its height (PA-1).
+        await cadView()
+          .locator('.triage-cad-button', { hasText: 'Part Height' })
+          .dispatchEvent('click');
+        await pickItem(window, reference);
+        await answerPrompt(window, `Height of ${reference}`, height);
         const started = Date.now();
         await expect.poll(updates, { timeout: 60_000, interval: 50 }).toBeGreaterThan(before);
         return Date.now() - started;
@@ -409,7 +429,8 @@ describe('packaged Triage app', () => {
       console.log(JSON.stringify({ boardEditTo3dMs: editToViewMs }));
       await expect.poll(problems, { timeout: 30_000 }).toBeGreaterThan(0);
       expect(await cadView().getAttribute('data-problem-objects')).toContain('R1');
-      await runCommand(window, 'View: Focus Problems (Errors, Warnings, Infos)');
+      // The Problems count in the status bar opens the Problems panel.
+      await window.locator('.part.statusbar [id="status.problems"]').click();
       await window
         .locator('.markers-panel .marker-message', { hasText: 'R1' })
         .first()
@@ -436,7 +457,7 @@ describe('packaged Triage app', () => {
   });
 
   edaIt('pans and zooms the schematic and board views smoothly', async () => {
-    await runCommand(window, 'Triage: Benchmark Schematic and Board Views');
+    await clickMenu(window, ['Triage', 'Diagnostics', 'Benchmark Schematic and Board Views']);
     const report: Record<string, number> = {};
     for (const kind of ['schematic', 'board']) {
       await expect
@@ -455,13 +476,8 @@ describe('packaged Triage app', () => {
   });
 
   edaIt('cross-probes a part between the schematic and the board', async () => {
-    await runCommand(window, 'Triage: Select Part in Schematic and Board');
-    // Wait for the command's own prompt: typing earlier lands in the closing palette.
-    await window
-      .locator('.quick-input-widget .quick-input-message', { hasText: 'References to select' })
-      .waitFor({ state: 'visible', timeout: 30_000 });
-    await window.locator('.quick-input-widget .quick-input-box input').fill('Q1');
-    await window.keyboard.press('Enter');
+    await clickMenu(window, ['Triage', 'Electronics', 'Select Parts…']);
+    await answerPrompt(window, 'References to select', 'Q1');
     for (const kind of ['schematic', 'board']) {
       await expect
         .poll(() => edaView(kind).getAttribute('data-selection'), { timeout: 30_000 })
@@ -497,18 +513,13 @@ describe('packaged Triage app', () => {
     await expect
       .poll(() => (existsSync(header) ? readFileSync(header, 'utf8') : ''), { timeout: 60_000 })
       .toContain('FAN_PWM');
-    await runCommand(window, 'Triage: Rename Net in the Schematic');
-    const input = window.locator('.quick-input-widget .quick-input-box input');
-    const prompt = (text: string) =>
-      window
-        .locator('.quick-input-widget .quick-input-message', { hasText: text })
-        .waitFor({ state: 'visible', timeout: 30_000 });
-    await prompt('Net to rename');
-    await input.fill('FAN_PWM');
-    await window.keyboard.press('Enter');
-    await prompt('New name for FAN_PWM');
-    await input.fill('MOTOR_SPEED');
-    await window.keyboard.press('Enter');
+    // The Schematic tab's Rename Net… button (PA-1); a net's right-click menu has it too.
+    const renameButton = edaView('schematic').locator(
+      '.triage-eda-button[data-action="rename-net"]',
+    );
+    await renameButton.dispatchEvent('click');
+    await answerPrompt(window, 'Net to rename', 'FAN_PWM');
+    await answerPrompt(window, 'New name for FAN_PWM', 'MOTOR_SPEED');
     const ms = await timeUntil(() => readFileSync(header, 'utf8').includes('MOTOR_SPEED'), 10_000);
     console.log(JSON.stringify({ renameToHeaderMs: ms }));
     writeFileSync(
@@ -523,13 +534,9 @@ describe('packaged Triage app', () => {
     kicadCli(['sch', 'export', 'netlist', '--output', netlist, schematic]);
     expect(readFileSync(netlist, 'utf8')).toContain('MOTOR_SPEED');
     // Rename it back: the simulation checks below build the firmware, which uses FAN_PWM.
-    await runCommand(window, 'Triage: Rename Net in the Schematic');
-    await prompt('Net to rename');
-    await input.fill('MOTOR_SPEED');
-    await window.keyboard.press('Enter');
-    await prompt('New name for MOTOR_SPEED');
-    await input.fill('FAN_PWM');
-    await window.keyboard.press('Enter');
+    await renameButton.dispatchEvent('click');
+    await answerPrompt(window, 'Net to rename', 'MOTOR_SPEED');
+    await answerPrompt(window, 'New name for MOTOR_SPEED', 'FAN_PWM');
     await expect.poll(() => readFileSync(header, 'utf8'), { timeout: 10_000 }).toContain('FAN_PWM');
   });
 
@@ -549,7 +556,7 @@ describe('packaged Triage app', () => {
 
   edaIt('restarts the KiCad engine when it dies and reopens the documents', async () => {
     const status = () => window.locator('[id="triage.edaEngine"]').textContent();
-    await runCommand(window, 'Triage: Kill the KiCad Engine (Restart Test)');
+    await clickMenu(window, ['Triage', 'Diagnostics', 'Kill the KiCad Engine (Restart Test)']);
     await expect.poll(status, { timeout: 30_000 }).toContain('reconnecting');
     await expect.poll(status, { timeout: 120_000 }).toContain('connected');
     for (const kind of ['schematic', 'board']) {
@@ -574,8 +581,23 @@ describe('packaged Triage app', () => {
   const simIt = simShipped ? it : it.skip;
   const simView = () => window.locator('.triage-sim-view');
   const simT = async () => Number((await simView().getAttribute('data-t')) ?? 0);
-  /** Sets a range input in the Sim tab and lets it fire its input event. */
-  const setSlider = (control: string, value: number) =>
+  /**
+   * Moves a slider in the Sim tab with the mouse (PA-1): a click at the place on the
+   * track for `value` (Chromium puts the thumb's centre there).
+   */
+  const setSlider = async (control: string, value: number) => {
+    const input = simView().locator(`input[data-control="${control}"]`);
+    await input.scrollIntoViewIfNeeded();
+    const box = await input.boundingBox();
+    if (!box) throw new Error(`no slider for ${control}`);
+    const min = Number(await input.getAttribute('min'));
+    const max = Number(await input.getAttribute('max'));
+    const thumb = 16;
+    const x = box.x + thumb / 2 + ((value - min) / (max - min)) * (box.width - thumb);
+    await window.mouse.click(x, box.y + box.height / 2);
+  };
+  /** Sets a slider to an exact value (checks that need a precise input, not the walk). */
+  const setSliderExact = (control: string, value: number) =>
     window.evaluate(`(() => {
       const input = document.querySelector('.triage-sim-view input[data-control="${control}"]');
       if (!input) throw new Error('no slider for ${control}');
@@ -604,9 +626,17 @@ describe('packaged Triage app', () => {
   // P3-4 and P3-5 (PLAN §3 step 6): Run builds the firmware, the emulated Uno reads the
   // thermistor, drives the fan, shows it on the OLED; the rotor turns in the 3D tab.
   simIt(
-    'runs the Smart Fan in the Sim tab and turns the rotor in 3D (ROADMAP P3-4, P3-5)',
+    'builds and runs the Smart Fan with clicks only and turns the rotor in 3D (ROADMAP PA-1, P3-4, P3-5)',
     async () => {
-      await runCommand(window, 'Triage: Run the Simulation');
+      // PLAN §3 with the mouse (PA-1): Build, then Run, in the Sim tab.
+      await simView().locator('.triage-sim-button[data-action="build"]').click();
+      const firmwareStatus = window.locator('.triage-firmware-status');
+      await expect
+        .poll(() => firmwareStatus.getAttribute('data-state'), { timeout: 180_000 })
+        .toMatch(/^(built|error)$/);
+      expect(await firmwareStatus.textContent()).toContain('arduino:avr:uno');
+      expect(Number(await firmwareStatus.getAttribute('data-flash'))).toBeGreaterThan(5000);
+      await simView().locator('.triage-sim-button[data-action="run"]').click();
       await expect
         .poll(() => simView().getAttribute('data-loaded'), { timeout: 60_000 })
         .toBe('true');
@@ -619,7 +649,7 @@ describe('packaged Triage app', () => {
       const oled = simView().locator('.triage-sim-oled');
       await expect
         .poll(() => oled.getAttribute('data-text'), { timeout: 60_000 })
-        .toMatch(/35\.\dC 8\d%/);
+        .toMatch(/3[45]\.\dC (79|8\d)%/);
       expect(await simView().locator('.triage-sim-serial').textContent()).toContain('duty=');
       const ratio = Number(await simView().getAttribute('data-ratio'));
       console.log(JSON.stringify({ simulation: 'whole device', realTimeRatio: ratio }));
@@ -642,6 +672,14 @@ describe('packaged Triage app', () => {
       await window.screenshot({ path: shot('sim-whole-device') });
       await setSlider('env.room_temperature_c', 40);
       await expect.poll(() => oled.getAttribute('data-text'), { timeout: 60_000 }).toContain('HOT');
+      // The Mode button (SW1), pressed with the mouse: Auto → Max.
+      await simView().locator('button[data-control="SW1.pressed"]').click();
+      await expect.poll(() => oled.getAttribute('data-text'), { timeout: 30_000 }).toContain('MAX');
+      await simView().locator('button[data-control="SW1.pressed"]').click();
+      await simView().locator('button[data-control="SW1.pressed"]').click();
+      await expect
+        .poll(() => oled.getAttribute('data-text'), { timeout: 30_000 })
+        .toContain('AUTO');
     },
   );
 
@@ -654,7 +692,7 @@ describe('packaged Triage app', () => {
       expect(
         await simView().locator('.triage-sim-section h3', { hasText: 'Virtual I/O' }).count(),
       ).toBe(1);
-      await setSlider('net:/TEMP_SENSE.value', 3.03);
+      await setSliderExact('net:/TEMP_SENSE.value', 3.03);
       await expect
         .poll(() => simView().locator('.triage-sim-oled').getAttribute('data-text'), {
           timeout: 60_000,
@@ -662,7 +700,7 @@ describe('packaged Triage app', () => {
         .toMatch(/3[45]\.\dC (79|8\d)%/);
       await window.screenshot({ path: shot('sim-code-only') });
       await runScope('Mechanism only');
-      await setSlider('J1.torque.value', 2);
+      await setSliderExact('J1.torque.value', 2);
       await runScope('Power stage only');
     } finally {
       await stopSim();
@@ -686,6 +724,156 @@ describe('packaged Triage app', () => {
     await window.screenshot({ path: shot('sim-scenarios') });
   });
 
+  // PLAN §3's last step with a click (PA-1): the enclosure's print files.
+  cadIt('exports the enclosure for printing from the 3D toolbar (ROADMAP PA-1)', async () => {
+    const exports = path.join(project, 'mechanical', 'exports');
+    rmSync(exports, { recursive: true, force: true });
+    await cadView().locator('.triage-cad-button', { hasText: 'Export STL' }).dispatchEvent('click');
+    await expect
+      .poll(
+        () =>
+          existsSync(path.join(exports, 'base.stl')) && existsSync(path.join(exports, 'lid.stl')),
+        {
+          timeout: 60_000,
+        },
+      )
+      .toBe(true);
+  });
+
+  // ROADMAP PA-3: the board and port picker in the status bar, and the Serial Monitor
+  // for a real board (CI has none plugged in: it says so).
+  it('picks the board and port in the status bar and opens the Serial Monitor (ROADMAP PA-3)', async () => {
+    const status = window.locator('.part.statusbar [id="triage.arduino.status"]');
+    await expect.poll(() => status.textContent(), { timeout: 60_000 }).toContain('Arduino Uno');
+    await status.click();
+    await pickItem(window, 'Arduino Nano');
+    // The Nano's Processor menu (the Arduino IDE's Tools menu): the old bootloader.
+    await pickItem(window, 'ATmega328P (Old Bootloader)');
+    await pickItem(window, 'No port: build only');
+    await expect.poll(() => status.textContent(), { timeout: 30_000 }).toContain('Arduino Nano');
+    // Back to the project's board.
+    await status.click();
+    await pickItem(window, 'Arduino Uno');
+    await pickItem(window, 'No port: build only');
+    await expect.poll(() => status.textContent(), { timeout: 30_000 }).toContain('Arduino Uno');
+    await clickMenu(window, ['Triage', 'Serial Monitor']);
+    const monitor = window.locator('.triage-serial-monitor');
+    await monitor.waitFor({ state: 'visible', timeout: 30_000 });
+    expect(await monitor.locator('.triage-arduino-button[data-action="connect"]').count()).toBe(1);
+    expect(await monitor.locator('.triage-arduino-status').textContent()).toContain(
+      'Plug the board in',
+    );
+    await window.screenshot({ path: shot('serial-monitor') });
+  });
+
+  // ROADMAP PA-4: a library from the Library Manager builds, runs in the simulator and
+  // draws on the simulated OLED. The Smart Fan's firmware is swapped for a sketch using
+  // Adafruit SSD1306 while this runs.
+  simIt(
+    'installs Adafruit SSD1306 with the Library Manager; a sketch using it draws on the simulated OLED (ROADMAP PA-4)',
+    async () => {
+      await window.locator('.part.activitybar [aria-label^="Arduino"]').first().click();
+      const libraries = window.locator('.triage-libraries');
+      await libraries.waitFor({ state: 'visible', timeout: 60_000 });
+      await libraries.locator('input.triage-arduino-search').fill('Adafruit SSD1306');
+      await libraries.locator('.triage-arduino-button[data-action="search"]').click();
+      const row = libraries.locator('.triage-arduino-item[data-library="Adafruit SSD1306"]');
+      await row.waitFor({ state: 'visible', timeout: 300_000 });
+      await row.locator('.triage-arduino-button[data-action="install"]').click();
+      await expect
+        .poll(() => libraries.getAttribute('data-installed-library'), { timeout: 300_000 })
+        .toBe('Adafruit SSD1306');
+      expect(readFileSync(path.join(project, 'triage.toml'), 'utf8')).toMatch(
+        /libraries = \[.*"Adafruit SSD1306@/,
+      );
+      await window.screenshot({ path: shot('library-manager') });
+
+      const src = path.join(project, 'firmware', 'src');
+      const saved = new Map(
+        readdirSync(src).map((name) => [name, readFileSync(path.join(src, name))]),
+      );
+      try {
+        for (const name of saved.keys()) rmSync(path.join(src, name));
+        cpSync(
+          path.join(appDir, '..', 'sim', 'test', 'firmware', 'OledHello', 'OledHello.ino'),
+          path.join(src, 'main.cpp'),
+        );
+        writeFileSync(
+          path.join(src, 'main.cpp'),
+          `#include <Arduino.h>\n${readFileSync(path.join(src, 'main.cpp'), 'utf8')}`,
+        );
+        await stopSim();
+        await simView().locator('select.triage-sim-scope').selectOption({ label: 'Whole device' });
+        await simView().locator('.triage-sim-button[data-action="run"]').click();
+        await expect
+          .poll(() => simView().locator('.triage-sim-oled').getAttribute('data-text'), {
+            timeout: 180_000,
+          })
+          .toContain('HELLO');
+        await window.screenshot({ path: shot('library-oled') });
+      } finally {
+        await stopSim();
+        for (const name of readdirSync(src)) rmSync(path.join(src, name));
+        for (const [name, bytes] of saved) writeFileSync(path.join(src, name), bytes);
+      }
+    },
+  );
+
+  // ROADMAP PA-5: the Boards Manager lists the AVR boards as built in.
+  it('shows the built-in AVR boards in the Boards Manager (ROADMAP PA-5)', async () => {
+    await clickMenu(window, ['Triage', 'Boards Manager']);
+    const boards = window.locator('.triage-boards');
+    await boards.waitFor({ state: 'visible', timeout: 60_000 });
+    const avr = boards.locator('.triage-arduino-item[data-platform="arduino:avr"]');
+    await avr.waitFor({ state: 'visible', timeout: 120_000 });
+    expect(await avr.textContent()).toContain('built into Triage');
+    expect(await avr.textContent()).toContain('Triage simulates some');
+    await window.screenshot({ path: shot('boards-manager') });
+  });
+
+  // ROADMAP PA-6: Blink from the examples opens as a new project in a new window; it runs
+  // in the simulator (code only: the virtual I/O panel shows D13 blinking) and builds.
+  simIt('opens Blink from the examples, simulates it and builds it (ROADMAP PA-6)', async () => {
+    const app = electronApp;
+    if (!app) throw new Error('app not started');
+    await clickMenu(window, ['File', 'Examples…']);
+    const opened = app.waitForEvent('window', { timeout: 120_000 });
+    await pickItem(window, 'Blink');
+    const blink = await opened;
+    await blink.locator('.monaco-workbench').waitFor({ state: 'visible', timeout: 120_000 });
+    await blink.locator('.part.activitybar [aria-label^="Triage"]').first().click();
+    await expect
+      .poll(() => blink.locator('.triage-project-name').textContent(), { timeout: 60_000 })
+      .toBe('Blink');
+    expect(existsSync(path.join(projectsFolder, 'Blink', 'Blink', 'Blink.ino'))).toBe(true);
+    await blink
+      .locator('.triage-overview .monaco-button', { hasText: 'Open Engineering Layout' })
+      .click();
+    const sim = blink.locator('.triage-sim-view');
+    await sim.waitFor({ state: 'visible', timeout: 60_000 });
+    await expect.poll(() => sim.getAttribute('data-loaded'), { timeout: 60_000 }).toBe('true');
+    await sim.locator('select.triage-sim-scope').selectOption({ label: 'Code only' });
+    await sim.locator('.triage-sim-button[data-action="run"]').click();
+    const led = sim.locator('.triage-sim-led[data-signal="A1.D13.drive"]');
+    await expect
+      .poll(async () => Number((await led.getAttribute('data-changes')) ?? 0), { timeout: 180_000 })
+      .toBeGreaterThan(3);
+    await blink.screenshot({ path: shot('example-blink') });
+    await sim.locator('.triage-sim-button[data-action="stop"]').click();
+    await blink
+      .locator('.triage-overview .monaco-button[data-command="triage.arduino.build"]')
+      .click();
+    await expect
+      .poll(() => blink.locator('.triage-firmware-status').getAttribute('data-state'), {
+        timeout: 180_000,
+      })
+      .toBe('built');
+    expect(await blink.locator('.triage-firmware-status').textContent()).toContain(
+      'arduino:avr:uno',
+    );
+    await blink.close();
+  });
+
   it('starts the hello engine when the Triage view opens', async () => {
     await expect
       .poll(engineStatus, { timeout: 60_000 })
@@ -693,7 +881,9 @@ describe('packaged Triage app', () => {
   });
 
   it('streams 100 MB/s or more from the engine into the window', async () => {
-    await runCommand(window, 'Triage: Benchmark Hello Engine');
+    await window
+      .locator('.triage-overview .monaco-button', { hasText: 'Benchmark Hello Engine' })
+      .click();
     const benchmark = window.locator('.triage-engine-benchmark');
     await expect.poll(() => benchmark.textContent(), { timeout: 120_000 }).toContain('MB/s');
     const text = (await benchmark.textContent()) ?? '';
@@ -716,7 +906,7 @@ describe('packaged Triage app', () => {
 
   it('shows "reconnecting" when the engine is killed, then recovers', async () => {
     const before = /pid (\d+)/.exec((await engineStatus()) ?? '')?.[1];
-    await runCommand(window, 'Triage: Kill Hello Engine (Restart Test)');
+    await clickMenu(window, ['Triage', 'Diagnostics', 'Kill Hello Engine (Restart Test)']);
     await expect.poll(engineStatus, { timeout: 30_000 }).toContain('reconnecting');
     await expect
       .poll(engineStatus, { timeout: 60_000 })
@@ -766,7 +956,9 @@ describe('packaged Triage app', () => {
     const app = electronApp;
     if (!app) throw new Error('app not started');
     const before = app.windows().length;
-    await runCommand(window, 'Triage: Open Engineering Views in Separate Windows');
+    await window
+      .locator('.triage-overview .monaco-button', { hasText: 'Open in Separate Windows' })
+      .click();
     await expect
       .poll(() => app.windows().length, { timeout: 60_000 })
       .toBeGreaterThanOrEqual(before + 4);

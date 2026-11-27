@@ -348,6 +348,26 @@ export function deviceSpec(
       quiescent_a: 0.045,
     };
   }
+  if (!board && links.components.length === 0) {
+    // A project without electronics (an Arduino example, ROADMAP PA-6): the board on
+    // its own, each pin on a net of its own name, so the Code only scope's virtual I/O
+    // panel shows the pins (Blink's D13 blinking).
+    board = {
+      reference: 'A1',
+      profile: profile.id,
+      pins: Object.keys(profile.pins)
+        .filter((name) => !profile.pins[name]?.adcOnly)
+        .map((name) => ({
+          name,
+          net: name,
+          analog: name.startsWith('A'),
+          pwm: profile.pwm.includes(name),
+        })),
+      regulator: { net: '+5V', volts: 5 },
+      vin: null,
+      quiescent_a: 0.045,
+    };
+  }
   if (!ground) ground = links.nets.find((n) => /(^|\/)GND$/.test(n.name))?.name ?? 'GND';
 
   const parts: PartSpec[] = [];

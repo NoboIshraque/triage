@@ -311,7 +311,9 @@ export class SimView extends Disposable {
 				} else if (element.signal) {
 					const row = append(io, $('.triage-sim-row'));
 					append(row, $('span.triage-sim-name', undefined, element.label));
-					this.indicators.set(element.signal, append(row, $('span.triage-sim-led')));
+					const led = append(row, $('span.triage-sim-led'));
+					led.dataset['signal'] = element.signal;
+					this.indicators.set(element.signal, led);
 				}
 			}
 		}
@@ -364,6 +366,11 @@ export class SimView extends Disposable {
 			const on = duty !== undefined ? duty : level === 1 ? 1 : 0;
 			indicator.style.opacity = String(0.15 + 0.85 * on);
 			indicator.textContent = duty !== undefined ? `${Math.round(duty * 100)}%` : level === 1 ? 'H' : level === 0 ? 'L' : '–';
+			// Each change of level counts (a smoke check watches Blink blink).
+			if (indicator.dataset['level'] !== indicator.textContent) {
+				indicator.dataset['changes'] = String(Number(indicator.dataset['changes'] ?? 0) + 1);
+				indicator.dataset['level'] = indicator.textContent;
+			}
 		}
 		if (frame.serial) {
 			this.serialText = (this.serialText + frame.serial).slice(-20_000);

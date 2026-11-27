@@ -49,6 +49,13 @@ export class TriageArduinoService extends Disposable implements ITriageArduinoSe
 	readonly onDidMonitor = this._onDidMonitor.event;
 	private readonly _onDidChangeTask = this._register(new Emitter<ArduinoTask>());
 	readonly onDidChangeTask = this._onDidChangeTask.event;
+	private readonly _onDidBuild = this._register(new Emitter<IArduinoBuild>());
+	readonly onDidBuild = this._onDidBuild.event;
+	private _lastBuild: IArduinoBuild | undefined;
+
+	get lastBuild(): IArduinoBuild | undefined {
+		return this._lastBuild;
+	}
 
 	private picked: { fqbn: string; name: string } | undefined;
 	private _port: IArduinoPort | undefined;
@@ -253,6 +260,8 @@ export class TriageArduinoService extends Disposable implements ITriageArduinoSe
 			const engine = await this.engine();
 			const result = await engine.build(project);
 			this.showDiagnostics(result);
+			this._lastBuild = result;
+			this._onDidBuild.fire(result);
 			this.setTask({ kind: 'idle' });
 			const used = result.maxFlash ? ` (${Math.round(100 * result.flash / result.maxFlash)}%)` : '';
 			this._onDidOutput.fire({ task: 'build', text: `${localize('triage.arduino.built', "Done: {0} bytes of flash{1}, {2} bytes of RAM. Libraries: {3}.", result.flash, used, result.ram, result.libraries.join(', ') || '—')}\n` });

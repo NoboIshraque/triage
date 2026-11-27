@@ -23,7 +23,7 @@ import { describeEngineState, HELLO_ENGINE_COMMANDS, IHelloEngineBenchmark, ITri
 import { ITriageDomain, ITriageProjectService, TriageProjectState } from '../common/projectModel.js';
 import { ENGINEERING_LAYOUT_COMMAND_ID, ENGINEERING_WINDOWS_COMMAND_ID, TRIAGE_WALKTHROUGH_ID } from '../common/triage.js';
 import { URI } from '../../base/common/uri.js';
-import { ARDUINO_COMMANDS } from '../common/arduino/arduino.js';
+import { ARDUINO_COMMANDS, ITriageArduinoService } from '../common/arduino/arduino.js';
 import { joinPath } from '../../base/common/resources.js';
 
 /** What each domain holds, for folders that are not Triage projects yet. */
@@ -49,6 +49,7 @@ export class TriageOverviewView extends ViewPane {
 		@ICommandService private readonly commandService: ICommandService,
 		@ITriageHelloEngineService private readonly helloEngine: ITriageHelloEngineService,
 		@ITriageProjectService private readonly projectService: ITriageProjectService,
+		@ITriageArduinoService private readonly arduino: ITriageArduinoService,
 	) {
 		super(options, keybindingService, contextMenuService, configurationService, contextKeyService, viewDescriptorService, instantiationService, openerService, themeService, hoverService);
 	}
@@ -97,6 +98,25 @@ export class TriageOverviewView extends ViewPane {
 			button.element.dataset['command'] = command;
 			this._register(button.onDidClick(() => this.commandService.executeCommand(command)));
 		}
+		const buildStatus = append(root, $('p.triage-note.triage-firmware-status'));
+		const renderBuild = () => {
+			const task = this.arduino.task;
+			const last = this.arduino.lastBuild;
+			buildStatus.dataset['state'] = task.kind === 'busy' ? 'busy' : task.kind === 'error' ? 'error' : last ? 'built' : 'idle';
+			if (task.kind === 'busy') {
+				buildStatus.textContent = task.what;
+			} else if (task.kind === 'error') {
+				buildStatus.textContent = task.message;
+			} else if (last) {
+				buildStatus.dataset['flash'] = String(last.flash);
+				buildStatus.textContent = localize('triage.overview.lastBuild', "Built for {0}: {1} of {2} bytes of flash, {3} bytes of RAM. Libraries: {4}.", last.fqbn, last.flash, last.maxFlash || '?', last.ram, last.libraries.join(', ') || '—');
+			} else {
+				buildStatus.textContent = localize('triage.overview.noBuild', "Build compiles the firmware with Triage's own compiler (no Arduino IDE needed); Upload puts it on a board plugged in over USB.");
+			}
+		};
+		renderBuild();
+		this._register(this.arduino.onDidChangeTask(renderBuild));
+		this._register(this.arduino.onDidBuild(renderBuild));
 
 		// The hello engine (ROADMAP P0-4) starts when this view first shows.
 		append(root, $('h3', undefined, localize('triage.overview.engines', "Engines")));
