@@ -23,6 +23,7 @@
 //   data/packages/arduino/tools/{avr-gcc,avrdude,arduinoOTA}/<version>/
 //   data/packages/builtin/tools/{ctags,serial-discovery,serial-monitor,mdns-discovery}/<version>/
 //   data/package_index.json, data/library_index.json  empty until the user refreshes them
+//   examples/                                         the Arduino IDE's built-in examples
 //   triage-arduino.json                                 what was built, from which sources
 // The app copies the stage into resources/app/engines/arduino/; on first use the
 // data folder is copied to the user's own Arduino folder (sim/src/arduino.ts).
@@ -124,6 +125,7 @@ const gitSources = () => ({
   'arduino-cli': pins.arduinoCli,
   ...Object.fromEntries(pins.goTools.map((tool) => [tool.name, tool])),
   ctags: pins.ctags,
+  'arduino-examples': pins.examples,
   avrdude: pins.avrdude,
   'avrdude-packing': pins.avrdudePacking,
   'toolchain-avr': pins.avrGcc.toolchainAvr,
@@ -484,6 +486,11 @@ function stage(target) {
     recursive: true,
   });
 
+  // The Arduino IDE's built-in examples (File → Examples).
+  cpSync(path.join(upstreamDir, 'arduino-examples', 'examples'), path.join(out, 'examples'), {
+    recursive: true,
+  });
+
   // Empty indexes: arduino-cli then starts offline instead of downloading Arduino's
   // indexes at its first start; the Boards and Library Managers refresh them.
   writeFileSync(path.join(out, 'data', 'package_index.json'), '{"packages":[]}\n');
@@ -494,6 +501,7 @@ function stage(target) {
     os: target,
     arduinoCli: pins.arduinoCli.version,
     platform: `${p.packager}:${p.architecture}@${p.version}`,
+    examples: pins.examples.tag,
     tools: {
       'avr-gcc': pins.avrGcc.version,
       avrdude: pins.avrdude.version,

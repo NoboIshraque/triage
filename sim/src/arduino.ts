@@ -520,3 +520,530 @@ function projectCompileCommands(buildPath: string, outDir: string): string | und
     return undefined;
   }
 }
+
+// --- boards and ports ------------------------------------------------------------------
+
+export interface BoardInfo {
+  readonly name: string;
+  readonly fqbn: string;
+  readonly platform: string;
+  readonly simulated?: string;
+}
+
+/** Every board of the installed platforms (`board listall`). */
+export function listBoards(setup: ArduinoSetup): BoardInfo[] {
+  const json = cliJson<{
+    boards?: { name: string; fqbn: string; platform?: { metadata?: { id?: string } } }[];
+  }>(setup, ['board', 'listall']);
+  return (json.boards ?? []).map((b) => {
+    const simulated = simulatedProfile(b.fqbn);
+    return {
+      name: b.name,
+      fqbn: b.fqbn,
+      platform: b.platform?.metadata?.id ?? b.fqbn.split(':').slice(0, 2).join(':'),
+      ...(simulated ? { simulated } : {}),
+    };
+  });
+}
+
+export interface BoardOption {
+  readonly option: string;
+  readonly label: string;
+  readonly values: readonly { value: string; label: string; selected: boolean }[];
+}
+
+/** A board's menu options (the IDE's Tools menu), with the FQBN's choices selected. */
+export function boardOptions(setup: ArduinoSetup, fqbn: string): BoardOption[] {
+  const json = cliJson<{
+    config_options?: {
+      option: string;
+      option_label: string;
+      values: { value: string; value_label: string; selected?: boolean }[];
+    }[];
+  }>(setup, ['board', 'details', '-b', fqbn]);
+  return (json.config_options ?? []).map((o) => ({
+    option: o.option,
+    label: o.option_label,
+    values: o.values.map((v) => ({
+      value: v.value,
+      label: v.value_label,
+      selected: v.selected === true,
+    })),
+  }));
+}
+
+export interface PortInfo {
+  readonly address: string;
+  readonly label: string;
+  readonly protocol: string;
+  readonly protocolLabel: string;
+  readonly boards: readonly { name: string; fqbn: string }[];
+}
+
+interface PortJson {
+  readonly port?: {
+    address: string;
+    label?: string;
+    protocol?: string;
+    protocol_label?: string;
+  };
+  readonly matching_boards?: { name: string; fqbn: string }[];
+}
+
+function portOf(json: PortJson): PortInfo | undefined {
+  const port = json.port;
+  if (!port) return undefined;
+  return {
+    address: port.address,
+    label: port.label ?? port.address,
+    protocol: port.protocol ?? 'serial',
+    protocolLabel: port.protocol_label ?? 'Serial Port',
+    boards: (json.matching_boards ?? []).map((b) => ({ name: b.name, fqbn: b.fqbn })),
+  };
+}
+
+/** The ports boards can be on now (`board list`). */
+export function listPorts(setup: ArduinoSetup): PortInfo[] {
+  const json = cliJson<{ detected_ports?: PortJson[] }>(setup, ['board', 'list']);
+  return (json.detected_ports ?? []).map(portOf).filter((p): p is PortInfo => p !== undefined);
+}
+
+/**
+ * Watches ports appear and go (`board list --watch`): a board plugged in shows
+ * in the board and port picker. Returns a function that stops watching.
+ */
+export function watchPorts(setup: ArduinoSetup, onChange: (ports: PortInfo[]) => void): () => void {
+  const ports = new Map<string, PortInfo>();
+  let stopped = false;
+  let child: ChildProcess | undefined;
+  const start = () => {
+    if (stopped) return;
+    child = spawn(setup.engine.cli, ['board', 'list', '--watch', '--format', 'jsonmini'], {
+      env: setup.env,
+      windowsHide: true,
+    });
+    let buffer = '';
+    child.stdout?.on('data', (chunk: Buffer) => {
+      buffer += chunk.toString('utf8');
+      let newline: number;
+      while ((newline = buffer.indexOf('\n')) >= 0) {
+        const line = buffer.slice(0, newline).trim();
+        buffer = buffer.slice(newline + 1);
+        if (!line) continue;
+        try {
+          const event = JSON.parse(line) as PortJson & { eventType?: string };
+          const port = portOf(event);
+          if (!port) continue;
+          const key = `${port.protocol}:${port.address}`;
+          if (event.eventType === 'remove') ports.delete(key);
+          else ports.set(key, port);
+          onChange([...ports.values()]);
+        } catch {
+          // not an event
+        }
+      }
+    });
+    // The discovery may stop (a tool restarted): watch again.
+    child.on('close', () => {
+      if (!stopped) setTimeout(start, 2000);
+    });
+  };
+  start();
+  return () => {
+    stopped = true;
+    child?.kill();
+  };
+}
+
+// --- upload ----------------------------------------------------------------------------
+
+/**
+ * Uploads a build to a board (`arduino-cli upload`, avrdude for AVR boards): the same
+ * firmware.hex the simulation ran. `port` is a serial port (COM3, /dev/ttyUSB0) or,
+ * for tests, avrdude's `net:host:port`.
+ */
+export function upload(
+  setup: ArduinoSetup,
+  options: { fqbn: string; buildDir: string; port: string; protocol?: string; verify?: boolean },
+  onOutput: (text: string) => void,
+): Promise<void> {
+  const args = [
+    'upload',
+    '--fqbn',
+    options.fqbn,
+    '--port',
+    options.port,
+    '--protocol',
+    options.protocol ?? 'serial',
+    '--input-dir',
+    options.buildDir,
+    '--verbose',
+  ];
+  if (options.verify) args.push('--verify');
+  return cliStream(setup, args, onOutput).done;
+}
+
+// --- libraries -------------------------------------------------------------------------
+
+export interface LibraryInfo {
+  readonly name: string;
+  readonly author: string;
+  readonly sentence: string;
+  readonly paragraph: string;
+  readonly website: string;
+  readonly category: string;
+  readonly versions: readonly string[];
+  readonly installed?: string;
+  readonly location?: string;
+}
+
+interface LibraryReleaseJson {
+  author?: string;
+  version?: string;
+  sentence?: string;
+  paragraph?: string;
+  website?: string;
+  category?: string;
+}
+
+function newestFirst(versions: readonly string[]): string[] {
+  return [...versions].sort((a, b) => b.localeCompare(a, 'en', { numeric: true }));
+}
+
+/** Installed libraries (user-installed and the platform's own). */
+export function installedLibraries(setup: ArduinoSetup): LibraryInfo[] {
+  const json = cliJson<{
+    installed_libraries?: {
+      library: LibraryReleaseJson & { name: string; location?: string };
+      release?: LibraryReleaseJson;
+    }[];
+  }>(setup, ['lib', 'list', '--all']);
+  return (json.installed_libraries ?? []).map(({ library }) => ({
+    name: library.name,
+    author: library.author ?? '',
+    sentence: library.sentence ?? '',
+    paragraph: library.paragraph ?? '',
+    website: library.website ?? '',
+    category: library.category ?? '',
+    versions: library.version ? [library.version] : [],
+    ...(library.version ? { installed: library.version } : {}),
+    ...(library.location ? { location: library.location } : {}),
+  }));
+}
+
+/** The Library Manager's search over Arduino's library index (`lib search`). */
+export function searchLibraries(setup: ArduinoSetup, query: string): LibraryInfo[] {
+  const installed = new Map(installedLibraries(setup).map((l) => [l.name, l]));
+  const json = cliJson<{
+    libraries?: { name: string; latest?: LibraryReleaseJson; available_versions?: string[] }[];
+  }>(setup, ['lib', 'search', ...(query.trim() ? query.trim().split(/\s+/) : [])]);
+  return (json.libraries ?? []).map((l) => {
+    const mine = installed.get(l.name);
+    return {
+      name: l.name,
+      author: l.latest?.author ?? '',
+      sentence: l.latest?.sentence ?? '',
+      paragraph: l.latest?.paragraph ?? '',
+      website: l.latest?.website ?? '',
+      category: l.latest?.category ?? '',
+      versions: newestFirst(l.available_versions ?? (l.latest?.version ? [l.latest.version] : [])),
+      ...(mine?.installed ? { installed: mine.installed } : {}),
+      ...(mine?.location ? { location: mine.location } : {}),
+    };
+  });
+}
+
+/** Installs a library and the libraries it needs (`lib install Name@version`). */
+export function installLibrary(
+  setup: ArduinoSetup,
+  name: string,
+  version: string | undefined,
+  onOutput: (text: string) => void,
+): Promise<void> {
+  return cliStream(setup, ['lib', 'install', version ? `${name}@${version}` : name], onOutput).done;
+}
+
+export function uninstallLibrary(
+  setup: ArduinoSetup,
+  name: string,
+  onOutput: (text: string) => void,
+): Promise<void> {
+  return cliStream(setup, ['lib', 'uninstall', name], onOutput).done;
+}
+
+/** Refreshes Arduino's package and library indexes (the Managers' Refresh). */
+export async function updateIndexes(
+  setup: ArduinoSetup,
+  onOutput: (text: string) => void,
+): Promise<void> {
+  await cliStream(setup, ['core', 'update-index'], onOutput).done;
+  await cliStream(setup, ['lib', 'update-index'], onOutput).done;
+}
+
+/**
+ * Makes sure a project's libraries (triage.toml `firmware.libraries`, `Name@version`)
+ * are installed at those versions before a build.
+ */
+export async function ensureLibraries(
+  setup: ArduinoSetup,
+  wanted: readonly string[],
+  onOutput: (text: string) => void,
+): Promise<void> {
+  if (wanted.length === 0) return;
+  const installed = new Map(installedLibraries(setup).map((l) => [l.name, l.installed]));
+  for (const entry of wanted) {
+    const at = entry.lastIndexOf('@');
+    const name = at > 0 ? entry.slice(0, at) : entry;
+    const version = at > 0 ? entry.slice(at + 1) : undefined;
+    const have = installed.get(name);
+    if (have && (!version || have === version)) continue;
+    await installLibrary(setup, name, version, onOutput);
+  }
+}
+
+// --- platforms (the Boards Manager) ----------------------------------------------------------
+
+export interface PlatformInfo {
+  readonly id: string;
+  readonly name: string;
+  readonly maintainer: string;
+  readonly website: string;
+  readonly versions: readonly string[];
+  readonly installed?: string;
+  readonly boards: readonly string[];
+  readonly builtIn: boolean;
+  readonly simulated: boolean;
+}
+
+/** Installed and available platforms (`core search`; installed ones even offline). */
+export function listPlatforms(setup: ArduinoSetup, query = ''): PlatformInfo[] {
+  const json = cliJson<{
+    platforms?: {
+      id: string;
+      maintainer?: string;
+      website?: string;
+      releases?: Record<string, { name?: string; boards?: { name: string; fqbn?: string }[] }>;
+      installed_version?: string;
+      latest_version?: string;
+    }[];
+  }>(setup, ['core', 'search', '--all', ...(query.trim() ? [query.trim()] : [])]);
+  const shipped = setup.engine.manifest.platform.split('@')[0];
+  return (json.platforms ?? []).map((p) => {
+    const releases = p.releases ?? {};
+    const shown = releases[p.installed_version ?? ''] ?? releases[p.latest_version ?? ''];
+    const boards = (shown?.boards ?? []).map((b) => b.name);
+    return {
+      id: p.id,
+      name: shown?.name ?? p.id,
+      maintainer: p.maintainer ?? '',
+      website: p.website ?? '',
+      versions: newestFirst(Object.keys(releases)),
+      ...(p.installed_version ? { installed: p.installed_version } : {}),
+      boards,
+      builtIn: p.id === shipped,
+      simulated: (shown?.boards ?? []).some((b) => b.fqbn && simulatedProfile(b.fqbn)),
+    };
+  });
+}
+
+/**
+ * Installs a platform with its compilers and tools (`core install`): Arduino's own
+ * ready-made files from its package index (or an extra index URL), each checked
+ * against the index's SHA-256, as the Arduino IDE does (ADR 0006).
+ */
+export function installPlatform(
+  setup: ArduinoSetup,
+  id: string,
+  version: string | undefined,
+  onOutput: (text: string) => void,
+): Promise<void> {
+  return cliStream(setup, ['core', 'install', version ? `${id}@${version}` : id], onOutput).done;
+}
+
+export function uninstallPlatform(
+  setup: ArduinoSetup,
+  id: string,
+  onOutput: (text: string) => void,
+): Promise<void> {
+  return cliStream(setup, ['core', 'uninstall', id], onOutput).done;
+}
+
+/** Extra Boards Manager index URLs (the IDE's "Additional boards manager URLs"). */
+export function withAdditionalUrls(setup: ArduinoSetup, urls: readonly string[]): ArduinoSetup {
+  const env = { ...setup.env };
+  if (urls.length > 0) env['ARDUINO_BOARD_MANAGER_ADDITIONAL_URLS'] = urls.join(' ');
+  else delete env['ARDUINO_BOARD_MANAGER_ADDITIONAL_URLS'];
+  return { ...setup, env };
+}
+
+// --- examples and new projects ---------------------------------------------------------------
+
+export interface ExampleInfo {
+  readonly name: string;
+  readonly path: string;
+  readonly group: string;
+  readonly builtIn: boolean;
+}
+
+/** The Arduino IDE's built-in examples (shipped in the engine) and each library's. */
+export function listExamples(setup: ArduinoSetup, fqbn?: string): ExampleInfo[] {
+  const out: ExampleInfo[] = [];
+  const builtIn = path.join(setup.engine.root, 'examples');
+  if (existsSync(builtIn)) {
+    for (const group of readdirSync(builtIn).sort()) {
+      const groupDir = path.join(builtIn, group);
+      if (!statSync(groupDir).isDirectory()) continue;
+      for (const sketch of findSketches(groupDir)) {
+        out.push({ name: path.basename(sketch), path: sketch, group, builtIn: true });
+      }
+    }
+  }
+  try {
+    const json = cliJson<{ examples?: { library: { name: string }; examples?: string[] }[] }>(
+      setup,
+      ['lib', 'examples', ...(fqbn ? ['--fqbn', fqbn] : [])],
+    );
+    for (const entry of json.examples ?? []) {
+      for (const sketch of entry.examples ?? []) {
+        out.push({
+          name: path.basename(sketch),
+          path: sketch,
+          group: entry.library.name,
+          builtIn: false,
+        });
+      }
+    }
+  } catch {
+    // Libraries' examples need arduino-cli; the built-in ones don't.
+  }
+  return out;
+}
+
+/** Sketch folders (a folder with `<name>.ino`) under `dir`. */
+function findSketches(dir: string): string[] {
+  if (isSketchFolder(dir)) return [dir];
+  const out: string[] = [];
+  for (const name of readdirSync(dir).sort()) {
+    const sub = path.join(dir, name);
+    if (statSync(sub).isDirectory()) out.push(...findSketches(sub));
+  }
+  return out;
+}
+
+function tomlString(value: string): string {
+  return JSON.stringify(value);
+}
+
+/**
+ * A new Triage project (ROADMAP PA-6): `<folder>/<name>/` with triage.toml and the
+ * firmware as an Arduino sketch folder (`<Name>/<Name>.ino`, from an example or a
+ * bare setup()/loop()), so stock arduino-cli and the Arduino IDE open it too.
+ * Returns the project folder.
+ */
+export function createProject(options: {
+  folder: string;
+  name: string;
+  fqbn: string;
+  example?: string;
+}): string {
+  const safe = options.name.replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'Sketch';
+  const root = path.join(options.folder, safe);
+  if (existsSync(root) && readdirSync(root).length > 0) {
+    throw new ArduinoError(`${root} already exists and isn't empty: pick another name or folder`);
+  }
+  const sketch = path.join(root, safe);
+  mkdirSync(sketch, { recursive: true });
+  if (options.example) {
+    for (const name of readdirSync(options.example)) {
+      const from = path.join(options.example, name);
+      const to =
+        name === `${path.basename(options.example)}.ino`
+          ? path.join(sketch, `${safe}.ino`)
+          : path.join(sketch, name);
+      cpSync(from, to, { recursive: true });
+    }
+  } else {
+    writeFileSync(
+      path.join(sketch, `${safe}.ino`),
+      [
+        'void setup() {',
+        '  // put your setup code here, to run once:',
+        '}',
+        '',
+        'void loop() {',
+        '  // put your main code here, to run repeatedly:',
+        '}',
+        '',
+      ].join('\n'),
+    );
+  }
+  const profile = simulatedProfile(options.fqbn);
+  writeFileSync(
+    path.join(root, 'triage.toml'),
+    [
+      '# A Triage project (format 0). Schema: crates/triage-model/schema/triage.schema.json',
+      '[project]',
+      `name = ${tomlString(options.name)}`,
+      'format = 0',
+      options.example
+        ? `description = ${tomlString(`From the Arduino example ${path.basename(options.example)}.`)}`
+        : 'description = "A new Arduino project."',
+      '',
+      '[firmware]',
+      `path = ${tomlString(safe)}`,
+      `board = ${tomlString(profile ?? 'arduino-uno')}`,
+      `fqbn = ${tomlString(options.fqbn)}`,
+      'build = "arduino-cli"',
+      '',
+    ].join('\n'),
+  );
+  return root;
+}
+
+// --- the serial monitor ----------------------------------------------------------------------
+
+export interface Monitor {
+  send(text: string): void;
+  close(): void;
+}
+
+/**
+ * The Serial Monitor for a real board (`arduino-cli monitor`, the serial-monitor
+ * tool): what the board sends goes to `onData`; `send` writes to it.
+ */
+export function openMonitor(
+  setup: ArduinoSetup,
+  options: { port: string; baud: number; fqbn?: string; protocol?: string },
+  onData: (text: string) => void,
+  onClose: (reason: string) => void,
+): Monitor {
+  const args = [
+    'monitor',
+    '--port',
+    options.port,
+    '--protocol',
+    options.protocol ?? 'serial',
+    '--config',
+    `baudrate=${options.baud}`,
+    '--quiet',
+  ];
+  if (options.fqbn) args.push('--fqbn', options.fqbn);
+  const child = spawn(setup.engine.cli, args, { env: setup.env, windowsHide: true });
+  let errors = '';
+  child.stdout.on('data', (chunk: Buffer) => {
+    onData(chunk.toString('latin1'));
+  });
+  child.stderr.on('data', (chunk: Buffer) => {
+    errors += chunk.toString('utf8');
+  });
+  child.on('error', (error) => {
+    onClose(`could not run arduino-cli: ${error.message}`);
+  });
+  child.on('close', (code) => {
+    onClose(code === 0 || code === null ? '' : plainError(lastLines(errors)));
+  });
+  return {
+    send: (text) => child.stdin.write(Buffer.from(text, 'latin1')),
+    close: () => child.kill(),
+  };
+}

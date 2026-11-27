@@ -58,6 +58,12 @@
     "commit": "740e75e1dca4adaaae8e66f16fc1573220235107",
     "version": "5.8-arduino12"
   },
+  "examples": {
+    "$comment": "The Arduino IDE 2's built-in examples (File → Examples: 01.Basics … 11.ArduinoISP), the version arduino-ide-extension/scripts/download-examples.js pins. Sketches only (CC0 / public domain).",
+    "repository": "https://github.com/arduino/arduino-examples.git",
+    "tag": "1.10.3",
+    "commit": "33dddb8c8f6d28509fa035c3437df63e8d5c6d81"
+  },
   "avrdude": {
     "repository": "https://github.com/avrdudes/avrdude.git",
     "tag": "v8.0",
