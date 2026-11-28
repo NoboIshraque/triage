@@ -211,3 +211,37 @@ Costs:
 5. **When:** **between P3 and P4**. P4 onward move by about 6 weeks.
 6. **Permission:** asked **each time** the laptop shares; a view-only phone can be
    given edit permission from the laptop during the session (decision 5 above).
+
+## PC-1 results and the relay's host (2026-11-28)
+
+**WebTransport works as planned (C1), in a real browser engine.** The built phone
+app, in Chromium with a Pixel 7's and an iPhone 15's emulation
+(`companion/web/scripts/spike.mjs`), and in an Electron window in CI's smoke test,
+connected to the laptop's Rust server (`crates/triage-companion`, `wtransport`
+0.7) over WebTransport with the laptop's self-signed ECDSA P-256 certificate
+pinned by its hash from the QR link: no warning page, no certificate authority.
+Noise `IKpsk2` in WebCrypto agreed with `snow` byte for byte (the same six digits
+on both screens), the board's display list was drawn by `edaRenderer.ts`, and a
+value edit from the tapped part reached the laptop. WebRTC (C2) is not needed.
+
+| Measure (Pixel 7 emulation, Chromium, this container's software graphics) | Result |
+|---|---|
+| Opening the QR link to the board drawn (incl. the 0.2 s the scripted laptop waits before Allow) | 2.2–3.0 s (PLAN target: 3 s) |
+| A board display list of 816 KB (40,000 segments, 400 pads): request to drawn | 58–97 ms (8–14 MB/s through Noise and WebTransport) |
+| A sealed request and its reply over WebTransport | 0.5–0.6 ms (loopback) |
+| Frame rate | 2 fps: each draw call takes 0.1 ms; the time is compositing a 1082 × 1811 canvas without a GPU. Real phones are owner check C8 |
+
+**Found:** Chromium rejects the content-security-policy keyword
+`'unsafe-webtransport-hashes'` as invalid and connects with `connect-src https:`;
+the app's policy doesn't use it (DV-52). Still to see on real phones (C8): Safari
+26.4's WebTransport, its local-network prompt, the camera inside the installed
+app, and what Windows Defender Firewall asks when Triage first listens.
+
+**The relay runs on Cloudflare Workers** (the owner's choice, 2026-11-28, from
+Cloudflare's free plan with Durable Objects, Fly.io at about $2.19 a month, or a
+small VPS at about €4–6.50 a month): one Durable Object per mailbox, WebSocket
+hibernation so a waiting laptop costs nothing, the same limits as the Node relay
+(`companion/relay/cloudflare/`). The owner creates the account and adds its API
+token as a repository secret; the Companion workflow deploys it (check C8). The
+typed code uses `NNpsk0` with the code stretched by PBKDF2 (WhatsApp's option 2),
+not SPAKE2 (DV-51).

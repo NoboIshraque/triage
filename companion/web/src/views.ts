@@ -14,5 +14,7 @@ export interface PhoneView {
   open(): Promise<void>;
   /** A laptop event (event:document, event:sim.frame …). */
   onEvent(kind: string, body: Record<string, unknown>): void;
+  /** Pans and zooms for 120 display frames; resolves with frames per second (the owner's 30 fps check). */
+  benchmark?(): Promise<number>;
   dispose(): void;
 }

@@ -19,7 +19,7 @@ import {
 } from '../../../app/src/vs/triage/common/eda/protobuf.js';
 import type { CompanionSession } from '../../../app/src/vs/triage/common/companion/session.js';
 import { h, replace, toast } from './dom.js';
-import { attachGestures, frameScheduler } from './gestures.js';
+import { attachGestures, frameScheduler, measureFrames } from './gestures.js';
 import type { PhoneView, ViewHost } from './views.js';
 
 interface LayerInfo {
@@ -267,6 +267,23 @@ export class EdaPhoneView implements PhoneView {
       scale: Math.min(this.width / ((x1 - x0) * 1.08), this.height / ((y1 - y0) * 1.08)),
     };
     this.requestDraw();
+  }
+
+  async benchmark(): Promise<number> {
+    const start = { ...this.camera };
+    const fps = await measureFrames(120, (i) => {
+      const t = (i / 120) * Math.PI * 2;
+      this.camera = {
+        cx: start.cx + (Math.cos(t) * 50) / start.scale,
+        cy: start.cy + (Math.sin(t) * 50) / start.scale,
+        scale: start.scale * (1 + 0.5 * Math.sin(t)),
+      };
+      this.draw();
+    });
+    this.camera = start;
+    this.requestDraw();
+    this.element.dataset['benchmarkFps'] = fps.toFixed(1);
+    return fps;
   }
 
   private draw(): void {

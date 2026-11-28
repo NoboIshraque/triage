@@ -16,7 +16,7 @@ import type {
   CadTreeItem,
 } from '../../../app/src/vs/triage/common/cad/cadEngine.js';
 import { h, replace, toast } from './dom.js';
-import { attachGestures, frameScheduler } from './gestures.js';
+import { attachGestures, frameScheduler, measureFrames } from './gestures.js';
 import type { PhoneView, ViewHost } from './views.js';
 
 interface SceneReply {
@@ -225,6 +225,15 @@ export class CadPhoneView implements PhoneView {
     );
     this.renderSide();
     this.requestDraw();
+  }
+
+  async benchmark(): Promise<number> {
+    const fps = await measureFrames(120, () => {
+      this.renderer?.orbit(3, 0);
+      this.draw();
+    });
+    this.element.dataset['benchmarkFps'] = fps.toFixed(1);
+    return fps;
   }
 
   private draw(): void {

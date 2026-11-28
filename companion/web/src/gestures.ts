@@ -120,6 +120,21 @@ export function attachGestures(element: HTMLElement, handlers: GestureHandlers):
   };
 }
 
+/** Runs `step(i)` once per display frame, `frames` times; returns frames per second. */
+export async function measureFrames(frames: number, step: (i: number) => void): Promise<number> {
+  const times: number[] = [];
+  let last = performance.now();
+  for (let i = 0; i < frames; i++) {
+    await new Promise((resolve) => requestAnimationFrame(resolve));
+    step(i);
+    const now = performance.now();
+    times.push(now - last);
+    last = now;
+  }
+  const settled = times.slice(5);
+  return 1000 / (settled.reduce((a, b) => a + b, 0) / Math.max(1, settled.length));
+}
+
 /** Redraws at most once per display frame (GUIDELINES §10: per frame, not per message). */
 export function frameScheduler(draw: () => void): () => void {
   let pending = false;

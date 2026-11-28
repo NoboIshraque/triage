@@ -762,6 +762,11 @@ export class CompanionApp implements ViewHost {
         ),
         h(
           'button',
+          { dataset: { action: 'benchmark' }, onclick: () => void this.benchmark() },
+          'Benchmark this view',
+        ),
+        h(
+          'button',
           {
             onclick: () => {
               this.current?.close();
@@ -784,6 +789,18 @@ export class CompanionApp implements ViewHost {
       ),
       menu,
     );
+  }
+
+  /** Frames per second of the current view while it pans and zooms (the owner's check). */
+  private async benchmark(): Promise<void> {
+    const view = this.view;
+    if (!view?.benchmark) {
+      toast('This view has no benchmark.');
+      return;
+    }
+    toast('Measuring for two seconds…', 2000);
+    const fps = await view.benchmark();
+    toast(`${this.viewId}: ${fps.toFixed(0)} frames per second`, 6000);
   }
 
   private unlinkButton(): HTMLElement | null {
