@@ -122,6 +122,16 @@ export class EdaDocumentView extends Disposable {
 				void this.selectReferences(probe.references, probe.net);
 			}
 		}));
+		// An edit made on a paired phone (ROADMAP PC-4) went to this tab's document:
+		// draw it again, keeping the camera.
+		this._register(this.engine.onDidChangeDocument(change => {
+			if (change.origin?.startsWith('phone') && change.document === this.document && this.document) {
+				if (change.modified !== undefined) {
+					this.markModified(change.modified);
+				}
+				void this.loadDisplayList(this.sheet).catch(error => this.logService.warn('[triage] redrawing after a phone edit', error));
+			}
+		}));
 	}
 
 	get documentId(): number {

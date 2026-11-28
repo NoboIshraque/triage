@@ -7,7 +7,8 @@
 import { Emitter, Event } from '../../../base/common/event.js';
 import { createDecorator } from '../../../platform/instantiation/common/instantiation.js';
 
-export type ProbeSource = 'schematic' | 'board' | 'code';
+/** 'phone': a part tapped on a paired phone (ROADMAP PC-4); every tab follows it. */
+export type ProbeSource = 'schematic' | 'board' | 'code' | 'phone';
 
 export interface IProbe {
 	readonly source: ProbeSource;

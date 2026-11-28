@@ -124,6 +124,12 @@ export class CadView extends Disposable {
 	private boardError: string | undefined;
 	private problems: readonly FitProblem[] = [];
 
+	/** The 3D tabs open in this window: the phone companion shows what they show (ROADMAP PC-5). */
+	static readonly instances = new Set<CadView>();
+	private readonly _onDidChangeScene = this._register(new Emitter<void>());
+	/** Fires when meshes, visibility or fit problems change (not for simulation frames). */
+	readonly onDidChangeScene = this._onDidChangeScene.event;
+
 	private readonly _onDidLoad = this._register(new Emitter<void>());
 	/** Fires after the documents and the board are drawn (tests wait for it). */
 	readonly onDidLoad = this._onDidLoad.event;
@@ -143,6 +149,8 @@ export class CadView extends Disposable {
 		this._register(this.sim.onDidFrame(frame => this.onSimFrame(frame)));
 		this._register(this.sim.onDidChangeState(state => this.onSimState(state)));
 		this._register(toDisposable(() => this.disposed = true));
+		CadView.instances.add(this);
+		this._register(toDisposable(() => CadView.instances.delete(this)));
 		this.element = $('.triage-cad-view');
 		this.element.dataset['state'] = 'empty';
 		this.element.tabIndex = 0;
@@ -264,6 +272,27 @@ export class CadView extends Disposable {
 			});
 		}
 		this.scheduleRender();
+		this._onDidChangeScene.fire();
+	}
+
+	/** What the tab shows, for a phone: documents with their objects, and the drawn objects. */
+	snapshot(): { documents: { name: string; label: string; objects: readonly CadTreeItem[] }[]; objects: readonly SceneObject[]; problems: readonly string[] } {
+		return {
+			documents: [...this.documents.values()].map(d => ({ name: d.name, label: d.label, objects: d.objects })),
+			objects: this.objects,
+			problems: this.problems.map(p => p.message),
+		};
+	}
+
+	/** Objects the simulation moves or lights now (sent to phones with each frame). */
+	transforms(): { key: string; model?: number[]; emissive?: readonly number[] }[] {
+		const out: { key: string; model?: number[]; emissive?: readonly number[] }[] = [];
+		for (const object of this.objects) {
+			if (object.model || object.emissive) {
+				out.push({ key: object.key, model: object.model ? Array.from(object.model) : undefined, emissive: object.emissive });
+			}
+		}
+		return out;
 	}
 
 	/** Reads the live board from KiCad's engine and has the CAD engine build it. */
@@ -344,6 +373,7 @@ export class CadView extends Disposable {
 		this.markerService.changeAll(FIT_MARKERS, [...markers].flatMap(([file, list]) => list.map(marker => ({ resource: URI.file(file), marker }))));
 		this.renderOutliner();
 		this.scheduleRender();
+		this._onDidChangeScene.fire();
 		return this.problems.length;
 	}
 
@@ -713,6 +743,7 @@ export class CadView extends Disposable {
 		this.renderOutliner();
 		this.updateDataset();
 		this.scheduleRender();
+		this._onDidChangeScene.fire();
 	}
 
 	/** Blender's N panel: shows or hides the outliner and properties. */

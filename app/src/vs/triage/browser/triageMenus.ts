@@ -13,6 +13,7 @@ import { localize } from '../../nls.js';
 import { IMenuItem, ISubmenuItem, MenuId, MenuRegistry } from '../../platform/actions/common/actions.js';
 import { ContextKeyExpr } from '../../platform/contextkey/common/contextkey.js';
 import { ARDUINO_COMMANDS } from '../common/arduino/arduino.js';
+import { COMPANION_COMMANDS } from '../common/companion/companionService.js';
 import { HELLO_ENGINE_COMMANDS } from '../common/helloEngine.js';
 import { ENGINEERING_LAYOUT_COMMAND_ID, ENGINEERING_WINDOWS_COMMAND_ID } from '../common/triage.js';
 import { CAD_COMMANDS } from './cad/cadCommands.js';
@@ -38,6 +39,10 @@ export const TRIAGE_MENU: readonly { readonly menu: 'triage' | 'electronics' | '
 	{ menu: 'triage', group: '3_managers', id: ARDUINO_COMMANDS.libraryManager, title: localize({ key: 'triage.menu.libraries', comment: ['&& denotes a mnemonic'] }, "&&Library Manager") },
 	{ menu: 'triage', group: '3_managers', id: ARDUINO_COMMANDS.boardsManager, title: localize('triage.menu.boards', "Boards Manager") },
 	{ menu: 'triage', group: '3_managers', id: ARDUINO_COMMANDS.boardsUrls, title: localize('triage.menu.boardsUrls', "Additional Boards Manager URLs…") },
+	{ menu: 'triage', group: '4_phones', id: COMPANION_COMMANDS.pair, title: localize({ key: 'triage.menu.showOnPhone', comment: ['&& denotes a mnemonic'] }, "Show on &&Phone…") },
+	{ menu: 'triage', group: '4_phones', id: COMPANION_COMMANDS.showOn, title: localize('triage.menu.showOnPaired', "Show on a Paired Phone…") },
+	{ menu: 'triage', group: '4_phones', id: COMPANION_COMMANDS.phones, title: localize('triage.menu.phones', "Phones and Tablets…") },
+	{ menu: 'triage', group: '4_phones', id: COMPANION_COMMANDS.stop, title: localize('triage.menu.stopPhones', "Stop Sharing with Phones") },
 	{ menu: 'electronics', group: '1_edit', id: EDA_COMMANDS.renameNet, title: localize('triage.menu.renameNet', "Rename Net…") },
 	{ menu: 'electronics', group: '1_edit', id: EDA_COMMANDS.select, title: localize('triage.menu.selectPart', "Select Parts…") },
 	{ menu: 'electronics', group: '2_file', id: EDA_COMMANDS.save, title: localize('triage.menu.saveEda', "Save Schematic and Board") },

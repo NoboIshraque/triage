@@ -808,3 +808,137 @@
 	border: 1px solid var(--vscode-input-border, transparent);
 	padding: 3px 6px;
 }
+
+/* ---- Phone companion (ROADMAP PC-2): the pairing dialog and the Phones section ---- */
+
+.triage-companion-backdrop {
+	position: absolute;
+	inset: 0;
+	z-index: 2600;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.45);
+	outline: none;
+}
+
+.triage-companion-dialog {
+	max-width: min(440px, 92vw);
+	max-height: 92vh;
+	overflow: auto;
+	padding: 16px 20px 18px;
+	border-radius: 8px;
+	border: 1px solid var(--vscode-widget-border, transparent);
+	background: var(--vscode-editorWidget-background);
+	color: var(--vscode-editorWidget-foreground, var(--vscode-foreground));
+	box-shadow: 0 8px 32px var(--vscode-widget-shadow, rgba(0, 0, 0, 0.4));
+	text-align: center;
+}
+
+.triage-companion-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.triage-companion-header h2 {
+	margin: 0;
+	font-size: 16px;
+	font-weight: 600;
+}
+
+.triage-companion-header .triage-companion-close {
+	width: auto;
+	min-width: 28px;
+	padding: 2px 8px;
+}
+
+.triage-companion-qr {
+	display: block;
+	margin: 8px auto;
+	border-radius: 4px;
+	image-rendering: pixelated;
+}
+
+.triage-companion-code,
+.triage-companion-sas {
+	font-family: var(--monaco-monospace-font);
+	font-size: 26px;
+	letter-spacing: 0.12em;
+	margin: 6px 0 10px;
+}
+
+.triage-companion-sas {
+	font-size: 34px;
+	font-weight: 600;
+}
+
+.triage-companion-name {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	margin: 8px 0;
+}
+
+.triage-companion-name input {
+	flex: 1;
+	max-width: 240px;
+	padding: 4px 6px;
+	color: var(--vscode-input-foreground);
+	background: var(--vscode-input-background);
+	border: 1px solid var(--vscode-input-border, transparent);
+	border-radius: 2px;
+}
+
+.triage-companion-buttons {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 8px;
+	margin: 10px 0 4px;
+}
+
+.triage-companion-buttons .monaco-button {
+	width: auto;
+	padding: 4px 12px;
+}
+
+.triage-companion-small {
+	font-size: 12px;
+	opacity: 0.8;
+}
+
+.triage-phones {
+	padding: 4px 12px 12px;
+}
+
+.triage-phone {
+	padding: 6px 0;
+	border-bottom: 1px solid var(--vscode-widget-border, rgba(128, 128, 128, 0.2));
+}
+
+.triage-phone-name {
+	font-weight: 600;
+}
+
+.triage-phone-detail {
+	font-size: 12px;
+	opacity: 0.8;
+	margin: 2px 0 4px;
+}
+
+.triage-phone-buttons,
+.triage-phone-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 4px;
+}
+
+.triage-phone-buttons .monaco-button,
+.triage-phone-actions .monaco-button {
+	width: auto;
+	padding: 2px 10px;
+}

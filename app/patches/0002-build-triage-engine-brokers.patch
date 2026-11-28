@@ -6,8 +6,9 @@ Build changes in build/next/index.ts (ROADMAP P0-4, P0-5; DV-13).
   vs/triage/node/projectModelMain (the model service, Rust addon),
   vs/triage/node/edaEngineBrokerMain (the EDA engine's broker, P1-2),
   vs/triage/node/cadEngineBrokerMain (the CAD engine's broker, P2-3),
-  vs/triage/node/simEngineMain (the sim engine, P3) and
-  vs/triage/node/arduinoEngineMain (the Arduino engine, PA).
+  vs/triage/node/simEngineMain (the sim engine, P3),
+  vs/triage/node/arduinoEngineMain (the Arduino engine, PA) and
+  vs/triage/node/companionBrokerMain (the phone companion's broker, PC).
 - TRIAGE_SEQUENTIAL_BUNDLES: bundle the entry points one at a time, as
   upstream already does for its mobile target, instead of all 28 at once.
   Unset, nothing changes. See 0003 for the memory measurements.
@@ -16,7 +17,7 @@ diff --git a/build/next/index.ts b/build/next/index.ts
 index dd534bff120ce02570bb2ab8f7540c84ee961fc3..940c1ff9a7914fba1ea55397a3f4d8c9bf32cc47 100644
 --- a/build/next/index.ts
 +++ b/build/next/index.ts
-@@ -108,6 +108,13 @@ const desktopEntryPoints = [
+@@ -108,6 +108,14 @@ const desktopEntryPoints = [
  	'vs/workbench/contrib/debug/node/telemetryApp',
  	'vs/platform/files/node/watcher/watcherMain',
  	'vs/platform/localTranscription/node/localTranscriptionMain',
@@ -27,10 +28,11 @@ index dd534bff120ce02570bb2ab8f7540c84ee961fc3..940c1ff9a7914fba1ea55397a3f4d8c9
 +	'vs/triage/node/cadEngineBrokerMain',
 +	'vs/triage/node/simEngineMain',
 +	'vs/triage/node/arduinoEngineMain',
++	'vs/triage/node/companionBrokerMain',
  	'vs/platform/terminal/node/ptyHostMain',
  	'vs/platform/agentHost/node/agentHostMain',
  	'vs/platform/agentHost/node/diffWorkerMain',
-@@ -572,7 +579,7 @@ async function bundleToOutput(outDir: string, doMinify: boolean, doNls: boolean,
+@@ -572,7 +580,7 @@ async function bundleToOutput(outDir: string, doMinify: boolean, doNls: boolean,
  
  		buildResults.push({ outPath, result });
  	};

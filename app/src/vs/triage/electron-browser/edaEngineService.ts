@@ -29,10 +29,12 @@ export class TriageEdaEngineService extends Disposable implements ITriageEdaEngi
 	readonly onDidChangeState = this._onDidChangeState.event;
 	private readonly _onDidRestart = this._register(new Emitter<void>());
 	readonly onDidRestart = this._onDidRestart.event;
-	private readonly _onDidChangeDocument = this._register(new Emitter<{ document: number; path: string }>());
+	private readonly _onDidChangeDocument = this._register(new Emitter<{ document: number; path: string; origin?: string; command: string; modified?: boolean }>());
 	readonly onDidChangeDocument = this._onDidChangeDocument.event;
 	/** Open documents: id -> path. */
 	private readonly documents = new Map<number, string>();
+	/** Open documents: id -> the DocumentInfo they were opened with. */
+	private readonly infos = new Map<number, Message>();
 
 	private broker: Promise<IEdaEngineBroker> | undefined;
 	private readonly worker = this._register(new MutableDisposable());
@@ -53,7 +55,7 @@ export class TriageEdaEngineService extends Disposable implements ITriageEdaEngi
 		return this._state;
 	}
 
-	async call(command: string, body: Message): Promise<IEdaResult> {
+	async call(command: string, body: Message, origin?: string): Promise<IEdaResult> {
 		const broker = await this.getBroker();
 		const id = this.nextId++;
 		const request = encodeMessage(api.Request, { id, [command]: body });
@@ -64,7 +66,7 @@ export class TriageEdaEngineService extends Disposable implements ITriageEdaEngi
 		if (!response.ok) {
 			throw new EdaEngineError(response.error || `${command} failed`);
 		}
-		this.track(command, body, response);
+		this.track(command, body, response, origin);
 		return { response, chunks: reply.chunks };
 	}
 
@@ -78,15 +80,22 @@ export class TriageEdaEngineService extends Disposable implements ITriageEdaEngi
 		return found;
 	}
 
-	private track(command: string, body: Message, response: Message): void {
+	documentInfo(document: number): Message | undefined {
+		return this.infos.get(document);
+	}
+
+	private track(command: string, body: Message, response: Message, origin: string | undefined): void {
 		if (command === 'openDocument' && response.document) {
 			this.documents.set(response.document.document, response.document.path);
+			this.infos.set(response.document.document, response.document);
 		} else if (command === 'closeDocument') {
 			this.documents.delete(body.document);
+			this.infos.delete(body.document);
 		} else if (['edit', 'undo', 'redo', 'reload', 'save'].includes(command)) {
 			const path = this.documents.get(body.document);
 			if (path) {
-				this._onDidChangeDocument.fire({ document: body.document, path });
+				const modified = command === 'save' ? false : response.edit?.modified as boolean | undefined;
+				this._onDidChangeDocument.fire({ document: body.document, path, origin, command, modified });
 			}
 		}
 	}
@@ -122,6 +131,7 @@ export class TriageEdaEngineService extends Disposable implements ITriageEdaEngi
 			if (this.worker.value === worker) {
 				this.broker = undefined;
 				this.documents.clear();
+				this.infos.clear();
 				this.setState({ kind: 'stopped', reason: 'broker exited' });
 				this._onDidRestart.fire();
 			}
@@ -143,6 +153,7 @@ export class TriageEdaEngineService extends Disposable implements ITriageEdaEngi
 		this._onDidChangeState.fire(state);
 		if (restarted) {
 			this.documents.clear();
+			this.infos.clear();
 			this._onDidRestart.fire();
 		}
 		const icon = state.kind === 'connected' ? '$(circuit-board)' : state.kind === 'stopped' ? '$(error)' : '$(sync~spin)';

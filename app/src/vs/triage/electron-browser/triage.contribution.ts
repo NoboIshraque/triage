@@ -26,6 +26,13 @@ import { ITriageArduinoService } from '../common/arduino/arduino.js';
 import { TriageArduinoService } from './arduinoService.js';
 import { registerWorkbenchContribution2, WorkbenchPhase } from '../../workbench/common/contributions.js';
 import { TriagePinMapContribution } from './pinMapContribution.js';
+import { ITriageCompanionService } from '../common/companion/companionService.js';
+import { TriageCompanionService } from './companionService.js';
+import { CompanionMenus, CompanionPairingDialog, registerCompanionUi, TRIAGE_PHONES_VIEW_ID, TriagePhonesView } from '../browser/companion/companionUi.js';
+import { Registry } from '../../platform/registry/common/platform.js';
+import { Extensions as ViewExtensions, IViewContainersRegistry, IViewsRegistry } from '../../workbench/common/views.js';
+import { SyncDescriptor } from '../../platform/instantiation/common/descriptors.js';
+import { TRIAGE_VIEW_CONTAINER_ID } from '../common/triage.js';
 
 registerSingleton(ITriageHelloEngineService, TriageHelloEngineService, InstantiationType.Delayed);
 registerSingleton(ITriageProjectService, TriageProjectService, InstantiationType.Delayed);
@@ -34,6 +41,20 @@ registerSingleton(ITriageCadEngineService, TriageCadEngineService, Instantiation
 registerSingleton(ITriageSimService, TriageSimService, InstantiationType.Delayed);
 // The Arduino IDE built in (ROADMAP PA): Build, Upload, boards, libraries, examples.
 registerSingleton(ITriageArduinoService, TriageArduinoService, InstantiationType.Delayed);
+// The phone and tablet companion (ROADMAP PC, ADR 0005).
+registerSingleton(ITriageCompanionService, TriageCompanionService, InstantiationType.Delayed);
+registerCompanionUi();
+const triageContainer = Registry.as<IViewContainersRegistry>(ViewExtensions.ViewContainersRegistry).get(TRIAGE_VIEW_CONTAINER_ID);
+if (triageContainer) {
+	Registry.as<IViewsRegistry>(ViewExtensions.ViewsRegistry).registerViews([{
+		id: TRIAGE_PHONES_VIEW_ID,
+		name: localize2('triage.phones', "Phones and Tablets"),
+		ctorDescriptor: new SyncDescriptor(TriagePhonesView),
+		canToggleVisibility: true,
+		canMoveView: true,
+		order: 10,
+	}], triageContainer);
+}
 
 registerAction2(class extends Action2 {
 	constructor() {
@@ -67,3 +88,6 @@ registerAction2(class extends Action2 {
 
 registerWorkbenchContribution2(TriagePinMapContribution.ID, TriagePinMapContribution, WorkbenchPhase.AfterRestored);
 registerWorkbenchContribution2(TriageScenarioTesting.ID, TriageScenarioTesting, WorkbenchPhase.Eventually);
+// Also starts the companion, so paired phones can come back (when its setting is on).
+registerWorkbenchContribution2(CompanionMenus.ID, CompanionMenus, WorkbenchPhase.AfterRestored);
+registerWorkbenchContribution2(CompanionPairingDialog.ID, CompanionPairingDialog, WorkbenchPhase.AfterRestored);

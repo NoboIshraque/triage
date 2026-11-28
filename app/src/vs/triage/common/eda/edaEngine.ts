@@ -95,15 +95,22 @@ export interface ITriageEdaEngineService {
 	readonly onDidChangeState: Event<EngineState>;
 	/** Fires when the engine restarted: documents must be opened again. */
 	readonly onDidRestart: Event<void>;
-	/** Fires after an edit, undo, redo, reload or save changed an open document. */
-	readonly onDidChangeDocument: Event<{ readonly document: number; readonly path: string }>;
+	/**
+	 * Fires after an edit, undo, redo, reload or save changed an open document.
+	 * `origin` is the caller's (e.g. 'phone' for the companion, ROADMAP PC-4); tabs
+	 * redraw changes that came from elsewhere.
+	 */
+	readonly onDidChangeDocument: Event<{ readonly document: number; readonly path: string; readonly origin?: string; readonly command: string; readonly modified?: boolean }>;
 	/** An open document of this window's engine for `path` (the latest opened), if any. */
 	documentFor(path: string): number | undefined;
+	/** The DocumentInfo an open document was opened with (layers, sheets, box). */
+	documentInfo(document: number): Message | undefined;
 	/**
 	 * Sends a request: `command` is the Request field (e.g. 'openDocument') and
 	 * `body` its message. Rejects with EdaEngineError when the engine says no.
+	 * `origin` names a caller other than the window's own tabs ('phone').
 	 */
-	call(command: string, body: Message): Promise<IEdaResult>;
+	call(command: string, body: Message, origin?: string): Promise<IEdaResult>;
 	/** Opens `path` in KiCad's own editor window (the temporary fallback, ROADMAP P1-7). */
 	openInKicad(path: string): Promise<void>;
 	kill(): Promise<void>;
