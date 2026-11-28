@@ -56,6 +56,8 @@ class CompanionBroker implements ICompanionBroker {
 	private server: ICompanionServer | undefined;
 	private certificates: CompanionCertificate[] = [];
 	private addresses: string[] = [];
+	private addressOverride: string | undefined;
+	private listenPort = 0;
 	private renewTimer: ReturnType<typeof setInterval> | undefined;
 	private readonly pairings = new Map<string, ReturnType<typeof setTimeout>>();
 
@@ -78,6 +80,8 @@ class CompanionBroker implements ICompanionBroker {
 		server.setAllowedOrigins(options.origins);
 		const port = await server.listen(options.port, current);
 		console.log(`[triage] companion broker: listening on UDP ${port}`);
+		this.addressOverride = options.address;
+		this.listenPort = port;
 		this.addresses = lanAddresses(addon, port, options.address);
 		this.laptopKeyCache = addon.publicKey(keys.private);
 		void this.pump(server);
@@ -174,7 +178,7 @@ class CompanionBroker implements ICompanionBroker {
 		const link = addon.qrLink({
 			id, secret, certificateHash: current.hash, laptopKey: this.laptopKey(), expires: Math.floor(expires / 1000),
 			view: (['board', 'schematic', '3d', 'sim'].includes(view) ? view : 'board') as 'board',
-			addresses: this.addresses, ...(relay ? { relay } : {}),
+			addresses: this.refreshAddresses(), ...(relay ? { relay } : {}),
 		}, appUrl);
 		const { width, dark } = addon.qrModules(link);
 		let modules = '';
@@ -190,6 +194,14 @@ class CompanionBroker implements ICompanionBroker {
 			throw new Error('no laptop key');
 		}
 		return this.laptopKeyCache;
+	}
+
+	/** The laptop may have moved to another network since it started: look again. */
+	private refreshAddresses(): string[] {
+		if (this.addon && this.server) {
+			this.addresses = lanAddresses(this.addon, this.listenPort, this.addressOverride);
+		}
+		return this.addresses;
 	}
 
 	async removePairing(id: string): Promise<void> {
@@ -229,7 +241,7 @@ class CompanionBroker implements ICompanionBroker {
 	async info(): Promise<{ port: number | undefined; addresses: string[]; certificateHashes: string[]; sessions: number }> {
 		return {
 			port: this.server?.port() ?? undefined,
-			addresses: this.addresses,
+			addresses: this.refreshAddresses(),
 			certificateHashes: this.certificates.map(c => base64UrlEncode(c.hash)),
 			sessions: this.server?.sessions() ?? 0,
 		};
