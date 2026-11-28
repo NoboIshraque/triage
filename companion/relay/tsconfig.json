@@ -2,20 +2,12 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "lib": [
-      "ES2023",
-      "DOM"
-    ],
+    "lib": ["ES2023", "DOM"],
     "noUncheckedIndexedAccess": false,
     "exactOptionalPropertyTypes": false,
     "verbatimModuleSyntax": false,
     "allowJs": true,
     "checkJs": false
   },
-  "include": [
-    "src",
-    "test",
-    "cloudflare",
-    "vitest.config.ts"
-  ]
+  "include": ["src", "test", "cloudflare", "vitest.config.ts"]
 }
