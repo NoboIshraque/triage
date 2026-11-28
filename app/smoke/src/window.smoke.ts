@@ -836,57 +836,76 @@ describe('packaged Triage app', () => {
     } else {
       await clickMenu(window, ['Triage', 'Show on Phone…']);
     }
-    await expect.poll(() => dialog().getAttribute('data-state'), { timeout: 60_000 }).toBe('qr');
+    await expect
+      .poll(() => dialog().getAttribute('data-state'), { timeout: 60_000 })
+      .not.toBe('starting');
+    expect(await dialog().getAttribute('data-state'), (await dialog().textContent()) ?? '').toBe(
+      'qr',
+    );
     return (await dialog().getAttribute('data-link')) ?? '';
   };
   const phoneError = (phone: Page) => phone.locator('.screen.home .error').textContent();
 
+  /** Closes the pairing dialog if a failed step left it open (it covers the window). */
+  const closeDialog = async () => {
+    if (await dialog().isVisible()) {
+      console.log(`pairing dialog left open: ${(await dialog().textContent()) ?? ''}`);
+      await dialog().locator('.triage-companion-close').click();
+    }
+  };
+
   companionIt(
     'pairs a scripted phone: wrong digits denied, the six digits, view only, reused QR refused (ROADMAP PC-2, PC-3)',
     async () => {
-      const first = await pairNewPhone();
-      expect(first).toContain(`${phoneAppUrl}/p#`);
-      await window.screenshot({ path: shot('companion-qr') });
-      // A phone the person doesn't recognise (other digits): Deny.
-      const stranger = await openPhone(first);
-      await expect
-        .poll(() => dialog().getAttribute('data-state'), { timeout: 60_000 })
-        .toBe('request');
-      await dialog().locator('[data-answer="deny"]').click();
-      await expect.poll(() => phoneError(stranger), { timeout: 30_000 }).toContain('said no');
-      // A new code; the phone in the user's hand shows the same digits.
-      await expect.poll(() => dialog().getAttribute('data-state'), { timeout: 60_000 }).toBe('qr');
-      const link = (await dialog().getAttribute('data-link')) ?? '';
-      expect(link).not.toBe(first);
-      const phone = await openPhone(link);
-      await expect
-        .poll(() => dialog().getAttribute('data-state'), { timeout: 60_000 })
-        .toBe('request');
-      const phoneSas = await phone
-        .locator('[data-screen="pairing"]')
-        .getAttribute('data-sas', { timeout: 30_000 });
-      expect(phoneSas).toMatch(/^\d{6}$/);
-      expect(await dialog().getAttribute('data-sas')).toBe(phoneSas);
-      await dialog().locator('.triage-companion-name-input').fill('Smoke phone');
-      await window.screenshot({ path: shot('companion-digits') });
-      await dialog().locator('[data-answer="view"]').click();
-      // The phone shows the Board tab, drawn by its own renderer.
-      const board = phone.locator('.view.eda[data-view="board"]');
-      await expect.poll(() => board.getAttribute('data-state'), { timeout: 60_000 }).toBe('ready');
-      expect(Number(await board.getAttribute('data-groups'))).toBeGreaterThan(20);
-      expect(await phone.locator('body').getAttribute('data-permission')).toBe('view');
-      await phone.screenshot({ path: shot('companion-phone-board') });
-      expect(await phonesView().locator('.triage-phone[data-phone="Smoke phone"]').count()).toBe(1);
-      // The same QR code again: used, refused.
-      const again = await openPhone(link);
-      await expect.poll(() => phoneError(again), { timeout: 30_000 }).toContain('already used');
-      // The first (rotated away) code: expired.
-      const late = await openPhone(first);
-      await expect
-        .poll(() => phoneError(late), { timeout: 30_000 })
-        .toMatch(/expired|already used/);
+      try {
+        await pairPhone();
+      } finally {
+        await closeDialog();
+      }
     },
   );
+
+  const pairPhone = async () => {
+    const first = await pairNewPhone();
+    expect(first).toContain(`${phoneAppUrl}/p#`);
+    await window.screenshot({ path: shot('companion-qr') });
+    // A phone the person doesn't recognise (other digits): Deny.
+    const stranger = await openPhone(first);
+    await expect
+      .poll(() => dialog().getAttribute('data-state'), { timeout: 60_000 })
+      .toBe('request');
+    await dialog().locator('[data-answer="deny"]').click();
+    await expect.poll(() => phoneError(stranger), { timeout: 30_000 }).toContain('said no');
+    // A new code; the phone in the user's hand shows the same digits.
+    await expect.poll(() => dialog().getAttribute('data-state'), { timeout: 60_000 }).toBe('qr');
+    const link = (await dialog().getAttribute('data-link')) ?? '';
+    expect(link).not.toBe(first);
+    const phone = await openPhone(link);
+    await expect
+      .poll(() => dialog().getAttribute('data-state'), { timeout: 60_000 })
+      .toBe('request');
+    const phoneSas = await phone
+      .locator('[data-screen="pairing"]')
+      .getAttribute('data-sas', { timeout: 30_000 });
+    expect(phoneSas).toMatch(/^\d{6}$/);
+    expect(await dialog().getAttribute('data-sas')).toBe(phoneSas);
+    await dialog().locator('.triage-companion-name-input').fill('Smoke phone');
+    await window.screenshot({ path: shot('companion-digits') });
+    await dialog().locator('[data-answer="view"]').click();
+    // The phone shows the Board tab, drawn by its own renderer.
+    const board = phone.locator('.view.eda[data-view="board"]');
+    await expect.poll(() => board.getAttribute('data-state'), { timeout: 60_000 }).toBe('ready');
+    expect(Number(await board.getAttribute('data-groups'))).toBeGreaterThan(20);
+    expect(await phone.locator('body').getAttribute('data-permission')).toBe('view');
+    await phone.screenshot({ path: shot('companion-phone-board') });
+    expect(await phonesView().locator('.triage-phone[data-phone="Smoke phone"]').count()).toBe(1);
+    // The same QR code again: used, refused.
+    const again = await openPhone(link);
+    await expect.poll(() => phoneError(again), { timeout: 30_000 }).toContain('already used');
+    // The first (rotated away) code: expired.
+    const late = await openPhone(first);
+    await expect.poll(() => phoneError(late), { timeout: 30_000 }).toMatch(/expired|already used/);
+  };
 
   companionIt(
     'refuses a view-only phone’s edit, then takes it once the laptop allows editing (ROADMAP PC-2, PC-4)',

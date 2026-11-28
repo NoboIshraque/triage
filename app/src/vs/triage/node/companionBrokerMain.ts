@@ -65,6 +65,7 @@ class CompanionBroker implements ICompanionBroker {
 
 	async start(options: ICompanionBrokerStart): Promise<ICompanionBrokerStarted> {
 		await this.stop();
+		console.log(`[triage] companion broker: loading ${join(options.addonFolder, COMPANION_ADDON)}`);
 		const addon = this.addon ??= createRequire(import.meta.url)(join(options.addonFolder, COMPANION_ADDON)) as ICompanionAddon;
 		const keys = options.staticPrivate ? { private: base64UrlDecode(options.staticPrivate) } : addon.generateKeypair();
 		const now = Date.now() / 1000;
@@ -76,6 +77,7 @@ class CompanionBroker implements ICompanionBroker {
 		const server = this.server = new addon.CompanionServer(keys.private);
 		server.setAllowedOrigins(options.origins);
 		const port = await server.listen(options.port, current);
+		console.log(`[triage] companion broker: listening on UDP ${port}`);
 		this.addresses = lanAddresses(addon, port, options.address);
 		this.laptopKeyCache = addon.publicKey(keys.private);
 		void this.pump(server);

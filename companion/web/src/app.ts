@@ -557,7 +557,11 @@ export class CompanionApp implements ViewHost {
     this.current?.close();
     this.current = session;
     this.connectedAt = performance.now();
+    let welcomed = false;
     session.onEvent((envelope) => {
+      if (envelope.kind === 'event:welcome') {
+        welcomed = true;
+      }
       const body = (envelope.json ? JSON.parse(envelope.json) : {}) as Record<string, unknown>;
       void this.onEvent(session, envelope.kind, body, record, firstView);
     });
@@ -566,8 +570,13 @@ export class CompanionApp implements ViewHost {
         return;
       }
       clearInterval(this.ping);
-      this.banner(closed.message, true);
       document.body.dataset['connection'] = 'closed';
+      if (!welcomed) {
+        // Closed before the laptop let it in (Deny, a timeout): back home, saying why.
+        this.home(closed.message);
+        return;
+      }
+      this.banner(closed.message, true);
       if (this.record && !['not-paired', 'denied', 'incompatible'].includes(closed.reason)) {
         const record = this.record;
         this.reconnectTimer = setTimeout(() => {

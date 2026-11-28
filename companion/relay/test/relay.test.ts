@@ -124,7 +124,8 @@ describe('relay', () => {
     const laptop2 = await socket(`${url}/v1/${mailbox}?role=laptop`);
     const phone2 = await socket(`${url}/v1/${mailbox}?role=phone`);
     phone2.ws.send(new Uint8Array(80_000));
-    expect((await phone2.closed).code).toBe(1009);
+    // 1009 (message too big); Windows' sockets may drop the close frame: 1006.
+    expect([1009, 1006]).toContain((await phone2.closed).code);
     await laptop2.closed;
   });
 });

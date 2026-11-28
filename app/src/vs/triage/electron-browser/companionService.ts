@@ -77,6 +77,11 @@ interface Connection {
 	answerTimer?: ReturnType<typeof setTimeout>;
 }
 
+/** Rejects after `ms` with `message`. */
+function timeout(ms: number, message: string): Promise<never> {
+	return new Promise((_, reject) => setTimeout(() => reject(new Error(message)), ms));
+}
+
 function sanitizeName(name: unknown, fallback: string): string {
 	const text = typeof name === 'string' ? name.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, 60) : '';
 	return text || fallback;
@@ -251,9 +256,16 @@ export class TriageCompanionService extends Disposable implements ITriageCompani
 	}
 
 	private async createBroker(): Promise<ICompanionBroker> {
+		this.logService.info('[triage] companion: starting the broker');
 		const worker = await this.workerService.createWorker({ moduleId: COMPANION_BROKER_MODULE, type: 'triageCompanion', name: 'triage-companion-broker' });
 		this.worker.value = worker;
-		void worker.onDidTerminate.then(() => {
+		let terminated: ((reason: string) => void) | undefined;
+		const died = new Promise<never>((_, reject) => { terminated = reason => reject(new Error(reason)); });
+		died.catch(() => undefined);
+		void worker.onDidTerminate.then(({ reason }) => {
+			const why = localize('triage.companion.brokerExited', "the companion's process stopped (code {0}{1})", String(reason?.code ?? '?'), reason?.signal ? `, ${reason.signal}` : '');
+			this.logService.warn(`[triage] companion: ${why}`);
+			terminated?.(why);
 			if (this.worker.value === worker) {
 				this.broker = undefined;
 				this.started = undefined;
@@ -267,6 +279,7 @@ export class TriageCompanionService extends Disposable implements ITriageCompani
 		this.brokerListeners.clear();
 		this.brokerListeners.add(broker.onDidEvent(([json, data]) => void this.onBrokerEvent(JSON.parse(json), data.buffer)));
 		const identity = await this.loadIdentity();
+		this.logService.info(`[triage] companion: keys ${identity ? 'loaded' : 'not stored yet'}`);
 		const appUrl = this.appUrl();
 		let origin = '';
 		try {
@@ -274,7 +287,7 @@ export class TriageCompanionService extends Disposable implements ITriageCompani
 		} catch {
 			// no origin check for an odd URL
 		}
-		const started = await broker.start({
+		const starting = broker.start({
 			addonFolder: join(this.environmentService.appRoot, 'engines', COMPANION_FOLDER),
 			staticPrivate: identity?.staticPrivate ?? '',
 			certificates: identity?.certificates ?? [],
@@ -283,6 +296,8 @@ export class TriageCompanionService extends Disposable implements ITriageCompani
 			origins: origin ? [origin] : [],
 			address: this.configurationService.getValue<string>(COMPANION_SETTINGS.address) || undefined,
 		});
+		// A process that dies leaves the call unanswered: race it with the exit and a timeout.
+		const started = await Promise.race([starting, died, timeout(30_000, localize('triage.companion.startTimeout', "the companion's process didn't answer in 30 s"))]);
 		this.started = started;
 		await this.saveIdentity({ staticPrivate: started.staticPrivate, certificates: [...started.certificates] });
 		await broker.setPhones(this._phones.map(p => ({ mailbox: p.mailbox, key: p.key })));
@@ -294,7 +309,8 @@ export class TriageCompanionService extends Disposable implements ITriageCompani
 
 	private async loadIdentity(): Promise<Identity | undefined> {
 		try {
-			const text = await this.secretStorage.get(IDENTITY_KEY);
+			// Secret storage can stall where no OS keyring answers (Linux without one).
+			const text = await Promise.race([this.secretStorage.get(IDENTITY_KEY), timeout(5000, 'secret storage did not answer')]);
 			return text ? JSON.parse(text) as Identity : undefined;
 		} catch (error) {
 			this.logService.warn('[triage] companion: no stored keys', error);
@@ -304,7 +320,7 @@ export class TriageCompanionService extends Disposable implements ITriageCompani
 
 	private async saveIdentity(identity: Identity): Promise<void> {
 		try {
-			await this.secretStorage.set(IDENTITY_KEY, JSON.stringify(identity));
+			await Promise.race([this.secretStorage.set(IDENTITY_KEY, JSON.stringify(identity)), timeout(5000, 'secret storage did not answer')]);
 		} catch (error) {
 			this.logService.warn('[triage] companion: the keys were not stored; phones will pair again after a restart', error);
 		}
