@@ -1,0 +1,19 @@
+# The phone companion's relay on Cloudflare Workers (ROADMAP PC-7). Deployed by the
+# Companion workflow's relay job, or by hand: `npx wrangler deploy` in this folder.
+name = "triage-relay"
+main = "relay-worker.js"
+compatibility_date = "2026-11-01"
+workers_dev = true
+
+[[durable_objects.bindings]]
+name = "MAILBOX"
+class_name = "Mailbox"
+
+# The Workers Free plan runs SQLite-backed Durable Objects.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Mailbox"]
+
+[observability]
+# Request counts and errors only; the relay never logs what it forwards.
+enabled = false

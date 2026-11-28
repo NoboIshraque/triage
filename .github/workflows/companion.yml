@@ -5,7 +5,10 @@
 # meets Chrome's installability criteria). On the default branch the phone app is
 # published to GitHub Pages (ADR 0005 decision 2) once the owner has turned Pages
 # on (Settings → Pages → Source: GitHub Actions) and set the repository variable
-# TRIAGE_COMPANION_PAGES to true (owner check C8).
+# TRIAGE_COMPANION_PAGES to true, and the relay is deployed to Cloudflare Workers
+# (the owner's choice, 2026-11-28) once the owner has added the secrets
+# CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID and set TRIAGE_COMPANION_RELAY_DEPLOY
+# to true (owner check C8).
 name: Companion
 
 on:
@@ -104,3 +107,17 @@ jobs:
           path: companion/web/dist
       - id: deploy
         uses: actions/deploy-pages@v4
+
+  relay:
+    name: Deploy the relay (Cloudflare Workers)
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch && vars.TRIAGE_COMPANION_RELAY_DEPLOY == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: companion/relay/cloudflare
+          command: deploy

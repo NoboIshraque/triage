@@ -43,6 +43,8 @@ pub const MAX_INBOUND_RATE: f64 = 200.0;
 pub const INIT_TIMEOUT: Duration = Duration::from_secs(10);
 /// Time for the phone's first sealed message after the reply.
 pub const HELLO_TIMEOUT: Duration = Duration::from_secs(30);
+/// How often the relay client pings while connected.
+pub const RELAY_PING: Duration = Duration::from_secs(25);
 /// Application messages queued for one phone before [`Companion::send`] says no.
 pub const OUTBOUND_QUEUE: usize = 64;
 
@@ -554,9 +556,22 @@ async fn relay_loop(shared: Arc<Shared>, url: String, mailbox: [u8; 16]) {
                     }
                 });
                 let writer = tokio::spawn(async move {
-                    while let Some(frame) = outbound_rx.recv().await {
-                        if sink.send(Message::Binary(frame.into())).await.is_err() {
-                            return;
+                    // Hosted relays (Cloudflare) close a silent WebSocket: ping while waiting.
+                    let mut ping = tokio::time::interval(RELAY_PING);
+                    ping.tick().await;
+                    loop {
+                        tokio::select! {
+                            frame = outbound_rx.recv() => {
+                                let Some(frame) = frame else { break };
+                                if sink.send(Message::Binary(frame.into())).await.is_err() {
+                                    return;
+                                }
+                            }
+                            _ = ping.tick() => {
+                                if sink.send(Message::Ping(Vec::new().into())).await.is_err() {
+                                    return;
+                                }
+                            }
                         }
                     }
                     let _ = sink.close().await;
