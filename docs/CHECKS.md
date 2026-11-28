@@ -14,9 +14,10 @@
 
 **Current build branch:** `claude/unified-engineering-platform-jn5rmk`, the
 **default branch** (Claude updates this line when a session works on another
-branch). P0 to P3 and **PA** (the Arduino IDE built in, 2026-11-27) are
-**merged into it**: every check uses a build from it (C7 needs one made after
-PA's merge, which the nightly or the App workflow on this branch gives).
+branch). P0 to P3, **PA** (the Arduino IDE built in, 2026-11-27) and **PC**
+(the phone and tablet companion, 2026-11-28) are **merged into it**: every check
+uses a build from it (C7 needs one made after PA's merge, C8 to C10 one made after
+PC's merge, which the nightly or the App workflow on this branch gives).
 
 ## At a glance
 
@@ -29,6 +30,9 @@ PA's merge, which the nightly or the App workflow on this branch gives).
 | [C5](#c5--the-3d-tab-and-the-enclosure-p2) | The 3D tab and the enclosure | P2 | no | |
 | [C6](#c6--m2-exit-demo-the-smart-fan-runs-in-one-window-p3) | M2 exit demo: the Smart Fan runs in one window | P3 (milestone M2) | no | |
 | [C7](#c7--pa-exit-demo-the-arduino-ide-built-into-triage-on-your-board-pa) | PA exit demo: examples, Upload to your Nano or Mega, Serial Monitor, Library and Boards Managers (ESP32) | PA (PA-3, PA-5, exit demo) | no | |
+| [C8](#c8--the-phone-app-online-the-relay-and-your-phone-sees-the-board-pc-1) | Turn on GitHub Pages and the Cloudflare relay; your phone pairs and shows the board | PC-1, PC-3, PC-7 | no | |
+| [C9](#c9--install-the-phone-app-and-reconnect-without-a-qr-code-pc-3) | Install the phone app; it reconnects without a QR code | PC-3 | no | |
+| [C10](#c10--pc-exit-demo-edit-and-simulate-from-your-phone-pc-4-to-pc-7) | PC exit demo: a value changed on the phone, 3D and the simulation from the phone, mobile data | PC-4 … PC-7 (exit demo) | no | |
 
 "Blocks the next phase: no" means Claude can start the next phase before you run
 it. A milestone (M1, M2 …) only counts as finished once you have run its exit
@@ -410,14 +414,164 @@ menu sits between **Edit** and **Selection**.) Typing a command
   anything slow or confusing; screenshots (**Win+Shift+S**).
 - [ ] Done
 
+## C8 · The phone app online, the relay, and your phone sees the board (PC-1)
+
+- **Why:** ROADMAP PC-1: "the owner scans the QR from the Windows build and sees
+  the board drawn on their phone over the LAN. The numbers are in STATUS." Claude
+  ran the same path with an emulated phone (ADR 0005, "PC-1 results"); a real
+  phone, Windows' firewall and Safari are only on your side. Parts A and B are
+  one-time settings only you can change (GitHub and a Cloudflare account, your
+  choice of 2026-11-28).
+- **You need:** a build made after PC's merge (top of this file), your phone
+  (Android with Chrome, or an iPhone with **iOS 26.4 or newer**) on the same
+  Wi-Fi as the laptop, about 40 minutes.
+- **Part A: publish the phone app on GitHub Pages** (5 minutes)
+  1. Open <https://github.com/NoboIshraque/triage> → **Settings** → **Pages**
+     (left list). Under **Build and deployment**, **Source**: pick **GitHub
+     Actions**.
+  2. **Settings** → **Secrets and variables** → **Actions** → tab
+     **Variables** → **New repository variable**: Name
+     `TRIAGE_COMPANION_PAGES`, Value `true` → **Add variable**.
+  3. **Actions** → **Companion** (left list) → **Run workflow** → keep the
+     default branch → **Run workflow**. Wait for the green check (about 10
+     minutes). **Check:** <https://noboishraque.github.io/triage/> opens on your
+     phone and says "Triage on your phone".
+- **Part B: the relay on Cloudflare** (15 minutes; free plan)
+  1. Create a free account at <https://dash.cloudflare.com/sign-up> (no card
+     needed for the free plan).
+  2. In the dashboard click **Workers & Pages**. Your **Account ID** is on the
+     right of that page: copy it.
+  3. Click your profile icon (top right) → **My Profile** → **API Tokens** →
+     **Create Token** → template **Edit Cloudflare Workers** → **Use template**.
+     Under **Account Resources** pick your account; under **Zone Resources**
+     pick **All zones** → **Continue to summary** → **Create Token**. Copy the
+     token (it's shown once).
+  4. On GitHub: **Settings** → **Secrets and variables** → **Actions** → tab
+     **Secrets** → **New repository secret** twice: `CLOUDFLARE_API_TOKEN` (the
+     token) and `CLOUDFLARE_ACCOUNT_ID` (the Account ID). Then tab **Variables**
+     → **New repository variable**: `TRIAGE_COMPANION_RELAY_DEPLOY` = `true`.
+  5. **Actions** → **Companion** → **Run workflow** again. **Check:** the job
+     **Deploy the relay (Cloudflare Workers)** is green; its log ends with an
+     address like `https://triage-relay.<your-name>.workers.dev`. Open that
+     address + `/healthz` in a browser: it says `ok`.
+  6. **Variables** → **New repository variable**: `TRIAGE_COMPANION_RELAY` =
+     `wss://triage-relay.<your-name>.workers.dev` (note **wss://**). Run
+     **Companion** once more (the phone app then knows the relay for typed codes).
+  7. In Triage: **File → Preferences → Settings**, type `companion relay` in the
+     search box, and paste the same `wss://…` address into **Triage › Companion:
+     Relay**.
+- **Part C: your phone and the board** (15 minutes)
+  1. Start Triage, open the `smart-fan` copy and click **Open Engineering
+     Layout**. Click the **Board** tab.
+  2. At the top right of the Board tab, click the **phone icon** (**Show on
+     Phone**) → **Show on Phone: Pair a New Phone…**. **Check:** a dialog shows
+     a QR code, and (with Part B done) an 8-character code under it.
+  3. **Windows may ask about its firewall** the first time ("Windows Defender
+     Firewall has blocked some features of Triage"). **Write down exactly what it
+     says and which boxes are ticked.** Tick **Private networks**, click **Allow
+     access**. If it asks for an administrator password you don't have, click
+     **Cancel** and note that.
+  4. On the phone, open the **Camera** and point it at the QR code; tap the link
+     that appears. Android: Triage's page opens in Chrome. iPhone: Safari says
+     "Add Triage to the Home Screen first": for this check tap **Pair in Safari
+     anyway** (installing is C9).
+  5. **Check:** both screens show the **same six digits**. On the laptop, click
+     **Allow: View Only**.
+  6. **Check:** the phone shows the board, drawn sharply. Drag with one finger to
+     move it, pinch to zoom, double-tap to fit. Tap a part (R1): a card shows its
+     value.
+  7. On the phone, tap **⋮** (top right) → **Benchmark this view**. Write down
+     the number ("board: … frames per second"). Do the same on the
+     **Schematic** tab (tap **Schematic** at the top).
+  8. Time it: on the laptop click **Show on Phone → Pair a New Phone…** again,
+     scan, and count the seconds from tapping the link to the board showing
+     (after you click **Allow**).
+  9. *If the phone says it can't reach the laptop:* note the message. "No
+     WebTransport" means the iPhone is older than iOS 26.4; with Part B done it
+     should then go through the relay instead.
+- **Tell Claude:** your phone's model and system version; what the firewall
+  asked (step 3); the seconds in step 8; the frames per second in step 7; the
+  relay's address (Part B step 5); anything that looked wrong, with screenshots.
+- [ ] Done
+
+## C9 · Install the phone app and reconnect without a QR code (PC-3)
+
+- **Why:** ROADMAP PC-3: "the owner installs the app on their phone, pairs it
+  with the Windows nightly, restarts both, and it reconnects without a QR."
+- **You need:** C8 Part A done, the same build and phone, 15 minutes.
+- **Steps:**
+  1. On the phone open <https://noboishraque.github.io/triage/>.
+     **Android:** tap **Install the app** (or Chrome's **⋮** → **Install app**).
+     **iPhone:** Safari's **Share** button → **Add to Home Screen** → **Add**.
+  2. Open **Triage** from the Home Screen. Tap **Scan the QR code** (allow the
+     camera). On the laptop: Board tab → **Show on Phone** → **Pair a New
+     Phone…**; scan it with the app. Compare the six digits, type a name (for
+     example "My phone") in the dialog and click **Allow: View and Edit**.
+     **Check:** the app shows the board; the Triage side bar's **Phones and
+     Tablets** section lists your phone.
+  3. Close the app (swipe it away) and quit Triage. Start Triage again and open
+     the `smart-fan` project.
+  4. Open the app on the phone. **Check:** it says "Connecting to smart-fan…" and
+     shows the board **without a QR code**. On the laptop a notification says
+     "My phone connected (view only)": click **Allow Editing**. **Check:** the
+     phone says "The laptop allowed editing" and shows **edit** at the top.
+  5. Turn on airplane mode and open the app again. **Check:** it still opens
+     (its home screen, "Connect" fails until you turn airplane mode off).
+- **Tell Claude:** which steps worked, the phone's model and system, anything
+  odd (camera permission, iPhone's Home Screen app, the notification).
+- [ ] Done
+
+## C10 · PC exit demo: edit and simulate from your phone (PC-4 to PC-7)
+
+- **Why:** ROADMAP PC exit demo: "Show on phone on the Board tab, pair a phone
+  with the QR and the six-digit code, change a resistor's value on the phone, then
+  run the Smart Fan simulation from the phone and watch the fan spin in 3D on both
+  screens. The files still open in stock KiCad." Also PC-4's and PC-5's 30 fps,
+  PC-6's owner check and PC-7's mobile data.
+- **You need:** C8 and C9 done (the installed app, paired), the build, 30
+  minutes. Optional: KiCad 10.
+- **Steps:**
+  1. Open the `smart-fan` copy, **Open Engineering Layout**. Board tab → **Show
+     on Phone** → **Show on My phone…** → **View and edit**. Open the app on the
+     phone if it isn't. **Check:** it shows the board, with **edit** at the top.
+  2. **A value from the phone:** tap **R1** → **Value…** → type `4.7k` → **OK**.
+     **Check:** within about a second the laptop's **Board** tab shows
+     **modified**. On the phone tap **Save**. **Check:** "Saved on the laptop".
+     *(Optional)* open `electronics\smart-fan.kicad_pcb` in KiCad 10: R1 says
+     4.7k. Set it back to `10k` the same way and save.
+  3. **3D on the phone:** tap **3D**. **Check:** the board and the enclosure
+     show; drag to orbit, pinch to zoom. **⋮ → Benchmark this view**: write down
+     the number. Tap **Objects** → tap **Enclosure** → in its properties set
+     **WallThickness** to `3` → **Check:** both screens redraw thicker walls.
+     Set it back to `2`.
+  4. **The simulation from the phone (PC-6):** tap **Sim**. Pick **Whole
+     device**, tap **Run**. **Check:** after "Building on the laptop…" the time
+     counts up on both screens. Drag **Room temperature** to **35 °C** on the
+     phone. **Check:** the phone's OLED shows `35.0C 80%`; in the laptop's **3D**
+     tab the rotor turns; on the phone tap **3D**: the rotor turns there too.
+     *(Optional)* tap **Tilt to set** and tilt the phone towards you (iPhone asks
+     for motion permission).
+  5. **The scenarios:** in the phone's Sim tab open **Scenarios** → **Run all
+     scenarios**. **Check:** all show ✓, `fan reacts to overheating` among them.
+     Tap **Stop** at the top.
+  6. **Away from the desk (PC-7, needs C8 Part B):** turn the phone's **Wi-Fi
+     off** (mobile data on). Open the app. **Check:** it connects; **⋮** says
+     "through the relay"; the board shows (more slowly than on Wi-Fi). Turn
+     Wi-Fi back on.
+  7. **Remove:** in the laptop's **Phones and Tablets** section click
+     **Remove** next to your phone. **Check:** the phone says the laptop doesn't
+     know it any more.
+- **Tell Claude:** which steps worked; the 3D frames per second; how quickly
+  the value showed on the laptop; whether the relay step worked; screenshots of
+  anything odd.
+- [ ] Done
+
 ---
 
 ## Coming later
 
 Claude adds full steps when the work package is built. From the ROADMAP:
 
-- **PC exit demo and PC-6 (phone companion, after P3):** "Show on phone" from
-  the laptop, then the simulation on your phone.
 - **M3 exit demo (end of P4):** the ESP32 Smart Fan serving its dashboard over
   simulated Wi-Fi.
 - **M4 and M5 exit demos (P6, P8).**

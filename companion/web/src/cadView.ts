@@ -320,56 +320,67 @@ export class CadPhoneView implements PhoneView {
         properties: CadProperty[];
       };
       const edit = this.host.permission() === 'edit';
-      const rows = result.properties.filter(
-        (p) =>
-          !p.hidden &&
-          [
-            'App::PropertyLength',
-            'App::PropertyDistance',
-            'App::PropertyFloat',
-            'App::PropertyInteger',
-            'App::PropertyBool',
-            'App::PropertyString',
-          ].includes(p.type),
-      );
+      // The same editors as the laptop's 3D panel (cadView.ts propertyEditor): yes/no,
+      // a choice, or text for numbers, quantities ("3 mm") and strings.
+      const send = (p: CadProperty, value: unknown) => {
+        void this.host.session
+          .request('cad.setProperty', { doc: p.doc || doc, object, property: p.name, value })
+          .then(
+            () => {
+              toast(`${p.name} changed on the laptop.`);
+            },
+            (e: unknown) => {
+              toast(e instanceof Error ? e.message : String(e));
+            },
+          );
+      };
+      const editor = (p: CadProperty): HTMLElement | null => {
+        const value = p.value;
+        const disabled = !edit || p.readOnly;
+        if (typeof value === 'boolean') {
+          const box = h('input', {
+            type: 'checkbox',
+            checked: value,
+            disabled,
+            dataset: { property: p.name },
+          });
+          box.addEventListener('change', () => {
+            send(p, box.checked);
+          });
+          return box;
+        }
+        if (typeof value === 'object' && value !== null && 'options' in value) {
+          const choice = value as { value: string; options: string[] };
+          const select = h(
+            'select',
+            { disabled, dataset: { property: p.name } },
+            ...choice.options.map((o) => h('option', { selected: o === choice.value }, o)),
+          );
+          select.addEventListener('change', () => {
+            send(p, select.value);
+          });
+          return select;
+        }
+        const quantity = typeof value === 'object' && value !== null && 'text' in value;
+        if (typeof value !== 'number' && typeof value !== 'string' && !quantity) {
+          return null;
+        }
+        const text = quantity ? (value as { text: string }).text : String(value);
+        const input = h('input', { value: text, disabled, dataset: { property: p.name } });
+        input.addEventListener('change', () => {
+          send(p, typeof value === 'number' ? Number(input.value) : input.value);
+        });
+        return input;
+      };
       replace(
         container,
         h('div.title', {}, `${result.label} (${result.type})`),
-        ...rows.map((p) => {
-          const value =
-            typeof p.value === 'object' && p.value !== null && 'value' in p.value
-              ? p.value.value
-              : p.value;
-          const input = h('input', {
-            value: String(value),
-            disabled: !edit || p.readOnly,
-            dataset: { property: p.name },
-          });
-          input.addEventListener('change', () => {
-            const typed: unknown =
-              p.type === 'App::PropertyBool'
-                ? input.value === 'true'
-                : p.type === 'App::PropertyString'
-                  ? input.value
-                  : Number(input.value);
-            void this.host.session
-              .request('cad.setProperty', {
-                doc: p.doc || doc,
-                object,
-                property: p.name,
-                value: typed,
-              })
-              .then(
-                () => {
-                  toast(`${p.name} changed on the laptop.`);
-                },
-                (e: unknown) => {
-                  toast(e instanceof Error ? e.message : String(e));
-                },
-              );
-          });
-          return h('label.property', {}, h('span', {}, p.name), input);
-        }),
+        ...result.properties
+          .filter((p) => !p.hidden)
+          .map((p) => {
+            const control = editor(p);
+            return control ? h('label.property', {}, h('span', {}, p.name), control) : null;
+          }),
       );
     } catch (error) {
       replace(container, h('p.error', {}, error instanceof Error ? error.message : String(error)));
