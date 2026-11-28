@@ -1,0 +1,25 @@
+{
+  "name": "@triage/companion-relay",
+  "version": "0.0.0",
+  "private": true,
+  "description": "The phone companion's relay (ROADMAP PC-7, ADR 0005): a stateless WebSocket forwarder of sealed frames between a phone and the laptop's mailbox, with size, rate and idle limits, no accounts and no content logs.",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/main.js",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "@types/ws": "^8.18.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

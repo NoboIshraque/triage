@@ -11,6 +11,8 @@ node_modules/
 /cli/dist/
 /sim/dist/
 /parts/dist/
+/companion/relay/dist/
+/companion/web/dist/
 *.tsbuildinfo
 .turbo/
 /coverage/

@@ -6,6 +6,8 @@ packages:
   - app/smoke
   - app/engine-tests
   - crates/triage-model-node
+  - companion/relay
+  - companion/web
 
 # Shared versions for workspace packages (`"typescript": "catalog:"`).
 # typescript-eslint supports TypeScript < 6.1, so TypeScript stays on 6.0.

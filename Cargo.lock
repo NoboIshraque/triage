@@ -912,6 +912,7 @@ dependencies = [
  "napi-sys",
  "nohash-hasher",
  "rustc-hash",
+ "tokio",
 ]
 
 [[package]]
@@ -1913,6 +1914,17 @@ dependencies = [
  "tokio",
  "tokio-tungstenite",
  "wtransport",
+]
+
+[[package]]
+name = "triage-companion-node"
+version = "0.0.0"
+dependencies = [
+ "napi",
+ "napi-build",
+ "napi-derive",
+ "tokio",
+ "triage-companion",
 ]
 
 [[package]]

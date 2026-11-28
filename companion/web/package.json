@@ -1,0 +1,22 @@
+{
+  "name": "@triage/companion-web",
+  "version": "0.1.0",
+  "private": true,
+  "description": "The phone and tablet companion app (ROADMAP PC-3 to PC-6, ADR 0005): an installable web app that draws Triage's schematic, board, 3D model and simulation streamed from the laptop.",
+  "license": "GPL-3.0-or-later",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "jsqr": "^1.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
