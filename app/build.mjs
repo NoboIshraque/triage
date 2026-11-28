@@ -263,6 +263,18 @@ function buildEngines({ arch }) {
     console.log(`Copied ${path.basename(file)} into ${path.relative(process.cwd(), target)}`);
   }
   buildSimulation(target);
+  // The phone companion's server (ROADMAP PC-2): Rust, as a Node addon for the
+  // companion broker's utility process.
+  run(process.execPath, [path.join(repoRoot, 'crates', 'triage-companion-node', 'build.mjs')], {
+    cwd: repoRoot,
+  });
+  const companionTarget = path.join(target, 'companion');
+  mkdirSync(companionTarget, { recursive: true });
+  cpSync(
+    path.join(repoRoot, 'build', 'native', 'addons', 'triage_companion.node'),
+    path.join(companionTarget, 'triage_companion.node'),
+  );
+  console.log(`Copied the companion addon into ${path.relative(process.cwd(), companionTarget)}`);
   // Triage's Arduino engine (ROADMAP PA-2): arduino-cli, the AVR platform and its
   // compiler, built from source by engines/arduino/build.mjs (Linux) or taken from the
   // Arduino workflow (.github/actions/arduino-engine). The sim package finds it at

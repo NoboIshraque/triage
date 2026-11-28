@@ -33,7 +33,7 @@ import {
 } from '../../../app/src/vs/triage/common/companion/session.js';
 import { CadPhoneView } from './cadView.js';
 import { h, replace, toast } from './dom.js';
-import { EdaPhoneView } from './edaView.js';
+import { edaCall, EdaPhoneView } from './edaView.js';
 import { scan } from './scanner.js';
 import { SimPhoneView } from './simView.js';
 import * as store from './store.js';
@@ -146,6 +146,11 @@ export class CompanionApp implements ViewHost {
       averageFrameMs: frames.length ? frames.reduce((a, b) => a + b, 0) / frames.length : 0,
       connectedMs: this.connectedAt,
     };
+  }
+
+  /** One KiCad-engine request through the laptop (tests: what a view-only phone may do). */
+  eda(command: string, body: Record<string, unknown>): Promise<unknown> {
+    return edaCall(this.session, command, body).then(({ response }) => response);
   }
 
   async start(): Promise<void> {

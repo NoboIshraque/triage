@@ -9,6 +9,8 @@ import {
   rmSync,
   writeFileSync,
 } from 'node:fs';
+import { createServer, type Server } from 'node:http';
+import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import process from 'node:process';
@@ -151,8 +153,40 @@ describe('packaged Triage app', () => {
   mkdirSync(path.dirname(userSettings), { recursive: true });
   writeFileSync(userSettings, JSON.stringify({ 'triage.projectsFolder': projectsFolder }, null, 2));
 
+  // ROADMAP PC: the phone app (companion/web, built) served here, as GitHub Pages serves it.
+  const phoneDist = path.join(appDir, '..', 'companion', 'web', 'dist');
+  const companionShipped =
+    existsSync(
+      path.join(app.folder, 'resources', 'app', 'engines', 'companion', 'triage_companion.node'),
+    ) && existsSync(path.join(phoneDist, 'index.html'));
+  if (process.env['TRIAGE_REQUIRE_COMPANION'] === '1' && !companionShipped) {
+    throw new Error(
+      `TRIAGE_REQUIRE_COMPANION is set but the companion addon or ${phoneDist} is missing`,
+    );
+  }
+  let phoneServer: Server | undefined;
+  let phoneAppUrl = '';
+
   beforeAll(async () => {
     mkdirSync(outputDir, { recursive: true });
+    if (companionShipped) {
+      phoneServer = servePhoneApp(phoneDist);
+      await new Promise<void>((resolve) => phoneServer?.listen(0, '127.0.0.1', resolve));
+      phoneAppUrl = `http://127.0.0.1:${(phoneServer.address() as AddressInfo).port}`;
+      // QR codes open this server's app, at the loopback address (CI's firewalls).
+      writeFileSync(
+        userSettings,
+        JSON.stringify(
+          {
+            'triage.projectsFolder': projectsFolder,
+            'triage.companion.appUrl': phoneAppUrl,
+            'triage.companion.address': '127.0.0.1',
+          },
+          null,
+          2,
+        ),
+      );
+    }
     electronApp = await electron.launch({
       executablePath: app.executable,
       // The flags VS Code's own smoke tests use, plus a throwaway profile.
@@ -183,6 +217,7 @@ describe('packaged Triage app', () => {
   });
 
   afterAll(async () => {
+    phoneServer?.close();
     await electronApp?.close();
     rmSync(profile, { recursive: true, force: true });
   });
@@ -763,6 +798,218 @@ describe('packaged Triage app', () => {
     await window.screenshot({ path: shot('sim-scenarios') });
   });
 
+  // ---- ROADMAP PC: the phone companion, with a scripted phone ---------------------------
+  // The phone app (companion/web) in a second Electron window with mobile emulation
+  // (no extra browser download), pairing with this app over WebTransport.
+  const companionIt = companionShipped && edaShipped ? it : it.skip;
+  const phones: Page[] = [];
+  const dialog = () => window.locator('.triage-companion-dialog');
+  const phonesView = () => window.locator('.triage-phones');
+  /** Opens the phone app at a pairing link in a phone-sized window. */
+  const openPhone = async (link: string): Promise<Page> => {
+    if (!electronApp) throw new Error('no app');
+    // The camera opens …/p#<payload>, whose page goes on to …/#p=<payload>; the
+    // test opens the second directly (VS Code's main process blocks navigations).
+    const url = link.includes('/p#') ? link.replace('/p#', '/#p=') : link;
+    const opened = electronApp.waitForEvent('window', { timeout: 30_000 });
+    await electronApp.evaluate(createPhoneWindow as never, url);
+    const page = await opened;
+    phones.push(page);
+    return page;
+  };
+  /** Show on Phone → Pair a New Phone…: the dropdown on the Board tab's bar. */
+  const pairNewPhone = async () => {
+    await window.locator('.tabs-container div.tab[data-resource-name="board"]').click();
+    const group = window.locator('.editor-group-container', {
+      has: window.locator('div.tab[data-resource-name="board"]'),
+    });
+    const dropdown = group.locator('.editor-actions .action-label[aria-label="Show on Phone"]');
+    if (await dropdown.isVisible()) {
+      await dropdown.click();
+      const item = window
+        .locator('.monaco-menu .action-menu-item')
+        .filter({ hasText: 'Pair a New Phone' })
+        .last();
+      await item.waitFor({ state: 'visible', timeout: 15_000 });
+      await window.waitForTimeout(300);
+      await item.click();
+    } else {
+      await clickMenu(window, ['Triage', 'Show on Phone…']);
+    }
+    await expect.poll(() => dialog().getAttribute('data-state'), { timeout: 60_000 }).toBe('qr');
+    return (await dialog().getAttribute('data-link')) ?? '';
+  };
+  const phoneError = (phone: Page) => phone.locator('.screen.home .error').textContent();
+
+  companionIt(
+    'pairs a scripted phone: wrong digits denied, the six digits, view only, reused QR refused (ROADMAP PC-2, PC-3)',
+    async () => {
+      const first = await pairNewPhone();
+      expect(first).toContain(`${phoneAppUrl}/p#`);
+      await window.screenshot({ path: shot('companion-qr') });
+      // A phone the person doesn't recognise (other digits): Deny.
+      const stranger = await openPhone(first);
+      await expect
+        .poll(() => dialog().getAttribute('data-state'), { timeout: 60_000 })
+        .toBe('request');
+      await dialog().locator('[data-answer="deny"]').click();
+      await expect.poll(() => phoneError(stranger), { timeout: 30_000 }).toContain('said no');
+      // A new code; the phone in the user's hand shows the same digits.
+      await expect.poll(() => dialog().getAttribute('data-state'), { timeout: 60_000 }).toBe('qr');
+      const link = (await dialog().getAttribute('data-link')) ?? '';
+      expect(link).not.toBe(first);
+      const phone = await openPhone(link);
+      await expect
+        .poll(() => dialog().getAttribute('data-state'), { timeout: 60_000 })
+        .toBe('request');
+      const phoneSas = await phone
+        .locator('[data-screen="pairing"]')
+        .getAttribute('data-sas', { timeout: 30_000 });
+      expect(phoneSas).toMatch(/^\d{6}$/);
+      expect(await dialog().getAttribute('data-sas')).toBe(phoneSas);
+      await dialog().locator('.triage-companion-name-input').fill('Smoke phone');
+      await window.screenshot({ path: shot('companion-digits') });
+      await dialog().locator('[data-answer="view"]').click();
+      // The phone shows the Board tab, drawn by its own renderer.
+      const board = phone.locator('.view.eda[data-view="board"]');
+      await expect.poll(() => board.getAttribute('data-state'), { timeout: 60_000 }).toBe('ready');
+      expect(Number(await board.getAttribute('data-groups'))).toBeGreaterThan(20);
+      expect(await phone.locator('body').getAttribute('data-permission')).toBe('view');
+      await phone.screenshot({ path: shot('companion-phone-board') });
+      expect(await phonesView().locator('.triage-phone[data-phone="Smoke phone"]').count()).toBe(1);
+      // The same QR code again: used, refused.
+      const again = await openPhone(link);
+      await expect.poll(() => phoneError(again), { timeout: 30_000 }).toContain('already used');
+      // The first (rotated away) code: expired.
+      const late = await openPhone(first);
+      await expect
+        .poll(() => phoneError(late), { timeout: 30_000 })
+        .toMatch(/expired|already used/);
+    },
+  );
+
+  companionIt(
+    'refuses a view-only phone’s edit, then takes it once the laptop allows editing (ROADMAP PC-2, PC-4)',
+    async () => {
+      const phone = phones[1];
+      if (!phone) throw new Error('no paired phone');
+      const board = phone.locator('.view.eda[data-view="board"]');
+      const document = Number(await board.getAttribute('data-document'));
+      const tryEdit = (text: string) =>
+        phone.evaluate(
+          async ([doc, value]) => {
+            const app = (
+              globalThis as unknown as {
+                triageCompanion: { eda(c: string, b: unknown): Promise<unknown> };
+              }
+            ).triageCompanion;
+            const items = (await app.eda('getItems', { document: doc, references: ['R1'] })) as {
+              items?: { items?: { uuid: string }[] };
+            };
+            const uuid = items.items?.items?.[0]?.uuid ?? '';
+            return app
+              .eda('edit', { document: doc, setField: { uuid, field: 'Value', text: value } })
+              .then(
+                () => 'ok',
+                (error: unknown) => String(error),
+              );
+          },
+          [document, text] as const,
+        );
+      expect(await tryEdit('4.7k')).toContain('may only view');
+      expect(await edaView('board').getAttribute('data-modified')).not.toBe('true');
+      // Allow Editing, from the Phones section of the Triage side bar.
+      await phonesView()
+        .locator('.triage-phone[data-phone="Smoke phone"] [data-action="permission"]')
+        .click();
+      await expect
+        .poll(() => phone.locator('body').getAttribute('data-permission'), { timeout: 30_000 })
+        .toBe('edit');
+      const started = Date.now();
+      expect(await tryEdit('4.7k')).toBe('ok');
+      // PC-4: the laptop's tab shows it within a second.
+      await expect
+        .poll(() => edaView('board').getAttribute('data-modified'), { timeout: 10_000 })
+        .toBe('true');
+      console.log(
+        JSON.stringify({ companion: 'phone edit to laptop tab', ms: Date.now() - started }),
+      );
+      // Undo from the phone, so the project stays as it was.
+      await phone.locator('.view.eda [data-action="undo"]').click();
+    },
+  );
+
+  companionIt('runs the simulation from the phone and streams it back (ROADMAP PC-6)', async () => {
+    const phone = phones[1];
+    if (!phone || !simShipped) return;
+    await stopSim();
+    await phone.locator('.tab[data-view="sim"]').click();
+    const sim = phone.locator('.view.sim');
+    await sim.locator('select.scope').waitFor({ state: 'visible', timeout: 30_000 });
+    await sim.locator('select.scope').selectOption({ label: 'Whole device' });
+    await sim.locator('[data-action="run"]').click();
+    await expect
+      .poll(() => simView().getAttribute('data-state'), { timeout: 180_000 })
+      .toBe('running');
+    await expect.poll(() => sim.getAttribute('data-state'), { timeout: 30_000 }).toBe('running');
+    const t0 = Number((await sim.getAttribute('data-t')) ?? 0);
+    await expect
+      .poll(async () => Number((await sim.getAttribute('data-t')) ?? 0), { timeout: 60_000 })
+      .toBeGreaterThan(t0 + 0.5);
+    // The room warms, from the phone's slider: the laptop's OLED and the phone's agree.
+    await phone.evaluate(`(() => {
+      const input = document.querySelector('.view.sim input[data-control="env.room_temperature_c"]');
+      if (!input) throw new Error('no room temperature slider');
+      input.value = '35';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    })()`);
+    await expect
+      .poll(() => sim.getAttribute('data-oled'), { timeout: 60_000 })
+      .toMatch(/3[45]\.\dC (79|8\d)%/);
+    await expect
+      .poll(() => simView().locator('.triage-sim-oled').getAttribute('data-text'), {
+        timeout: 30_000,
+      })
+      .toMatch(/3[45]\.\dC/);
+    console.log(
+      JSON.stringify({
+        companion: 'sim frames on the phone',
+        fps: Number(await sim.getAttribute('data-fps')),
+      }),
+    );
+    await phone.screenshot({ path: shot('companion-phone-sim') });
+    if (cadShipped) {
+      await phone.locator('.tab[data-view="3d"]').click();
+      const cad = phone.locator('.view.cad');
+      await expect.poll(() => cad.getAttribute('data-state'), { timeout: 60_000 }).toBe('ready');
+      expect(Number(await cad.getAttribute('data-objects'))).toBeGreaterThan(2);
+      // The rotor turns on the phone too: the laptop streams its transform.
+      const model = () => cad.getAttribute('data-sim-model');
+      const before = await model();
+      await expect.poll(model, { timeout: 30_000 }).not.toBe(before);
+      await phone.screenshot({ path: shot('companion-phone-3d') });
+    }
+    await phone.locator('.tab[data-view="sim"]').click();
+    await sim.locator('[data-action="stop"]').click();
+    await expect.poll(() => simView().getAttribute('data-state'), { timeout: 30_000 }).toBe('idle');
+  });
+
+  companionIt('removes the phone: its session ends and it is refused (ROADMAP PC-2)', async () => {
+    const phone = phones[1];
+    if (!phone) throw new Error('no paired phone');
+    await phonesView()
+      .locator('.triage-phone[data-phone="Smoke phone"] [data-action="remove"]')
+      .click();
+    await expect
+      .poll(() => phone.locator('body').getAttribute('data-connection'), { timeout: 30_000 })
+      .toBe('closed');
+    expect(await phonesView().locator('.triage-phone').count()).toBe(0);
+    for (const page of phones) {
+      await page.close().catch(() => undefined);
+    }
+    await window.screenshot({ path: shot('companion-removed') });
+  });
+
   // PLAN §3's last step with a click (PA-1): the enclosure's print files.
   cadIt('exports the enclosure for printing from the 3D toolbar (ROADMAP PA-1)', async () => {
     const exports = path.join(project, 'mechanical', 'exports');
@@ -1021,3 +1268,66 @@ describe('packaged Triage app', () => {
     await window.screenshot({ path: shot('main-window-after-pop-out') });
   });
 });
+
+/** Serves the built phone app (companion/web/dist) as a static site. */
+function servePhoneApp(dist: string): Server {
+  const types: Record<string, string> = {
+    '.html': 'text/html',
+    '.js': 'text/javascript',
+    '.css': 'text/css',
+    '.json': 'application/json',
+    '.webmanifest': 'application/manifest+json',
+    '.png': 'image/png',
+    '.svg': 'image/svg+xml',
+  };
+  return createServer((request, response) => {
+    let file = decodeURIComponent(new URL(request.url ?? '/', 'http://phone').pathname);
+    if (file === '/') file = '/index.html';
+    if (file === '/p') file = '/p.html';
+    const full = path.join(dist, file);
+    if (!full.startsWith(dist) || !existsSync(full)) {
+      response.writeHead(404).end();
+      return;
+    }
+    response
+      .writeHead(200, { 'content-type': types[path.extname(full)] ?? 'application/octet-stream' })
+      .end(readFileSync(full));
+  });
+}
+
+/** The part of Electron's BrowserWindow the scripted phone uses (no Electron types here). */
+interface PhoneWindow {
+  readonly webContents: {
+    setUserAgent(userAgent: string): void;
+    on(event: string, listener: () => void): void;
+    enableDeviceEmulation(parameters: unknown): void;
+  };
+  loadURL(url: string): Promise<void>;
+}
+
+/** Runs in the app's main process: a phone-sized window with mobile emulation. */
+function createPhoneWindow(
+  { BrowserWindow }: { BrowserWindow: new (options: unknown) => PhoneWindow },
+  target: string,
+): void {
+  const phone = new BrowserWindow({
+    width: 412,
+    height: 860,
+    title: 'Scripted phone',
+    webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false },
+  });
+  phone.webContents.setUserAgent(
+    'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Mobile Safari/537.36',
+  );
+  phone.webContents.on('did-finish-load', () => {
+    phone.webContents.enableDeviceEmulation({
+      screenPosition: 'mobile',
+      screenSize: { width: 412, height: 860 },
+      viewPosition: { x: 0, y: 0 },
+      deviceScaleFactor: 2,
+      viewSize: { width: 412, height: 860 },
+      scale: 1,
+    });
+  });
+  void phone.loadURL(target);
+}

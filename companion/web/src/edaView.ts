@@ -171,6 +171,7 @@ export class EdaPhoneView implements PhoneView {
     const reply = await this.host.session.request('view.open', { view: this.kind });
     const body = JSON.parse(reply.json) as { document: number; file: string };
     this.document = body.document;
+    this.element.dataset['document'] = String(body.document);
     const infoBytes = reply.blobs.at(0);
     if (infoBytes) {
       this.setInfo(decodeMessage(api.DocumentInfo, infoBytes));

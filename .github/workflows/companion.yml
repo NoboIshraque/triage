@@ -1,0 +1,106 @@
+# The phone and tablet companion (ROADMAP PC, ADR 0005): the laptop's Rust server
+# as a Node addon, the relay, and the phone app, tested together on Windows and
+# Linux (the TypeScript phone pairs with the Rust server through the relay, both
+# Noise implementations agree byte for byte, the parsers are fuzzed, the built app
+# meets Chrome's installability criteria). On the default branch the phone app is
+# published to GitHub Pages (ADR 0005 decision 2) once the owner has turned Pages
+# on (Settings → Pages → Source: GitHub Actions) and set the repository variable
+# TRIAGE_COMPANION_PAGES to true (owner check C8).
+name: Companion
+
+on:
+  push:
+    paths-ignore:
+      - docs/**
+      - '*.md'
+  pull_request:
+    paths-ignore:
+      - docs/**
+      - '*.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: companion-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: '0'
+  TURBO_TELEMETRY_DISABLED: '1'
+
+jobs:
+  test:
+    name: Companion (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, windows-2025]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install the pinned toolchain (rust-toolchain.toml)
+        run: rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - name: The companion's Rust tests (WebTransport, Noise, pairing, relay; fuzzed parsers)
+        run: cargo test -p triage-companion -p triage-companion-node --locked
+      - name: Build the addon (triage_companion.node)
+        run: node crates/triage-companion-node/build.mjs
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @triage/companion-web --filter @triage/companion-relay
+      - name: Build the phone app and the relay
+        run: |
+          pnpm --filter @triage/companion-web build
+          pnpm --filter @triage/companion-relay build
+      - name: The phone's protocol against the laptop's addon, and the relay
+        env:
+          TRIAGE_REQUIRE_ADDON: '1'
+        run: |
+          pnpm --filter @triage/companion-web test
+          pnpm --filter @triage/companion-relay test
+      - name: Upload the phone app
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: triage-companion-web
+          path: companion/web/dist/
+          include-hidden-files: true
+          retention-days: 7
+
+  pages:
+    name: Publish the phone app (GitHub Pages)
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref_name == github.event.repository.default_branch && vars.TRIAGE_COMPANION_PAGES == 'true'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile --filter @triage/companion-web
+      - name: Build the phone app
+        env:
+          # The relay typed codes meet the laptop through (PC-7), once the owner has one.
+          TRIAGE_COMPANION_RELAY: ${{ vars.TRIAGE_COMPANION_RELAY }}
+        run: pnpm --filter @triage/companion-web build
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: companion/web/dist
+      - id: deploy
+        uses: actions/deploy-pages@v4
