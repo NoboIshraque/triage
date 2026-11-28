@@ -145,6 +145,8 @@ export const PHONE_REQUESTS: Readonly<Record<string, CompanionPermission | 'eda'
 	'sim.sendSerial': 'edit',
 	'sim.runScenarios': 'edit',
 	'ping': 'view',
+	/** The phone's Unlink: the laptop forgets it too. */
+	'unlink': 'view',
 	'bye': 'view',
 };
 

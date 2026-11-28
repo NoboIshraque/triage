@@ -40,4 +40,9 @@ export default defineConfig(
     files: ['**/*.{js,mjs,cjs}'],
     languageOptions: { globals: globals.node },
   },
+  {
+    // The phone app (ROADMAP PC-3) runs in a browser; its spike script drives one.
+    files: ['companion/web/**'],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
+  },
 );

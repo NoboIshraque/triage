@@ -750,6 +750,13 @@ export class TriageCompanionService extends Disposable implements ITriageCompani
 				return;
 			case 'bye':
 				return;
+			case 'unlink':
+				this.reply(connection, request, {});
+				if (connection.phoneId) {
+					this.notificationService.info(localize('triage.companion.unlinked', "{0} unlinked itself from this laptop.", connection.name));
+					await this.removePhone(connection.phoneId);
+				}
+				return;
 			case 'views':
 				this.reply(connection, request, { views: this.views(), view: this.laptopView() });
 				return;
@@ -805,7 +812,7 @@ export class TriageCompanionService extends Disposable implements ITriageCompani
 				this.noteEdit(connection, `sim prepare ${body['scope']}`);
 				return;
 			case 'sim.run':
-				await this.sim.run(number('speed', 0.01, 1000));
+				await this.sim.run(number('speed', 0, 1000));
 				this.reply(connection, request, {});
 				return;
 			case 'sim.pause':
@@ -821,7 +828,7 @@ export class TriageCompanionService extends Disposable implements ITriageCompani
 				this.reply(connection, request, {});
 				return;
 			case 'sim.setSpeed':
-				await this.sim.setSpeed(number('speed', 0.01, 1000));
+				await this.sim.setSpeed(number('speed', 0, 1000));
 				this.reply(connection, request, {});
 				return;
 			case 'sim.input':

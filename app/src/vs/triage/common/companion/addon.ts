@@ -40,7 +40,7 @@ export interface CompanionQrPayload {
 	readonly expires: number;
 	readonly view: 'board' | 'schematic' | '3d' | 'sim';
 	readonly addresses: readonly string[];
-	readonly relay?: string | null;
+	readonly relay?: string;
 }
 
 export interface ICompanionServer {

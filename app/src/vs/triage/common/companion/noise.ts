@@ -46,7 +46,8 @@ function concat(...parts: readonly Uint8Array[]): Uint8Array {
 
 /** A view WebCrypto accepts (an ArrayBuffer-backed copy). */
 function buf(bytes: Uint8Array): ArrayBuffer {
-	return bytes.slice().buffer as ArrayBuffer;
+	// A copy into its own buffer (a Node Buffer's slice() is a view of a shared pool).
+	return new Uint8Array(bytes).buffer as ArrayBuffer;
 }
 
 export async function sha256(...parts: readonly Uint8Array[]): Promise<Uint8Array> {

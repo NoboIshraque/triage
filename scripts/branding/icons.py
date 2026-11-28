@@ -21,6 +21,8 @@ Writes (app/build.mjs copies app/resources/ and app/src/ over the checkout):
     app/src/vs/triage/browser/media/triage-logo-dark.svg   reversed, for dark themes
     docs/brand/triage-logo.svg, triage-logo-1024.png      the logo itself
     docs/brand/triage-logo-reversed.svg                    on dark backgrounds
+    companion/web/static/icons/*                           the phone app (PC-3): web app
+                                                           manifest icons, Apple touch icon
 
 Units: x = the height of the left arm. Origin: the top of the bar at the stem's
 left edge; y grows downwards.
@@ -266,6 +268,17 @@ def main() -> None:
     ico = win / "code.ico"
     images = ico_images()
     write(ico, lambda: images[-1].save(ico, sizes=[i.size for i in images], append_images=images[:-1]))
+    # The phone app (ROADMAP PC-3): Chrome's install needs 192 and 512 px icons; a
+    # maskable one keeps the T inside Android's safe zone; iOS takes 180 px on white.
+    phone = ROOT / "companion" / "web" / "static" / "icons"
+    write(phone / "icon.svg", svg)
+    for s in (192, 512):
+        icon = phone / f"icon-{s}.png"
+        write(icon, lambda icon=icon, s=s: raster(s).save(icon, optimize=True))
+    maskable = phone / "maskable-512.png"
+    write(maskable, lambda: raster(512, margin=0.45, background="#ffffff").save(maskable, optimize=True))
+    touch = phone / "apple-touch-icon.png"
+    write(touch, lambda: raster(180, margin=0.25, background="#ffffff").save(touch, optimize=True))
     for scale, (big, small) in INNO.items():
         b, s = win / f"inno-big-{scale}.bmp", win / f"inno-small-{scale}.bmp"
         write(b, lambda b=b, big=big: inno_image(big, 0.62).save(b))

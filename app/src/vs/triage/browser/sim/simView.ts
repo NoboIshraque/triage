@@ -16,20 +16,11 @@ import { Disposable, DisposableStore } from '../../../base/common/lifecycle.js';
 import { basename } from '../../../base/common/path.js';
 import { localize } from '../../../nls.js';
 import { ILogService } from '../../../platform/log/common/log.js';
+import { addPoints, drawOled, drawPlot, PLOT_COLOURS, PlotSeries } from './simDrawing.js';
 import { ISimFrame, ISimRunInfo, ISimScenarioResult, ISimScope, ITriageSimService, SimState } from '../../common/sim/simService.js';
 
-const COLOURS = ['#4fc1ff', '#f4b860', '#9cdc6c', '#f07178', '#c792ea', '#80cbc4', '#ffcb6b'];
 const SPEEDS: [string, number][] = [['0.25×', 0.25], ['0.5×', 0.5], ['1×', 1], ['2×', 2], ['4×', 4], [localize('triage.sim.max', "max"), 0]];
 /** Seconds of history the plots keep. */
-const PLOT_SECONDS = 10;
-
-interface Series {
-	readonly label: string;
-	readonly unit: string;
-	readonly colour: string;
-	t: number[];
-	v: number[];
-}
 
 export class SimView extends Disposable {
 	readonly element: HTMLElement;
@@ -47,7 +38,7 @@ export class SimView extends Disposable {
 	private readonly scenarioList: HTMLElement;
 	private readonly panelDisposables = this._register(new DisposableStore());
 	private readonly indicators = new Map<string, HTMLElement>();
-	private series = new Map<string, Series>();
+	private series = new Map<string, PlotSeries>();
 	private scopes: readonly ISimScope[] = [];
 	private scenarios: readonly string[] = [];
 	private info: ISimRunInfo | undefined;
@@ -342,7 +333,7 @@ export class SimView extends Disposable {
 		}
 		this.oledBox.style.display = info.displays.length > 0 ? '' : 'none';
 		for (const [i, plotted] of info.plotted.entries()) {
-			this.series.set(plotted.signal, { label: plotted.label, unit: plotted.unit, colour: COLOURS[i % COLOURS.length], t: [], v: [] });
+			this.series.set(plotted.signal, { label: plotted.label, unit: plotted.unit, colour: PLOT_COLOURS[i % PLOT_COLOURS.length], t: [], v: [] });
 		}
 	}
 
@@ -355,21 +346,7 @@ export class SimView extends Disposable {
 	 * (software graphics, a busy machine) skips frames instead of queueing them.
 	 */
 	private onFrame(frame: ISimFrame): void {
-		for (const [signal, points] of Object.entries(frame.plots)) {
-			const series = this.series.get(signal);
-			if (!series) {
-				continue;
-			}
-			for (let i = 0; i < points.length; i += 2) {
-				series.t.push(points[i]);
-				series.v.push(points[i + 1]);
-			}
-			const cut = series.t.findIndex(t => t >= frame.t - PLOT_SECONDS);
-			if (cut > 0) {
-				series.t.splice(0, cut);
-				series.v.splice(0, cut);
-			}
-		}
+		addPoints(this.series, frame.plots, frame.t);
 		if (frame.serial) {
 			this.serialText = (this.serialText + frame.serial).slice(-20_000);
 			this.serialChanged = true;
@@ -424,32 +401,8 @@ export class SimView extends Disposable {
 		this.drawPlot();
 	}
 
-	/**
-	 * A 2D context kept in the CPU: the Sim tab redraws its OLED and plots many times a
-	 * second, and a GPU-backed canvas makes each redraw wait for the GPU, which with
-	 * software graphics falls behind until the window stops answering (App runs 88, 103).
-	 */
-	private context2d(canvas: HTMLCanvasElement): CanvasRenderingContext2D | null {
-		return canvas.getContext('2d', { willReadFrequently: true });
-	}
-
 	private drawOled(buffer: readonly number[], on: boolean): void {
-		const context = this.context2d(this.oledCanvas);
-		if (!context) {
-			return;
-		}
-		const image = context.createImageData(128, 64);
-		for (let y = 0; y < 64; y++) {
-			for (let x = 0; x < 128; x++) {
-				const lit = on && ((buffer[(y >> 3) * 128 + x] ?? 0) & (1 << (y & 7))) !== 0;
-				const i = (y * 128 + x) * 4;
-				image.data[i] = lit ? 140 : 8;
-				image.data[i + 1] = lit ? 220 : 10;
-				image.data[i + 2] = lit ? 255 : 18;
-				image.data[i + 3] = 255;
-			}
-		}
-		context.putImageData(image, 0, 0);
+		drawOled(this.oledCanvas, buffer, on);
 	}
 
 	private schedulePlot(): void {
@@ -464,61 +417,12 @@ export class SimView extends Disposable {
 	}
 
 	private drawPlot(): void {
-		const canvas = this.plotCanvas;
-		const dpr = getWindow(canvas).devicePixelRatio || 1;
-		const width = Math.max(1, Math.round(canvas.clientWidth * dpr));
-		const height = Math.max(1, Math.round(canvas.clientHeight * dpr));
-		if (canvas.width !== width || canvas.height !== height) {
-			canvas.width = width;
-			canvas.height = height;
-		}
-		const context = this.context2d(canvas);
-		if (!context) {
-			return;
-		}
-		context.clearRect(0, 0, width, height);
-		context.strokeStyle = 'rgba(128,128,128,0.25)';
-		context.lineWidth = 1;
-		for (let i = 1; i < 4; i++) {
-			context.beginPath();
-			context.moveTo(0, (height * i) / 4);
-			context.lineTo(width, (height * i) / 4);
-			context.stroke();
-		}
-		let end = 0;
-		for (const s of this.series.values()) {
-			end = Math.max(end, s.t[s.t.length - 1] ?? 0);
-		}
-		const start = Math.max(0, end - PLOT_SECONDS);
+		const legend = drawPlot(this.plotCanvas, this.series.values(), getWindow(this.plotCanvas).devicePixelRatio || 1);
 		reset(this.legend);
-		for (const s of this.series.values()) {
-			if (s.t.length === 0) {
-				continue;
-			}
-			// Each signal on its own scale, so currents and temperatures share the plot.
-			let lo = Math.min(...s.v);
-			let hi = Math.max(...s.v);
-			if (hi - lo < 1e-9) {
-				hi += 0.5;
-				lo -= 0.5;
-			}
-			context.strokeStyle = s.colour;
-			context.lineWidth = 1.5 * dpr;
-			context.beginPath();
-			for (let i = 0; i < s.t.length; i++) {
-				const x = ((s.t[i] - start) / PLOT_SECONDS) * width;
-				const y = height - 4 - ((s.v[i] - lo) / (hi - lo)) * (height - 8);
-				if (i === 0) {
-					context.moveTo(x, y);
-				} else {
-					context.lineTo(x, y);
-				}
-			}
-			context.stroke();
-			const last = s.v[s.v.length - 1];
+		for (const item of legend) {
 			const entry = append(this.legend, $('span.triage-sim-legend-entry'));
-			entry.style.color = s.colour;
-			entry.textContent = `${s.label}: ${Number(last.toPrecision(4))} ${s.unit}`;
+			entry.style.color = item.colour;
+			entry.textContent = item.text;
 		}
 	}
 

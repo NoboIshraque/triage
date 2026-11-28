@@ -172,7 +172,7 @@ class CompanionBroker implements ICompanionBroker {
 		const link = addon.qrLink({
 			id, secret, certificateHash: current.hash, laptopKey: this.laptopKey(), expires: Math.floor(expires / 1000),
 			view: (['board', 'schematic', '3d', 'sim'].includes(view) ? view : 'board') as 'board',
-			addresses: this.addresses, relay: relay ?? null,
+			addresses: this.addresses, ...(relay ? { relay } : {}),
 		}, appUrl);
 		const { width, dark } = addon.qrModules(link);
 		let modules = '';
