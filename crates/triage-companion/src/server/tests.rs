@@ -196,7 +196,7 @@ async fn a_phone_pairs_on_the_lan_and_messages_flow_both_ways() {
     }
     match laptop.companion.next_event().await.expect("event") {
         Event::Message { session: s, data } => {
-            assert_eq!((s, data.as_slice()), (session, &b"tap"[..]))
+            assert_eq!((s, data.as_slice()), (session, &b"tap"[..]));
         }
         other => panic!("unexpected {other:?}"),
     }
