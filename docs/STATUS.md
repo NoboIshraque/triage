@@ -2,15 +2,49 @@
 
 > Read this first in every session. Update it before ending one (GUIDELINES §2).
 
-**Last updated:** 2026-11-27 · **Phase PA, "Arduino built in": done** and
-merged into the default branch through a pull request (ROADMAP PA,
-[ADR 0006](adr/0006-arduino-built-in.md), **accepted** by the owner at PA's
-start: arduino-cli 1.6.0 built from source is Triage's Arduino engine). **Next:
-PC (phone and tablet companion)**, which the owner starts in a new session; then
-P4. The owner's checks still open: **C3** (M1 demo), **C4** (60 fps on a real
-GPU), **C5** (the 3D tab, optional), **C6** (the M2 exit demo) and the new
-**C7** (PA's exit demo on the owner's Nano or Mega). Every owner step is in
-[CHECKS.md](CHECKS.md).
+**Last updated:** 2026-11-28 · **Phase PC, "Phone and tablet companion": done**
+(ROADMAP PC, [ADR 0005](adr/0005-phone-companion.md); the relay runs on
+**Cloudflare Workers**, the owner's choice at PC's start). **Next: P4 (ESP32
+and Raspberry Pi → M3)**, which the owner starts in a new session. The owner's
+checks still open: **C3** (M1 demo), **C4** (60 fps on a real GPU), **C5** (the
+3D tab, optional), **C6** (the M2 exit demo), **C7** (PA's exit demo) and the new
+**C8** (GitHub Pages and the Cloudflare relay switched on, your phone pairs: PC-1),
+**C9** (install the phone app, reconnect: PC-3) and **C10** (PC's exit demo).
+Every owner step is in [CHECKS.md](CHECKS.md).
+
+### PC done (2026-11-28)
+
+A phone or tablet shows Triage's Board, Schematic, 3D and Sim tabs from an
+installable web app, paired by a QR code and six digits, while the laptop does
+the work. CI: **CI_RUNS_PLACEHOLDER**.
+
+| WP | State | Evidence |
+|---|---|---|
+| PC-1 Spike: a phone reaches the laptop | **done** in the session and CI; **real phones are owner check C8** | The built phone app in Chromium with a Pixel 7's and an iPhone 15's emulation (`companion/web/scripts/spike.mjs`) and in an Electron window (the smoke test) reached the laptop's Rust server over **WebTransport with the certificate pinned by its hash** from the QR link. Pixel 7 emulation: QR link to board drawn **2.2–3.0 s**; an 816 KB display list in **58–97 ms** (8–14 MB/s); a sealed request's round trip **0.5 ms**; 2 fps in this container's software graphics (0.1 ms per draw call; the rest is compositing without a GPU). Chromium rejects the CSP keyword `'unsafe-webtransport-hashes'` (DV-52). **WebTransport settled; WebRTC not needed.** The relay's hosting options and costs were put to the owner (Cloudflare's free plan, Fly.io about $2.19/month, a VPS about €4–6.50/month): **Cloudflare Workers** (ADR 0005, "PC-1 results") |
+| PC-2 Companion broker and pairing | **done** | `crates/triage-companion` (Rust): WebTransport server (`wtransport` 0.7, IPv6 and IPv4), Noise `IKpsk2` (pair), `IK` (reconnect), `NNpsk0` (typed code) with `snow`, ECDSA P-256 certificates valid under 14 days, renewed every 13 with the next hash handed out, pairings that admit one phone and end after five failed attempts, QR payloads (141–190 bytes), the relay client; `crates/triage-companion-node` (`triage_companion.node`); `node/companionBrokerMain.ts` (utility process; patch 0002). Window: `electron-browser/companionService.ts` (pairing, keys in secret storage, phones in the machine's storage, permissions per request, the engine services), `browser/companion/companionUi.ts`: **Show on Phone** on Triage's tab bar, the pairing dialog (QR, typed code, six digits, name, **Allow: View Only / View and Edit / Deny**), the **Phones and Tablets** section (Allow Editing / View Only, Disconnect, Remove), the status bar item and its quick pick, a notification with **Allow Editing** when a paired phone comes back, the Triage menu's entries, settings (off by default). Tests: 27 Rust tests (a Rust phone over WebTransport: reused, expired and wrong QR codes and removed phones refused; the relay sees only ciphertext; proptest fuzzing of the frame, init-header and QR parsers and the Noise responders), the TypeScript phone against the addon in all three modes, seeded fuzzing of the envelope, QR, frame and EDA request parsers (DV-48), and the smoke test (below). Security review: below |
+| PC-3 Phone app shell | **done**; install and reconnect on a real phone are **owner check C9**; publishing waits for the owner to turn Pages on (C8) | `companion/web/`: web app manifest, service worker caching the whole app (versioned by its files' hashes), Triage's icons from `scripts/branding/icons.py`, a strict content security policy, the in-app scanner (BarcodeDetector, else jsQR for iOS), the typed code, the pairing screens (the six digits; iOS asks to add it to the Home Screen first), reconnecting by itself (LAN first, then the relay; again when the app comes back to the foreground), the tab switcher, **Follow laptop**, **Unlink**, **Benchmark this view**; compiled with tsc to ES modules (DV-44). The laptop refuses another protocol version with a sentence. Chrome's installability criteria checked on the built site in CI (DV-54). The Companion workflow builds it and publishes it to GitHub Pages once the owner turns Pages on (DV-56) |
+| PC-4 Schematic and board on the phone | **done** in CI; 30 fps on the owner's phone is **C8/C10** | `edaRenderer.ts` unchanged on the phone; one-finger pan, pinch zoom, double-tap fit, layers (board) and sheets (schematic), tap → the engine's hit test → a card (reference, value, net); cross-probing both ways; with edit permission Value…, Reference…, Rotate, Move, Delete, Undo, Redo, Save through the laptop's engine, in **the laptop tab's own document and undo history**; the laptop's tab redraws after a phone edit (`onDidChangeDocument` now says who changed it), and the phone redraws after the laptop's (DV-45, DV-46). Smoke test: a view-only phone's edit is refused, then after **Allow Editing** in the Phones section the same edit reaches the laptop's Board tab |
+| PC-5 3D on the phone | **done** in CI (the phone's 3D view draws the laptop's scene and turns the rotor); 30 fps and the wall thickness on a real phone are **C10** | `cadRenderer.ts` on the phone with the laptop 3D tab's meshes (`CadView.snapshot()`), one-finger orbit, two-finger pan, pinch zoom, the outliner with eyes, fit problems in red, properties with the laptop panel's editors (with edit permission), the simulation's transforms and LED glow streamed with each frame (`CadView.transforms()`) |
+| PC-6 Simulation on the phone | **done** in CI; **owner check C10** step 4 | Run, Pause, Step, Stop, Speed and the scope picker; environment, parts, virtual I/O and stubs; OLED and plots with the Sim tab's own drawing code (`browser/sim/simDrawing.ts`, no VS Code imports; simulation types in `common/sim/simTypes.ts`); serial monitor; the scenarios; frames at up to 30 Hz, dropped when a phone lags (the addon's `send` says when its queue is full); the phone's tilt as the room temperature (optional; iOS asks). Smoke test: the phone runs the Smart Fan, warms the room to 35 °C, both OLEDs show it, the rotor turns on the phone |
+| PC-7 Away from the desk + security review | **done** in code and tests; the relay's deployment and mobile data are **owner checks C8, C10** | `companion/relay/`: the Node relay (one laptop and one phone per 16-byte mailbox, binary frames only, 65,558 bytes, 400 a second, 64 connections per address, idle and peer-left closes, no content logs) and the **Cloudflare Worker** (`companion/relay/cloudflare/`, a Durable Object per mailbox with WebSocket hibernation; deployed by the Companion workflow with the owner's secrets); the laptop's relay client (one connection per open pairing, typed code and paired phone; pings every 25 s); pairing with the 8-character code through the relay (DV-51); reconnecting after a network change (the phone tries the LAN, then the relay; the laptop's addresses are looked up again for each QR code and welcome). Tests: the TypeScript phone through the Node relay to the Rust server in all three modes; the relay forwards only frames 0x20–0x22 and none of the plaintext; the Worker's rules with stand-ins for the runtime. Security review: below |
+
+**Security review (PC-2 to PC-7).** Each threat, what stops it, and what is left
+for the owner to accept:
+
+| Threat | What stops it | Left |
+|---|---|---|
+| **A QR code on a projector** (a classmate photographs it) | The QR's secret only gets a phone as far as the six digits; the person at the laptop compares them with the phone in their hand and clicks **Allow**, choosing View only or View and edit. A pairing admits one phone; five failed attempts end it; it changes every 45 s and works 90 s; Deny counts as a failure. The QR names no project or person | A person who clicks Allow without comparing the digits lets the other phone in (the dialog says why the digits matter) |
+| **Someone on the same Wi-Fi** | Nothing listens until Show on Phone (then while phones are paired and the setting is on). Every byte after the handshake is sealed with Noise inside TLS pinned by hash; a phone without the QR's secret or a paired key gets a refusal. Pages from other origins are refused on the LAN (the phone app's origin only). Limits: 8 sessions, 1 MiB per message, 200 messages a second, handshake timeouts | The port can be found and probed (it answers QUIC); a flood of connection attempts costs the laptop some CPU |
+| **The relay's operator** (Cloudflare, or anyone who breaks in) | It forwards frames sealed end to end with keys only the laptop and the phone hold (tested: no plaintext passes); mailboxes are random 16 bytes; it keeps no logs of content | It sees IP addresses, timing and sizes, and could drop or delay frames. A typed code's mailbox is a hash of a 40-bit code (DV-51): an operator could find the code offline, but still can't pass the six digits and Allow |
+| **A lost phone** | Remove it in the Phones and Tablets section: its key is forgotten and its session closed at once; a phone that comes back by itself is view only until the laptop allows editing; a phone unused for 30 days must pair again; the phone holds no project files, only a non-extractable key and the laptop's address | Until removed, whoever unlocks the phone can view the project while Triage runs (and the laptop is told when it connects) |
+| **The phone app's host** (GitHub Pages, later the owner's domain) | The QR's secret is in the URL fragment, which browsers never send to the host; the app's code has a strict content security policy and comes only from its own origin | Whoever can change the published app could change what the phone runs (publishing needs the owner's repository) |
+| **What a phone can do** | Only the requests in `PHONE_REQUESTS` (protocol.ts), each checked against the session's permission. **View:** look at the views, tap, cross-probe, follow the laptop, watch the simulation. **View and edit:** P1-6's simple edits (value, reference, move, rotate, delete, undo, redo, save), the 3D tab's properties, the simulation's controls and scenarios. **Never:** files or paths, opening or reloading documents, routing, placing parts, wires, tracks, renaming nets, the terminal, tasks, extensions or settings. Each edit is logged with the phone's name, and the Phones section counts them | — |
+
+**Known issues.** On Linux without an OS keyring the laptop's keys live for the
+session only (DV-49). One Triage window shares at a time (DV-47). The phone's
+own selection and no net highlight (DV-45). Frame rates on a real phone, Safari
+26.4's WebTransport, the camera in an installed iPhone app and Windows' firewall
+prompt are only known from the owner's checks (C8 to C10).
 
 ### PA done (2026-11-27)
 
@@ -372,8 +406,8 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
 | P2 3D engine + enclosure from board | P2-1 FreeCAD fork · P2-2 CAD engine RPC · P2-3 3D view · P2-4 enclosure · P2-5 fit checks | **done** 2026-11-26 on Windows and Linux in CI (DV-25 … DV-27; see "P2 done" at the top) |
 | P3 Simulation on Arduino (M2) | P3-1 … P3-6 | **done** 2026-11-27 on Windows and Linux in CI (Sim run 9, App run 80; DV-28 … DV-32); **the owner's M2 run (C6) next** |
 | PA Arduino built in ([ADR 0006](adr/0006-arduino-built-in.md)) | PA-1 … PA-6 | **done** 2026-11-27 on Windows and Linux in CI (Arduino run 6, Sim run 30, App run 102; ADR 0006 accepted; DV-33 … DV-42); **the owner's PA exit demo (C7) next** |
-| PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | **next** (the owner starts it in a new session) |
-| P4 ESP32 + Raspberry Pi (M3) | P4-1 … P4-6 | not started |
+| PC Phone and tablet companion ([ADR 0005](adr/0005-phone-companion.md)) | PC-1 … PC-7 | **done** 2026-11-28 on Windows and Linux in CI (DV-43 … DV-56; the relay on Cloudflare Workers, the owner's choice); **the owner's checks C8, C9 and C10 next** |
+| P4 ESP32 + Raspberry Pi (M3) | P4-1 … P4-6 | **next** (the owner starts it in a new session) |
 | P5 In-app electronics editing | P5-1 … P5-7 | not started |
 | P6 In-app 3D design (M4) | P6-1 … P6-5 | not started |
 | P7 Accuracy and depth | P7-1 … P7-5 | not started |
@@ -671,3 +705,16 @@ Nothing blocks the build. These defaults stand until the owner says otherwise:
   canvases redrawn for every simulation frame stalled behind software graphics.
   Fixed in the Sim tab (CPU-backed canvases, one drawing per display frame).
   The owner asked to fix it here before starting PC.
+- **2026-11-28 (PC session).** The owner started PC. Built the companion end to
+  end: `crates/triage-companion` (WebTransport, Noise, certificates, pairing, the
+  relay client) and its Node addon; the companion broker and service, Show on
+  Phone, the pairing dialog, the Phones section; the phone app (`companion/web`)
+  with the Board, Schematic, 3D and Sim views on the laptop's own renderers; the
+  Node relay and a Cloudflare Worker. The owner picked **Cloudflare** for the
+  relay. The spike (Chromium with phone emulation) paired over WebTransport with
+  the pinned certificate and measured it. The VS Code tree was installed without
+  install scripts (ripgrep's download is refused here), so the workbench was
+  type-checked locally and packaged and smoke-tested only in CI; Node 24 is
+  preinstalled at `/opt/node24` in this environment. CI found two Windows-only
+  test assumptions and that secret storage never answers on CI's Linux (fixed:
+  DV-49). DV-43 … DV-56; owner checks C8, C9 and C10.

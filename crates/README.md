@@ -10,6 +10,8 @@ Triage's Rust workspace (root `Cargo.toml`, toolchain pinned in `rust-toolchain.
 | [`triage-sim`](triage-sim/) | The simulated device: circuit islands, parts, environment, mechanics, scopes' default stubs | P3-3 … P3-5 |
 | [`triage-mujoco`](triage-mujoco/) | MuJoCo for mechanics: rotors built with `mjs_*`, torques in `mjcb_control` (needs `node engines/mujoco/build.mjs`) | P3-4 |
 | [`triage-sim-node`](triage-sim-node/) | The kernel and device as a Node addon, `triage_sim.node` (`node crates/triage-sim-node/build.mjs --mujoco`) | P3-2 … P3-6 |
+| [`triage-companion`](triage-companion/) | The phone companion's laptop side: QR payloads, wire frames, Noise sessions, certificates, pairing, the WebTransport server and the relay client | PC-2, PC-7 |
+| [`triage-companion-node`](triage-companion-node/) | The companion as a Node addon, `triage_companion.node`, for the companion broker (`node crates/triage-companion-node/build.mjs`) | PC-2 |
 | `triage-ngspice` | ngspice binding | P7-1 |
 | `triage-part-sdk` | WASM smart-part SDK | P7-3 |
 

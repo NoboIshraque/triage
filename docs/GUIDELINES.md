@@ -244,6 +244,27 @@ For source trees we have (the forks), read the source. REA is for shipped artifa
   with the CI build, then use gdb on the renderer, a CDP CPU profile and
   Chromium flags to bisect.
 
+**From the PC session (2026-11-28):**
+- **This environment has Node 24 preinstalled at `/opt/node24`** (VS Code's
+  build checks for Node 24). VS Code's full install still fails here:
+  `@vscode/ripgrep` downloads a prebuilt binary from a host the proxy refuses.
+  `corepack pnpm install --frozen-lockfile --ignore-scripts` in `app/upstream`
+  is enough for `node app/build.mjs typecheck`; packaging and the smoke test run
+  in CI.
+- **Secret storage may never answer on Linux without an OS keyring** (CI's
+  runners): put a timeout on `ISecretStorageService` calls in anything that
+  must start.
+- **A utility process that dies leaves its ProxyChannel calls unanswered**:
+  race a long call with the worker's `onDidTerminate` and a timeout, and log
+  each step, or a failure shows as a hang with nothing in the logs.
+- **npm packages that ship native binaries** (esbuild, wrangler's workerd) count
+  as downloaded binaries in sessions: prefer tsc, and let CI run deploy tools.
+- **A scripted phone is a second Electron window** created in the app's main
+  process (`electronApp.evaluate` with `BrowserWindow`, `enableDeviceEmulation`).
+  VS Code's main process blocks a page's own navigations, so open the final URL.
+- **Windows' sockets may lose a WebSocket close frame** (the client sees 1006):
+  tests of close codes accept it.
+
 ## 11. When Claude stops and asks
 
 - A decision changes product scope, user-visible behavior or architecture (ADR level).
